@@ -1,25 +1,5 @@
-import {Entreprise} from "./Entreprise.ts";
-
-
-type PdpDTO = {
-    id?: number;
-    operation?: string;
-    lieuintervention?: string;
-    datedebuttravaux?: Date;
-    datefintravaux?: Date;
-    effectifmaxisurchantier?: number;
-    nombreinterimaires?: number;
-    horairedetravail: string;
-    horairesdetail?: string;
-    icpdate?: Date;
-    entrepriseexterieureIds?: number[];
-    entrepriseUtilisatriseId?:number;
-    medecintravaileu?: string;
-    medecintravailee?: string;
-    dateprevenircssct?: Date;
-    dateprev?: Date;
-    location?: string;
-}
+import {Entreprise} from "../entreprise/Entreprise.ts";
+import { PdpDTO } from "./PdpDTO.ts";
 
 export class Pdp  {
     id?: number;
@@ -74,4 +54,3 @@ export class Pdp  {
     //Make create object
 
 }
-export default PdpDTO;

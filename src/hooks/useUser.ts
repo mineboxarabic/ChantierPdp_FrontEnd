@@ -1,16 +1,18 @@
 import {useAxios} from "./useAxios.ts";
-import {RegisterUserData} from "../interfaces/RegisterUserData.ts";
+import {RegisterUserData} from "../utils/user/RegisterUserData.ts";
 import axios, {AxiosResponse} from "axios";
 import {useEffect, useState} from "react";
 
 import { useNotifications } from '@toolpad/core/useNotifications';
-import useLocalStorage from "./useLocalStorage.ts";
+import {UserDTO} from "../utils/user/UserDTO.ts";
+import User from "../utils/user/User.ts";
 
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
+type UserResponse = UserDTO | User[] | UserDTO[] | User | number | null; // Could be one Pdp, a list of Pdps, or null.
 const useUser = ()=>{
-    const [response, setReponse] = useState<any | null>(null);
+    const [response, setReponse] = useState<UserResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
 
@@ -73,15 +75,113 @@ const useUser = ()=>{
         });
     }
 
-    const createUser = () =>{
-
+    const createUser = (user:User): Promise<User> =>{
+        return fetch('api/user','POST', user, [
+            {
+                status: 500,
+                message: 'Error while creating user',
+            },
+            {
+                status: -1,
+                message: 'Error while creating user -1',
+            }
+        ]).then((response: User) => {
+            setReponse(response as User);
+            return response as User;
+        }) as Promise<User>;
     }
 
     const getCurrentUser = ()=>{
         return localStorage.getItem("user");
     }
 
-    return {response, error, loading, registerUser, createUser, loginUser, getCurrentUser}
+
+    const getUsers = async () : Promise<User[]> => {
+
+            return fetch(`api/user`, 'GET', null, [
+                {
+                    status: 404,
+                    message: 'Error users not found',
+                },
+                {
+                    status: -1,
+                    message: 'Error while getting users',
+                }
+            ]).then(r => {
+
+                    setReponse(r.data?.data);
+                    return r.data?.data;
+
+            }) as Promise<User[]>;
+    }
+
+    const getUser = async (id:number):Promise<User> =>{
+        return fetch('api/user/' + id, 'GET', null,
+            [{
+                status: 404,
+                message: 'Error user not found',
+            },
+                {
+                    status: -1,
+                    message: 'Error while getting user',
+                }
+            ]).then((response:User): User =>{
+                setReponse(response as User);
+
+                return response as User;
+
+        }).catch(e=>{
+            setError(e);
+            if(e.status === 404){
+                notifications.show('Error user not found', {severity:'error'});
+            }else{
+
+                notifications.show('Error while getting user', {severity: 'error'});
+            }
+        }) as Promise<User>;
+    }
+
+
+    const updateUser = (user:User):Promise<User> =>{
+       return fetch('api/user/' + user.id, 'PUT', user, [
+            {
+                status: 404,
+                message: 'Error user not found',
+            },
+            {
+                status: 500,
+                message: 'Error while updating user',
+            },
+            {
+                status: -1,
+                message: 'Error while updating user -1',
+            }
+        ]).then((response: User)=>{
+            setReponse(response as User);
+            return response as User;
+        }) as Promise<User>;
+    }
+
+
+    const deleteUser = (id:number):Promise<void> =>{
+        return fetch('api/user/' + id, 'DELETE', null, [
+            {
+                status: 404,
+                message: 'Error user not found',
+            },
+            {
+                status: 500,
+                message: 'Error while deleting user',
+            },
+            {
+                status: -1,
+                message: 'Error while deleting user -1',
+            }
+        ]).then(()=>{
+            setReponse(null);
+        }) as Promise<void>;
+    }
+    return {response, error, loading, registerUser, createUser, loginUser, deleteUser ,getCurrentUser, getUsers, getUser, updateUser}
 }
 
 export default useUser;

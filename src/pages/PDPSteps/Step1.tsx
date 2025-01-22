@@ -1,7 +1,7 @@
 import Section from "../../components/Section.tsx";
 import Typography from "@mui/material/Typography";
 import TitleHeading from "../../components/TitleHeading.tsx";
-import {Box, Checkbox, FormControlLabel} from "@mui/material";
+import {Box, Checkbox, FormControlLabel, MenuItem, Select} from "@mui/material";
 
 import {TextField} from "@mui/material";
 import EntrepriseAddButton from "../../components/EntrepriseAddButton.tsx";
@@ -10,10 +10,10 @@ import {HorizontalBox, VerticalBox} from "../../components/Layout/Layouts.tsx";
 import BottomToolBar from "../../components/Steps/BottomToolBar.tsx";
 import Cas from "../../components/static/Cas.tsx";
 import {useEffect, useState} from "react";
-import PdpDTO, {Pdp} from "../../interfaces/Pdp.ts";
+import PdpDTO, {Pdp} from "../../utils/pdp/Pdp.ts";
 import dayjs, { Dayjs } from 'dayjs';
 import useEntreprise from "../../hooks/useEntreprise.ts";
-import {EntrepriseDTO} from "../../interfaces/Entreprise.ts";
+import {Entreprise} from "../../utils/entreprise/Entreprise.ts";
 
 
 interface StepsProps {
@@ -23,6 +23,9 @@ interface StepsProps {
 
 const Step1 = ({currentPdp, save}:StepsProps) => {
 
+    const {getAllEntreprises} = useEntreprise();
+
+    const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
 
 
     useEffect(() => {
@@ -30,19 +33,13 @@ const Step1 = ({currentPdp, save}:StepsProps) => {
 
     }, [currentPdp]);
 
+    useEffect(() => {
+        getAllEntreprises().then((response: Entreprise[]) => {
+            setEntreprises(response);
+        });
+    }, []);
 
-    const handleSaveResponsableChantier = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (currentPdp && currentPdp.entrepriseutilisatrice) {
-            currentPdp.entrepriseutilisatrice.responsableChantier = e.target.value;
-            if(save) save(currentPdp);
-        }
-    }
-    const handleSaveFonction = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (currentPdp && currentPdp.entrepriseutilisatrice) {
-            currentPdp.entrepriseutilisatrice.fonction = e.target.value;
-            if(save) save(currentPdp);
-        }
-    }
+
 
     return (
         <>
@@ -59,25 +56,72 @@ const Step1 = ({currentPdp, save}:StepsProps) => {
                     width={"100%"}
                 >
 
+
+
                     <VerticalBox
                         gap={"16px"}
                         width={"100%"}
-                    >
-                        <TitleHeading severity={"error"} title={"Enterprise Utilisatrice :"} />
-                        <TextField id="outlined-basic" label="Donneur d'ordre" variant="outlined" value={currentPdp?.entrepriseutilisatrice?.responsableChantier}
-                        onChange={handleSaveResponsableChantier}
-                        />
+                        padding={"0 20px 0 20px"}
+                        >
+                        <TitleHeading severity={"indecation"} title={"Entreprise utilisatrice :"}/>
+                        <Select
+                            fullWidth
+                            label="Entreprise utilisatrice"
+                            variant="outlined"
+                            value={currentPdp?.entrepriseutilisatrice?.id || ""}
+                            onChange={(e) => {
+                                if (currentPdp) {
+                                    const entreprise = entreprises.find(
+                                        (entreprise: Entreprise) => entreprise.id?.toString() === e.target.value
+                                    );
+                                    currentPdp.entrepriseutilisatrice = entreprise;
+                                    if (save) save(currentPdp);
+                                }
+                            }}
+                        >
+                            {entreprises.map((entreprise: Entreprise) => (
+                                <MenuItem value={entreprise.id}>
+                                    {`${entreprise.fonction || "No Fonction"} ${entreprise.id}`}
+                                </MenuItem>
+                            ))}
+                        </Select>
 
-                        <TextField id="outlined-basic" label="Fonction" variant="outlined" value={currentPdp?.entrepriseutilisatrice?.fonction}
-                                   onChange={handleSaveFonction}
-                        />
+                        {/**/}
 
 
-
-                        <TextField id="outlined-basic" label="No de telephone" variant="outlined"/>
-                        <TextField id="outlined-basic" label="Referent PDP" variant="outlined"/>
                     </VerticalBox>
+                    <VerticalBox
+                        gap={"16px"}
+                        width={"100%"}
+                        padding={"0 20px 0 20px"}
+                    >
+                        <TitleHeading severity={"indecation"} title={"Entreprise EXTERIEURE 1 :"}/>
+                        <Select
+                            fullWidth
+                            label="Entreprise EXTERIEURE 1"
+                            variant="outlined"
+                            value={currentPdp?.entrepriseutilisatrice?.id || ""}
+                            onChange={(e) => {
+                                if (currentPdp) {
+                                    const entreprise = entreprises.find(
+                                        (entreprise: Entreprise) => entreprise.id?.toString() === e.target.value
+                                    );
+                                    currentPdp.entrepriseutilisatrice = entreprise;
+                                    if (save) save(currentPdp);
+                                }
+                            }}
+                        >
+                            {entreprises.map((entreprise: Entreprise) => (
+                                <MenuItem value={entreprise.id}>
+                                    {`${entreprise.fonction || "No Fonction"} ${entreprise.id}`}
+                                </MenuItem>
+                            ))}
+                        </Select>
 
+                        {/**/}
+
+
+                    </VerticalBox>
                     <VerticalBox
                         gap={"16px"}
                         width={"100%"}

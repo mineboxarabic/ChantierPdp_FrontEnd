@@ -33,7 +33,13 @@ export const useAxios  =<T = any> () => {
         })
             .catch((err: AxiosError) => {
             setMessage(err?.message);
-            console.log(err);
+                if (!err.response) {
+                    // Handle no internet connection
+                    const noConnectionMessage = "No connection to the server. Please check your internet connection.";
+                    setErrorAxios(noConnectionMessage);
+                    notifications.show(noConnectionMessage, { severity: "error" });
+                    return null;
+                }
                 if (errorMapper.length > 0) {
                     for (let i = 0; i < errorMapper.length; i++) {
 

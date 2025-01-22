@@ -15,6 +15,8 @@ import Step4 from "./pages/PDPSteps/Step4.tsx";
 import Step5 from "./pages/PDPSteps/Step5.tsx";
 import Step6 from "./pages/PDPSteps/Step6.tsx";
 import Steps from "./pages/PDPSteps/Steps.tsx";
+import ViewAllEntreprises from "./pages/Entreprise/ViewAllEntreprises.tsx";
+import ViewAllUser from "./pages/User/ViewAllUser.tsx";
 
 
 function App() {
@@ -33,7 +35,8 @@ function App() {
 
 
                  <Route path={"profile"} element={<ProfilePage/>}/>
-
+                 <Route path={"view/entreprises"} element={<ViewAllEntreprises/>}/>
+                    <Route path={"view/users"} element={<ViewAllUser/>}/>
 
              </Route>
 

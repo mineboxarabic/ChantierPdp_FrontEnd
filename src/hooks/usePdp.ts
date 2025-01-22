@@ -1,12 +1,12 @@
 import {useAxios} from "./useAxios.ts";
-import {RegisterUserData} from "../interfaces/RegisterUserData.ts";
+import {RegisterUserData} from "../utils/user/RegisterUserData.ts";
 import axios, {AxiosResponse} from "axios";
 import {useEffect, useState} from "react";
 
 import { useNotifications } from '@toolpad/core/useNotifications';
 import useLocalStorage from "./useLocalStorage.ts";
-import PdpDTO, {Pdp} from "../interfaces/Pdp.ts";
-import {AxiosResponseState} from "../interfaces/AxiosResponse.ts";
+import PdpDTO, {Pdp} from "../utils/pdp/Pdp.ts";
+import {AxiosResponseState} from "../utils/AxiosResponse.ts";
 
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -87,8 +87,8 @@ const usePdp = ()=>{
 
     }
 
-    const createPdp = (pdpData:PdpDTO):void=>{
-        fetch('api/pdp/', 'POST', pdpData,
+    const createPdp = (pdpData:PdpDTO): Promise<void>=>{
+       return fetch('api/pdp/', 'POST', pdpData,
             [{
                 status: 409,
                 message: 'Error pdp already exists',
@@ -97,7 +97,7 @@ const usePdp = ()=>{
                     status: 404,
                     message: 'Error pdp or api link not found',
                 }
-            ]).then(r => {});
+            ]).then(r => {}) as Promise<void>;
 
     }
 

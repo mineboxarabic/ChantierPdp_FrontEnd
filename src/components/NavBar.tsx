@@ -92,6 +92,10 @@ function NavBar() {
                                     <Typography sx={{ textAlign: 'center' }}>{page}</Typography>
                                 </MenuItem>
                             ))}
+
+                            <MenuItem key={'viewall'} onClick={()=>{} }>
+                                <Typography sx={{ textAlign: 'center' }}>View All</Typography>
+                            </MenuItem>
                         </Menu>
                     </Box>
                     <AdbIcon sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }} />
@@ -106,6 +110,10 @@ function NavBar() {
                                 {page}
                             </Button>
                         ))}
+
+                        <MenuItem key={'viewall'} onClick={()=>{} }>
+                            <Typography sx={{ textAlign: 'center' }}>View All</Typography>
+                        </MenuItem>
                     </Box>
 
                     <Button
@@ -205,6 +213,12 @@ function NavBar() {
                                     {page}
                                 </Button>
                             ))}
+
+                            <MenuItem key={'viewall'} onClick={()=>{
+                                window.location.href = '/view/entreprises';
+                            } }>
+                                <Typography sx={{ textAlign: 'center' }}>View all entreprises</Typography>
+                            </MenuItem>
                         </Box>
                         <Box sx={{ flexGrow: 0 }}>
                             <Tooltip title="Open settings">
