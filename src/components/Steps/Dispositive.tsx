@@ -5,7 +5,15 @@ import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import MenuItem from "@mui/material/MenuItem";
 import {Checkbox} from "@mui/material";
-const Dispositive = () => {
+import Dispositif from "../../utils/dispositif/Dispositif.ts";
+import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+
+interface DispositifProps {
+    dispositifAnswered:ObjectAnswered
+    onSelectChange: (value:boolean) => void;
+}
+
+const Dispositive = ({dispositifAnswered,onSelectChange}:DispositifProps) => {
     return (
         <Box display={"flex"} alignItems={'center'}>
 
@@ -24,8 +32,10 @@ const Dispositive = () => {
                     }}/>
 
 
-                    <Typography fontWeight={'bold'} color={'purple'}>CASQUE</Typography>
-                  <Checkbox color={'primary'}/>
+                    <Typography fontWeight={'bold'} color={'purple'}>{dispositifAnswered.dispositif?.title}</Typography>
+                  <Checkbox
+                        checked={dispositifAnswered.answer}
+                      color={'primary'}/>
                 </CardContent>
             </Card>
 

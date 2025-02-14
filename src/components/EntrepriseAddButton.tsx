@@ -2,7 +2,12 @@ import {Box} from "@mui/material";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 
-const EntrepriseAddButton = () => {
+
+interface EntrepriseAddButtonProps {
+    openModal: (e: boolean) => void;
+}
+
+const EntrepriseAddButton = ({openModal}:EntrepriseAddButtonProps) => {
   return(
    <Button variant="contained" color="primary"
               style={{
@@ -11,10 +16,13 @@ const EntrepriseAddButton = () => {
                  backgroundColor: '#d8e0ed',
                  color: '#222222',
                  fontWeight: 'bold',
-                 fontSize: '15rem',
-                 padding: '10px',
-                 marginTop: '10px'
+                 fontSize: '10rem',
                 }}
+
+                onClick={() => {
+                    openModal(true);
+                }
+   }
    >+</Button>
   )
 };

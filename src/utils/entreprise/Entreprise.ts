@@ -11,6 +11,7 @@ export class Entreprise {
     raisonSociale?: string;
     isUtilisatrice?: boolean;
     image?: ImageModel;
+
     public constructor() {
         this.nom = "";
         this.fonction = "";

@@ -21,9 +21,31 @@ import BottomToolBar from "../../components/Steps/BottomToolBar.tsx";
 import Cas from "../../components/static/Cas.tsx";
 import Button from "@mui/material/Button";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import Risque from "../../components/Steps/Risque.tsx";
+import RisqueComponent from "../../components/Steps/RisqueComponent.tsx";
 import Dispositive from "../../components/Steps/Dispositive.tsx";
-const Step4 = () => {
+import useAnalyseRisque from "../../hooks/useAnalyseRisque.ts";
+import {Pdp} from "../../utils/pdp/Pdp.ts";
+import {useEffect, useState} from "react";
+import ObjectAnsweredEntreprises from "../../utils/pdp/ObjectAnsweredEntreprises.ts";
+import SelectOrCreateAnalyseRisque from "../../components/Pdp/SelectOrCreateAnalyseRisque.tsx";
+
+interface StepsProps {
+    currentPdp: Pdp | null
+    saveCurrentPdp: (pdp: Pdp) => void
+    save?: (pdp: Pdp) => void
+    setIsChanged: (isChanged: boolean) => void
+}
+const Step4 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
+
+    const [openSelectOrCreateAnalyse, setOpenSelectOrCreateAnalyse] = useState(false);
+
+    useEffect(() => {
+        currentPdp?.analyseDeRisques?.map((analyseDeRisqueEntreprise:ObjectAnsweredEntreprises, index) => (
+            console.log("analyseDeRisqueEntreprise", analyseDeRisqueEntreprise.ee)
+        ))
+    }, []);
+
+
     return (
         <Box sx={{ padding: 3 }}>
             {/* Title Section */}
@@ -43,46 +65,77 @@ const Step4 = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {[...Array(4)].map((_, index) => (
+                        {currentPdp?.analyseDeRisques?.map((analyseDeRisqueEntreprise:ObjectAnsweredEntreprises, index) => (
                             <TableRow key={index}>
-                                <TableCell sx={{ border: "1px solid #ccc", height: 50,}}></TableCell>
-                                <TableCell sx={{ border: "1px solid #ccc", height: 50,}}></TableCell>
-                                <TableCell sx={{ border: "1px solid #ccc", height: 50,}}></TableCell>
-                                <TableCell sx={{ border: "1px solid #ccc", height: 50,}}></TableCell>
+                                <TableCell sx={{ border: "1px solid #ccc", height: 50,}}>{
+                                    analyseDeRisqueEntreprise.analyseDeRisque?.deroulementDesTaches || "no data"
+                                }</TableCell>
+                                <TableCell sx={{ border: "1px solid #ccc", height: 50,}}>{
+                                    analyseDeRisqueEntreprise.analyseDeRisque?.moyensUtilises || "no data"
+                                }</TableCell>
+                                <TableCell sx={{ border: "1px solid #ccc", height: 50,}}>
+                                    {
+                                        analyseDeRisqueEntreprise.analyseDeRisque?.risque?.title || "no data"
+                                    }
+                                </TableCell>
+                                <TableCell sx={{ border: "1px solid #ccc", height: 50,}}>{
+                                    analyseDeRisqueEntreprise.analyseDeRisque?.mesuresDePrevention || "no data"
+                                }</TableCell>
 
-                                <TableCell align="center" sx={{border: "1px solid #ccc",}}><Checkbox /></TableCell>
-                                <TableCell align="center" sx={{border: "1px solid #ccc",}}><Checkbox /></TableCell>
+                                <TableCell align="center" sx={{border: "1px solid #ccc",}}><Checkbox
+                                    checked={!!analyseDeRisqueEntreprise?.ee}
+
+                                    onChange={(e) => {
+                                        analyseDeRisqueEntreprise.ee = e.target.checked;
+
+                                        saveCurrentPdp({
+                                            ...currentPdp,
+                                            analyseDeRisques: currentPdp.analyseDeRisques,
+                                        } as Pdp);
+
+                                      setIsChanged(true);
+                                    }}
+
+                                /></TableCell>
+                                <TableCell align="center" sx={{border: "1px solid #ccc",}}>
+                                    <Checkbox
+                                        checked={!!analyseDeRisqueEntreprise?.eu}
+                                        onChange={(e) => {
+                                            analyseDeRisqueEntreprise.eu = e.target.checked;
+
+                                            saveCurrentPdp({
+                                                ...currentPdp,
+                                                analyseDeRisques: currentPdp.analyseDeRisques,
+                                            } as Pdp);
+
+                                            setIsChanged(true);
+                                        }}
+                                    />
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
             </Box>
 
-            {/* Bottom Section */}
-            <Box
-                sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 2,
-                    mt: 2,
-                    flexWrap: "wrap",
-                }}
-            >
-                <TextField label="PHASE" variant="outlined" size="small" />
-                <TextField label="MOYENS UTILISES" variant="outlined" size="small" />
-                <TextField label="RISQUES" variant="outlined" multiline minRows={3} />
-                <TextField label="MESURES DE PREV." variant="outlined" multiline minRows={3} />
-                <Box>
-                    <Checkbox />
-                    <span>EE</span>
-                </Box>
-                <Box>
-                    <Checkbox />
-                    <span>EU</span>
-                </Box>
-            </Box>
 
-            {/* Navigation Buttons */}
+
+            <Button onClick={() => setOpenSelectOrCreateAnalyse(true)}
+                    color="primary"
+                    variant="contained"
+                    sx={{ mt: 2 }}
+                    //center
+            >Ajouter une analyse de risque</Button>
+
+            <SelectOrCreateAnalyseRisque
+                open={openSelectOrCreateAnalyse}
+                setOpen={setOpenSelectOrCreateAnalyse}
+                currentPdp={currentPdp as Pdp}
+                savePdp={(saveCurrentPdp)}
+                where={"analyseDeRisques"}
+            />
+
+
 
         </Box>
     )

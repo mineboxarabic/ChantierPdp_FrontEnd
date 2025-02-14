@@ -1,3 +1,5 @@
+import {Entreprise} from "../entreprise/Entreprise.ts";
+
 export type PdpDTO = {
     id?: number;
     operation?: string;
@@ -16,4 +18,7 @@ export type PdpDTO = {
     dateprevenircssct?: Date;
     dateprev?: Date;
     location?: string;
+    dateInspection?: Date;
+    entrepriseDInspection?: Entreprise;
+
 }

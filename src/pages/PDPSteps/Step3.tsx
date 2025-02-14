@@ -11,9 +11,37 @@ import BottomToolBar from "../../components/Steps/BottomToolBar.tsx";
 import Cas from "../../components/static/Cas.tsx";
 import Button from "@mui/material/Button";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import Risque from "../../components/Steps/Risque.tsx";
+import RisqueComponent from "../../components/Steps/RisqueComponent.tsx";
 import Dispositive from "../../components/Steps/Dispositive.tsx";
-const Step3 = () => {
+import useRisque from "../../hooks/useRisque.ts";
+import Risque from "../../utils/Risque/Risque.ts";
+import {useEffect, useState} from "react";
+import {Pdp} from "../../utils/pdp/Pdp.ts";
+import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+import SelectOrCreateRisque from "../../components/Pdp/SelectOrCreateRisque.tsx";
+import useDispositif from "../../hooks/useDispositif.ts";
+import DispositifComponent from "../../components/Steps/DispositifComponent.tsx";
+import Dispositif from "../../utils/dispositif/Dispositif.ts";
+import SelectOrCreateDispositif from "../../components/Pdp/SelectOrCreateDispositif.tsx";
+
+interface StepsProps {
+    currentPdp: Pdp | null
+    saveCurrentPdp: (pdp: Pdp) => void
+    save?: (pdp: Pdp) => void
+    setIsChanged: (isChanged: boolean) => void
+}
+const Step3=({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
+
+const {getAllDispositifs} = useDispositif();
+
+
+    useEffect(() => {
+       console.log("dispo", currentPdp);
+    }, []);
+
+const [openSelectOrCreateRisque, setOpenSelectOrCreateRisque] = useState(false);
+    const [openSelectOrCreateDispositif, setOpenSelectOrCreateDispositif] = useState(false);
+
     return (
         <Box>
             <TitleHeading title={"RISQUES PARTICULIERS DE L'OPÉRATION (référence au guide d'aide des donneurs d'ordre)"} severity={"error"} />
@@ -36,54 +64,104 @@ const Step3 = () => {
             </Grid>
 
             <Grid justifyContent={'space-between'} container spacing={2} size={{xs:6,md:12}}>
-                <VerticalBox gap={1} width={"49%"}>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                </VerticalBox>
-                <VerticalBox gap={1} width={"49%"}>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                    <Risque/>
-                </VerticalBox>
+                <Grid container spacing={2}>
+                    {currentPdp?.risques?.map((risque: ObjectAnswered, index) => (
+                        <Grid key={index} size={{sm:6,md:6}}>
+                            <RisqueComponent
+                                risque={risque}
+                                onSelectChange={(value: boolean) => {
+                                    console.log(value);
+                                    currentPdp?.risques?.map((r: ObjectAnswered) => {
+                                        if (r.id === risque.id) {
+                                            r.answer = value;
+                                        }
+                                    });
+
+                                    console.log(currentPdp);
+
+                                    saveCurrentPdp({
+                                        ...currentPdp,
+                                        risques: currentPdp.risques,
+                                    } as Pdp);
+                                    setIsChanged(true);
+                                }}
+                            />
+                        </Grid>
+                    ))}
+                </Grid>
 
             </Grid>
 
+            <Button
+                sx={{
+                    display: 'block',
+                    margin: 'auto',
+                    marginTop: 2,
+                    width: '50%',
+                    borderRadius: 2,
+                    borderColor: '#b3b3b3',
+                    borderWidth: 2,
+                    borderStyle: 'solid'
+                }}
+
+                onClick={() => setOpenSelectOrCreateRisque(true)}
+
+                color="primary">+ Ajouter un risque</Button>
             <Divider/>
+            <SelectOrCreateRisque open={openSelectOrCreateRisque} setOpen={setOpenSelectOrCreateRisque} currentPdp={currentPdp as Pdp} savePdp={(pdp)=>{
+                saveCurrentPdp(pdp);
+                setIsChanged(true);
+            }} where={"risques"}/>
+
+
             <TitleHeading title={"DISPOSITIFS DE SÉCURITÉ A FOURNIR PAR L'EE"} severity={"indecation"} />
 
 
             <Grid justifyContent={'space-between'} container spacing={2} size={{xs:6,md:12}}>
-                <VerticalBox gap={1} width={"49%"}>
-                    <Dispositive/>
-                    <Dispositive/>
-                    <Dispositive/>
-                    <Dispositive/>
+                {
+                    currentPdp?.dispositifs?.map((dispo, index) => (
+                        <Grid key={index} size={{sm:6,md:6}}>
+                            <DispositifComponent dispositif={dispo} onSelectChange={
+                                (value: boolean) => {
+                                    currentPdp?.dispositifs?.map((d: ObjectAnswered) => {
+                                        if (d.id === dispo.id) {
+                                            d.answer = value;
+                                        }
+                                    });
 
-                </VerticalBox>
+                                    saveCurrentPdp({
+                                        ...currentPdp,
+                                        dispositifs: currentPdp.dispositifs,
+                                    } as Pdp);
+                                    setIsChanged(true);
+                                }
+                            }/>
+                        </Grid>
+                    ))
 
-                <VerticalBox gap={1} width={"49%"}>
-                    <Dispositive/>
-                    <Dispositive/>
-                    <Dispositive/>
-                    <Dispositive/>
-                </VerticalBox>
+
+                }
+                <Button
+                    sx={{
+                        display: 'block',
+                        margin: 'auto',
+                        marginTop: 2,
+                        width: '50%',
+                        borderRadius: 2,
+                        borderColor: '#b3b3b3',
+                        borderWidth: 2,
+                        borderStyle: 'solid'
+                    }}
+
+                    onClick={() => setOpenSelectOrCreateDispositif(true)}
+
+                    color="primary">+ Ajouter un Dispositif</Button>
+                <Divider/>
+                <SelectOrCreateDispositif open={openSelectOrCreateDispositif} setOpen={setOpenSelectOrCreateDispositif} currentPdp={currentPdp as Pdp} savePdp={(pdp)=>{
+                    saveCurrentPdp(pdp);
+                    setIsChanged(true);
+                }} where={"risques"}/>
+
             </Grid>
         </Box>
     )

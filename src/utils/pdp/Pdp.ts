@@ -1,5 +1,12 @@
 import {Entreprise} from "../entreprise/Entreprise.ts";
 import { PdpDTO } from "./PdpDTO.ts";
+import HoraireDeTravaille from "./HoraireDeTravaille.ts";
+import MiseEnDisposition from "./MiseEnDisposition.ts";
+import {MedecinDuTravailleEE} from "./MedecinDuTravailleEE.ts";
+import ObjectAnswered from "./ObjectAnswered.ts";
+import Dispositif from "../dispositif/Dispositif.ts";
+import ObjectAnsweredEntreprises from "./ObjectAnsweredEntreprises.ts";
+import Localisation from "../Localisation/Localisation.ts";
 
 export class Pdp  {
     id?: number;
@@ -9,20 +16,26 @@ export class Pdp  {
     datefintravaux?: Date;
     effectifmaxisurchantier?: number;
     nombreinterimaires?: number;
-    horairedetravail?: string;
+    horaireDeTravail?: HoraireDeTravaille;
     horairesdetail?: string;
     icpdate?: Date;
     entrepriseexterieure?: Entreprise[];
     entrepriseutilisatrice?: Entreprise;
+    misesEnDisposition?: MiseEnDisposition;
     medecintravaileu?: string;
-    medecintravailee?: string;
-    dateprevenircssct?: Date;
-    dateprev?: Date;
+    medecinDuTravailleEE?: MedecinDuTravailleEE;
+    datePrevenirCSSCT?: Date;
+    datePrev?: Date;
     location?: string;
+    risques?: ObjectAnswered[];
+    dispositifs?: ObjectAnswered[];
+    analyseDeRisques?: ObjectAnsweredEntreprises[];
+    sousTraitants?: Entreprise[];
 
-    //Make create object function
+    dateInspection?: Date;
+    entrepriseDInspection?: Entreprise;
 
-
+    localisation?: Localisation;
 
     constructor() {
 
@@ -51,6 +64,5 @@ export class Pdp  {
         }
     }
 
-    //Make create object
 
 }

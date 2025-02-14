@@ -21,7 +21,7 @@ import BottomToolBar from "../../components/Steps/BottomToolBar.tsx";
 import Cas from "../../components/static/Cas.tsx";
 import Button from "@mui/material/Button";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import Risque from "../../components/Steps/Risque.tsx";
+import RisqueComponent from "../../components/Steps/RisqueComponent.tsx";
 import Dispositive from "../../components/Steps/Dispositive.tsx";
 const Step5 = () => {
     return (

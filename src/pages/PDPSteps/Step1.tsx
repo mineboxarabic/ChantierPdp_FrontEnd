@@ -1,7 +1,7 @@
 import Section from "../../components/Section.tsx";
 import Typography from "@mui/material/Typography";
 import TitleHeading from "../../components/TitleHeading.tsx";
-import {Box, Checkbox, FormControlLabel, MenuItem, Select} from "@mui/material";
+import {Box, Button, Checkbox, FormControlLabel, MenuItem, Select} from "@mui/material";
 
 import {TextField} from "@mui/material";
 import EntrepriseAddButton from "../../components/EntrepriseAddButton.tsx";
@@ -9,35 +9,40 @@ import {DatePicker} from "@mui/x-date-pickers";
 import {HorizontalBox, VerticalBox} from "../../components/Layout/Layouts.tsx";
 import BottomToolBar from "../../components/Steps/BottomToolBar.tsx";
 import Cas from "../../components/static/Cas.tsx";
-import {useEffect, useState} from "react";
-import PdpDTO, {Pdp} from "../../utils/pdp/Pdp.ts";
+import {useCallback, useEffect, useState} from "react";
+import {Pdp} from "../../utils/pdp/Pdp.ts";
 import dayjs, { Dayjs } from 'dayjs';
 import useEntreprise from "../../hooks/useEntreprise.ts";
 import {Entreprise} from "../../utils/entreprise/Entreprise.ts";
-
+import EditEntreprise from "../../components/Entreprise/EditEntreprise.tsx";
+import SelectOrCreateEntreprise from "../../components/Pdp/SelectOrCreateEntreprise.tsx";
+import Grid from "@mui/material/Grid2";
+import {debounce} from "lodash";
+import SelectEntreprise from "../../components/Entreprise/SelectEntreprise.tsx";
 
 interface StepsProps {
-    currentPdp?: Pdp | null
+    currentPdp: Pdp | null
+    saveCurrentPdp: (pdp: Pdp) => void
     save?: (pdp: Pdp) => void
+    setIsChanged: (isChanged: boolean) => void
 }
 
-const Step1 = ({currentPdp, save}:StepsProps) => {
+const Step1 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
 
     const {getAllEntreprises} = useEntreprise();
 
     const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
+    const [openCreateEntreprise, setOpenCreateEntreprise] = useState(false);
 
-
-    useEffect(() => {
-        console.log('response xx',currentPdp);
-
-    }, [currentPdp]);
 
     useEffect(() => {
         getAllEntreprises().then((response: Entreprise[]) => {
             setEntreprises(response);
         });
     }, []);
+
+
+
 
 
 
@@ -51,93 +56,141 @@ const Step1 = ({currentPdp, save}:StepsProps) => {
             </Section>
 
             <Section title="">
-
-                <HorizontalBox
-                    width={"100%"}
-                >
+                <Grid container spacing={2}>
 
 
-
+                    <Grid size={{xs:12, sm:6, md:4, lg:3}}>
                     <VerticalBox
                         gap={"16px"}
                         width={"100%"}
                         padding={"0 20px 0 20px"}
                         >
                         <TitleHeading severity={"indecation"} title={"Entreprise utilisatrice :"}/>
-                        <Select
+                        {/* <Select
                             fullWidth
+                            displayEmpty
                             label="Entreprise utilisatrice"
                             variant="outlined"
-                            value={currentPdp?.entrepriseutilisatrice?.id || ""}
+                            value={
+                                entreprises.some(
+                                    (entreprise) => entreprise.id === currentPdp?.entrepriseutilisatrice?.id
+                                )
+                                    ? currentPdp?.entrepriseutilisatrice?.id
+                                    : "" // Default to empty string if no match is found
+                            }
+
                             onChange={(e) => {
-                                if (currentPdp) {
-                                    const entreprise = entreprises.find(
-                                        (entreprise: Entreprise) => entreprise.id?.toString() === e.target.value
-                                    );
-                                    currentPdp.entrepriseutilisatrice = entreprise;
-                                    if (save) save(currentPdp);
-                                }
+                                const selectedId = e.target.value === "" ? null : Number(e.target.value);
+
+                                    const entreprise:Entreprise = entreprises.find((entreprise: Entreprise) => entreprise.id === selectedId) as Entreprise;
+
+                                    saveCurrentPdp({...currentPdp, entrepriseutilisatrice: entreprise});
+                                    setIsChanged(true);
                             }}
                         >
-                            {entreprises.map((entreprise: Entreprise) => (
-                                <MenuItem value={entreprise.id}>
-                                    {`${entreprise.fonction || "No Fonction"} ${entreprise.id}`}
+                            <MenuItem value="">Select an Entreprise</MenuItem>
+                            {entreprises && entreprises.map((entreprise: Entreprise) => (
+                                <MenuItem key={entreprise.id as number} value={entreprise.id as number}>
+                                    {`${entreprise.nom || "No Name"} (${entreprise.id})`}
                                 </MenuItem>
                             ))}
-                        </Select>
+                        </Select>*/}
 
-                        {/**/}
-
-
-                    </VerticalBox>
-                    <VerticalBox
-                        gap={"16px"}
-                        width={"100%"}
-                        padding={"0 20px 0 20px"}
-                    >
-                        <TitleHeading severity={"indecation"} title={"Entreprise EXTERIEURE 1 :"}/>
-                        <Select
-                            fullWidth
-                            label="Entreprise EXTERIEURE 1"
-                            variant="outlined"
-                            value={currentPdp?.entrepriseutilisatrice?.id || ""}
-                            onChange={(e) => {
-                                if (currentPdp) {
-                                    const entreprise = entreprises.find(
-                                        (entreprise: Entreprise) => entreprise.id?.toString() === e.target.value
-                                    );
-                                    currentPdp.entrepriseutilisatrice = entreprise;
-                                    if (save) save(currentPdp);
-                                }
-                            }}
-                        >
-                            {entreprises.map((entreprise: Entreprise) => (
-                                <MenuItem value={entreprise.id}>
-                                    {`${entreprise.fonction || "No Fonction"} ${entreprise.id}`}
-                                </MenuItem>
-                            ))}
-                        </Select>
-
-                        {/**/}
+                        <SelectEntreprise entreprises={entreprises} label={""} selectedEntrepriseId={currentPdp?.entrepriseutilisatrice?.id as number} onSelectEntreprise={(entreprise: Entreprise | null) => {
+                            if(entreprise) saveCurrentPdp({...currentPdp, entrepriseutilisatrice: entreprise});
+                            setIsChanged(true);
+                        }}/>
 
 
                     </VerticalBox>
-                    <VerticalBox
-                        gap={"16px"}
-                        width={"100%"}
-                        padding={"0 20px 0 20px"}
-                    >
-                        <TitleHeading severity={"indecation"} title={"Enterprise EXTERIEURE 1 :"}/>
-                        <TextField id="outlined-basic" label="Raison social" variant="outlined"/>
-                        <TextField id="outlined-basic" label="Adresse" variant="outlined"/>
-                        <TextField id="outlined-basic" label="No de telephone" variant="outlined"/>
-                        <TextField id="outlined-basic" label="Responsable chantier" variant="outlined"/>
-                        <TextField id="outlined-basic" label="Fonction" variant="outlined"/>
-                        <TextField id="outlined-basic" label="No de telephone" variant="outlined"/>
+                    </Grid>
+                    <SelectOrCreateEntreprise open={openCreateEntreprise} setOpen={setOpenCreateEntreprise} savePdp={save} currentPdp={currentPdp} where={'entrepriseExterieure'}/>
 
-                    </VerticalBox>
-                    <EntrepriseAddButton/>
-                </HorizontalBox>
+
+                    {
+                        currentPdp?.entrepriseexterieure && currentPdp.entrepriseexterieure.length > 0 && currentPdp.entrepriseexterieure.map((entreprise: Entreprise, index:number) => (
+                            <Grid size={{xs:12, sm:6, md:4, lg:4}} key={index}>
+                            <VerticalBox
+                                gap={"16px"}
+                                width={"100%"}
+                                padding={"0 20px 0 20px"}
+                            >
+                                <TitleHeading severity={"indecation"} title={"Entreprise EXTERIEURE " + (index+1) + " :"}/>
+                                {/*<Select
+                                    fullWidth
+                                    label={`Entreprise EXTERIEURE ${index + 1}`}
+                                    variant="outlined"
+                                    value={
+                                        entreprises.some(
+                                            (entrepriseItem) => entrepriseItem.id?.toString() === entreprise?.id?.toString()
+                                        )
+                                            ? entreprise?.id?.toString()
+                                            : "" // Default to an empty string if no match is found
+                                    }
+                                    onChange={(e) => {
+                                        if (currentPdp) {
+                                            // Parse the selected value safely
+                                            const selectedId = e.target.value === "" ? null : Number(e.target.value);
+
+                                            // Find the corresponding entreprise
+                                            const selectedEntreprise:Entreprise =entreprises.find((entrepriseItem) => entrepriseItem.id === selectedId) as Entreprise;
+
+
+                                                    const updatedPdp:Pdp = { ...currentPdp, entrepriseexterieure: currentPdp?.entrepriseexterieure?.map((entrepriseItem, i) => { return i === index ? selectedEntreprise : entrepriseItem }) };
+
+
+
+                                                    saveCurrentPdp(updatedPdp);
+
+                                                    setIsChanged(true);
+
+
+
+                                        }
+                                    }}
+                                >
+                                    <MenuItem value="">Select an Entreprise</MenuItem>
+                                    {entreprises.map((entreprise1: Entreprise) => (
+                                        <MenuItem
+                                            key={entreprise1.id}
+                                            value={entreprise1.id?.toString() ?? ""} // Ensure value is a string
+                                        >
+                                            {`${entreprise1.nom || "No Name"} (${entreprise1.id})`}
+                                        </MenuItem>
+                                    ))}
+                                </Select>*/}
+
+                                <SelectEntreprise label={""} entreprises={entreprises} selectedEntrepriseId={entreprise.id as number} onSelectEntreprise={(entreprise: Entreprise | null) => {
+                                    if(entreprise) {
+                                       saveCurrentPdp({...currentPdp, entrepriseexterieure: currentPdp?.entrepriseexterieure?.map((entrepriseItem, i) => { return i === index ? entreprise : entrepriseItem })});
+                                        setIsChanged(true);
+                                    }
+                                }}/>
+
+                                <Button
+                                    color={"error"}
+                                    onClick={() => {
+                                    if (currentPdp) {
+
+                                       currentPdp?.entrepriseexterieure?.splice(index, 1);
+                                        saveCurrentPdp(currentPdp);
+                                        setIsChanged(true);
+
+                                    }
+                                }}>Remove</Button>
+                                {/**/}
+
+                            </VerticalBox>
+                            </Grid>
+                        ))
+
+
+                    }
+                    <Grid size={{xs:12, sm:6, md:4, lg:3}}>
+                    <EntrepriseAddButton openModal={setOpenCreateEntreprise}/>
+                    </Grid>
+
+                </Grid>
 
             </Section>
 
@@ -150,20 +203,21 @@ const Step1 = ({currentPdp, save}:StepsProps) => {
 
                     <TitleHeading severity={"indecation"} title={"INFORMATION SUR LA PRESTATION"}/>
                     <TextField multiline fullWidth minRows={4} maxRows={4} id="outlined-basic" label="Operation"
-                               variant="outlined" value={currentPdp?.operation}
+                               variant="outlined" value={currentPdp?.operation ?? ''}
                         onChange={(e) => {
                             if (currentPdp) {
-                              currentPdp.operation = e.target.value;
-                                if(save) save(currentPdp);
+                                saveCurrentPdp({...currentPdp, operation: e.target.value});
+                                setIsChanged(true);
                             }
                         }}
                     />
 
-                    <TextField label={"Lieu d'intervention"} variant={"outlined"} fullWidth value={currentPdp?.lieuintervention}
+                    <TextField label={"Lieu d'intervention"} variant={"outlined"} fullWidth value={currentPdp?.lieuintervention ?? ''}
                         onChange={(e) => {
                             if (currentPdp) {
-                              currentPdp.lieuintervention = e.target.value;
-                                if(save) save(currentPdp);
+                              //currentPdp.lieuintervention = e.target.value;
+                                saveCurrentPdp({...currentPdp, lieuintervention: e.target.value});
+                                setIsChanged(true);
                             }
                         }}
                     />
@@ -177,8 +231,9 @@ const Step1 = ({currentPdp, save}:StepsProps) => {
                         <DatePicker label="Date de debut des travaux" value={currentPdp?.datedebuttravaux ? dayjs(currentPdp.datedebuttravaux) : null}
                         onChange={(date: Dayjs | null) => {
                             if (currentPdp) {
-                              currentPdp.datedebuttravaux = date?.toDate();
-                                if(save) save(currentPdp);
+                             // currentPdp.datedebuttravaux = date?.toDate();
+                                saveCurrentPdp({...currentPdp, datedebuttravaux: date?.toDate()});
+                                setIsChanged(true);
                             }
                         }
                         }
@@ -188,8 +243,9 @@ const Step1 = ({currentPdp, save}:StepsProps) => {
                                     value={currentPdp?.datefintravaux ? dayjs(currentPdp.datefintravaux) : null}
                                     onChange={(date: Dayjs | null) => {
                                         if (currentPdp) {
-                                            currentPdp.datefintravaux = date?.toDate();
-                                            if(save) save(currentPdp);
+                                           // currentPdp.datefintravaux = date?.toDate();
+                                            saveCurrentPdp({...currentPdp, datefintravaux: date?.toDate()});
+                                            setIsChanged(true);
                                         }
                                     }
                                     }
@@ -205,8 +261,36 @@ const Step1 = ({currentPdp, save}:StepsProps) => {
                         alignItems={"center"}
                     >
                         <Typography>Sur le chantier :</Typography>
-                        <TextField id="outlined-basic" label="Effectif maxi" variant="outlined"/>
-                        <TextField id="outlined-basic" label="Nombre de interimaires" variant="outlined"/>
+
+                        <TextField
+                            onChange={(e)=>{
+                                if (currentPdp) {
+                                    //currentPdp.effectifmaxisurchantier = parseInt(e.target.value);
+                                    saveCurrentPdp({...currentPdp, effectifmaxisurchantier: parseInt(e.target.value)});
+                                    setIsChanged(true);
+                                }
+                            }}
+                            value={currentPdp?.effectifmaxisurchantier ?? ''}
+                            type={"number"}
+                            id="outlined-basic"
+                            label="Effectif maxi"
+                            variant="outlined"
+                        />
+
+
+                        <TextField
+                            onChange={(e)=>{
+                                if (currentPdp) {
+                                    //currentPdp.nombreinterimaires = parseInt(e.target.value);
+                                    saveCurrentPdp({...currentPdp, nombreinterimaires: parseInt(e.target.value)});
+                                    setIsChanged(true);
+                                }
+                            }
+                            }
+
+                            value={currentPdp?.nombreinterimaires ?? ''}
+type={"number"}
+                            id="outlined-basic" label="Nombre de interimaires" variant="outlined"/>
                     </HorizontalBox>
 
 
@@ -218,12 +302,80 @@ const Step1 = ({currentPdp, save}:StepsProps) => {
                         justifyContent={"space-between"}
                     >
                         <Typography>Horaire de travail :</Typography>
-                        <FormControlLabel control={<Checkbox/>} label={"En journee"}/>
-                        <FormControlLabel control={<Checkbox/>} label={"En de nuit"}/>
-                        <FormControlLabel control={<Checkbox/>} label={"Samedi"}/>
+
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    onChange={(e) => {
+                                        if (currentPdp) {
+                                            // Safely update horaireDeTravail, creating it if it doesn't exist
+                                            const updatedPdp:Pdp = {
+                                                ...currentPdp,
+                                                horaireDeTravail: {
+                                                    ...currentPdp.horaireDeTravail,
+                                                    enJournee: e.target.checked
+                                                }
+                                            };
+
+                                            saveCurrentPdp(updatedPdp);
+                                            // Call save function if it exists
+                                            setIsChanged(true);
+
+                                        }
+                                    }}
+                                    checked={currentPdp?.horaireDeTravail?.enJournee || false}
+                                />
+                            }
+                            label="En journee"
+                        />
+
+
+                        <FormControlLabel control={<Checkbox
+                            onChange={(e) => {
+                                if (currentPdp) {
+                                    // Safely update horaireDeTravail, creating it if it doesn't exist
+                                    const updatedPdp:Pdp = {
+                                        ...currentPdp,
+                                        horaireDeTravail: {
+                                            ...currentPdp.horaireDeTravail,
+                                            enNuit: e.target.checked
+                                        }
+                                    };
+
+                                    // Call save function if it exists
+
+                                    saveCurrentPdp(updatedPdp);
+                                    setIsChanged(true);
+
+                                }
+                            }}
+                            checked={currentPdp?.horaireDeTravail?.enNuit || false}
+
+                        />} label={"En de nuit"}/>
+                        <FormControlLabel control={<Checkbox
+                            onChange={(e) => {
+                                if (currentPdp) {
+                                    // Safely update horaireDeTravail, creating it if it doesn't exist
+                                    const updatedPdp = {
+                                        ...currentPdp,
+                                        horaireDeTravail: {
+                                            ...currentPdp.horaireDeTravail,
+                                            samedi: e.target.checked
+                                        }
+                                    };
+
+                                    // Call save function if it exists
+                                    saveCurrentPdp(updatedPdp);
+                                    setIsChanged(true);
+
+                                }
+                            }}
+                            checked={currentPdp?.horaireDeTravail?.samedi || false}
+
+                        />} label={"Samedi"}/>
 
                     </HorizontalBox>
-                    <TextField label={"Horaire de travaille"} variant={"outlined"} fullWidth/>
+
                 </VerticalBox>
 
 

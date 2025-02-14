@@ -5,8 +5,11 @@ import {useEffect, useState} from "react";
 
 import { useNotifications } from '@toolpad/core/useNotifications';
 import useLocalStorage from "./useLocalStorage.ts";
-import PdpDTO, {Pdp} from "../utils/pdp/Pdp.ts";
+import {Pdp} from "../utils/pdp/Pdp.ts";
 import {AxiosResponseState} from "../utils/AxiosResponse.ts";
+import {PdpDTO} from "../utils/pdp/PdpDTO.ts";
+import ObjectAnswered from "../utils/pdp/ObjectAnswered.ts";
+import ObjectAnsweredEntreprises from "../utils/pdp/ObjectAnsweredEntreprises.ts";
 
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -147,8 +150,60 @@ const usePdp = ()=>{
     }
 
 
+    const linkRisqueToPdp = async (risqueId:number, pdpId:number):Promise<ObjectAnswered> => {
+        return fetch('api/pdp/' + pdpId + '/risque/' + risqueId, 'POST', null,
+            [{
+                status: 409,
+                message: 'Error pdp already exists',
+            },
+                {
+                    status: 404,
+                    message: 'Error pdp or api link not found',
+                }
+            ]).then(r => {
+            if(r != undefined){
+                setReponse(r.data?.data as ObjectAnswered);
+                return r.data?.data as ObjectAnswered;
+            }
+        }) as Promise<ObjectAnswered>;
+    }
 
-    return {loading,error, response, lastId, getPlanDePrevention, createPdp, getLastId, getRecentPdps, savePdp};
+    const linkDispositifToPdp = async (dispositifId:number, pdpId:number):Promise<ObjectAnswered> => {
+        return fetch('api/pdp/' + pdpId + '/dispositif/' + dispositifId, 'POST', null,
+            [{
+                status: 409,
+                message: 'Error pdp already exists',
+            },
+                {
+                    status: 404,
+                    message: 'Error pdp or api link not found',
+                }
+            ]).then(r => {
+            if(r != undefined){
+                setReponse(r.data?.data as ObjectAnswered);
+                return r.data?.data as ObjectAnswered;
+            }
+        }) as Promise<ObjectAnswered>;
+    }
+
+    const linkAnalyseToPdp = async (analyseId:number, pdpId:number):Promise<ObjectAnsweredEntreprises> => {
+        return fetch('api/pdp/' + pdpId + '/analyse/' + analyseId, 'POST', null,
+            [{
+                status: 409,
+                message: 'Error pdp already exists',
+            },
+                {
+                    status: 404,
+                    message: 'Error pdp or api link not found',
+                }
+            ]).then(r => {
+            if(r != undefined){
+                setReponse(r.data?.data as ObjectAnsweredEntreprises);
+                return r.data?.data as ObjectAnsweredEntreprises;
+            }
+        }) as Promise<ObjectAnsweredEntreprises>;
+    }
+    return {loading,error, response, lastId,linkAnalyseToPdp, getPlanDePrevention, createPdp, getLastId, linkDispositifToPdp,getRecentPdps, savePdp,linkRisqueToPdp};
 
 }
 

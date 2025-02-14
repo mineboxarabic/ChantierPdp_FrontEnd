@@ -40,6 +40,8 @@ const EditEntreprise = ({
         useEntreprise();
     const notifications = useNotifications();
     const [openDeleteModal, setOpenDeleteModal] = useState<boolean>(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
 
     const handleClose = () => {
         setOpen(false);
@@ -102,13 +104,22 @@ const EditEntreprise = ({
                 notifications.show("Invalid file type", { severity: "error" });
                 return;
             }
+
+            // Create temporary preview URL
+            const tempImageUrl = URL.createObjectURL(file);
+            setPreviewUrl(tempImageUrl);
+
+            // Convert the file to Base64 for backend storage
             const reader = new FileReader();
             reader.onload = () => {
                 const imageDataString = reader.result?.toString().split(",")[1];
                 if (imageDataString) {
                     setEntreprise({
                         ...entreprise,
-                        image: { mimeType: file.type, imageData: imageDataString },
+                        image: {
+                            mimeType: file.type,
+                            imageData: imageDataString
+                        }
                     });
                 }
             };
@@ -117,20 +128,30 @@ const EditEntreprise = ({
     };
 
     useEffect(() => {
+        // Reset preview URL when entreprise changes or modal closes
+        if (!open || !isEdit) {
+            setPreviewUrl(null);
+        }
+    }, [open, isEdit]);
+
+    useEffect(() => {
         if (!isEdit) {
-            const entrepriseNew: Entreprise = EntrepriseMapper.createEmptyEntreprise();
-            entrepriseNew.referentPdp = users[0];
-            entrepriseNew.responsableChantier = users[0];
-            setEntreprise(entrepriseNew);
+            const newEntreprise = EntrepriseMapper.createEmptyEntreprise();
+            setEntreprise(newEntreprise);
+        } else if (!entreprise) {
+            setEntreprise({}); // Ensure entreprise is not null
         }
     }, [open]);
+
 
     useEffect(() => {
         getUsers().then((response: User[]) => {
             setUsers(response);
         });
     }, []);
-
+    useEffect(() => {
+            console.log("entreprise?.image?.imageData", entreprise);
+    }, [entreprise]);
     return (
         <Modal open={open} onClose={handleClose}>
             <Box
@@ -176,13 +197,9 @@ const EditEntreprise = ({
                 </Typography>
 
                 <Grid container spacing={2}>
-                    <Grid size={{ xs: 12, md: 12 }} sx={{ textAlign: "center" }}>
+                    <Grid size={{xs: 12, md: 12}} sx={{textAlign: "center"}}>
                         <img
-                            src={
-                                entreprise?.image?.imageData
-                                    ? `data:${entreprise.image.mimeType};base64,${entreprise.image.imageData}`
-                                    : defaultImage
-                            }
+                            src={previewUrl || entreprise?.image?.imageData || defaultImage}
                             alt="Entreprise"
                             style={{
                                 width: "300px",
@@ -191,16 +208,17 @@ const EditEntreprise = ({
                                 marginBottom: "20px",
                                 borderRadius: "10px",
                             }}
-                        />
-                        <input type="file" accept="image/*" onChange={handleFileChange} />
+                        />;
+
+                        <input type="file" accept="image/*" onChange={handleFileChange}/>
                     </Grid>
 
-                    <Grid size={{ xs: 12, md: 6 }}>
+                    <Grid size={{xs: 12, md: 6}}>
                         <TextField
                             fullWidth
                             label="Nom"
                             value={entreprise?.nom || ""}
-                            onChange={(e) => setEntreprise({ ...entreprise, nom: e.target.value })}
+                            onChange={(e) => setEntreprise({...entreprise, nom: e.target.value})}
                         />
                     </Grid>
 
@@ -240,12 +258,20 @@ const EditEntreprise = ({
                         <Autocomplete
                             fullWidth
                             options={users}
-                            getOptionLabel={(option: User) => option.name || ""}
+                            getOptionLabel={(option: User) => `${option.name} - ${option.id}`  || ""}
                             renderInput={(params) => <TextField {...params} label="Référent PDP" />}
-                            value={entreprise?.referentPdp || users[0]}
-                            onChange={(e, value: User | null) =>
-                                setEntreprise({ ...entreprise, referentPdp: value || undefined })
+                            value={
+                                entreprise?.referentPdp
+                                    ? users.find(user => user.id === entreprise.referentPdp?.id) || null
+                                    : null
                             }
+                            onChange={(e, value: User | null) =>
+                                setEntreprise({
+                                    ...entreprise,
+                                    referentPdp: value || undefined
+                                })
+                            }
+                            isOptionEqualToValue={(option, value) => option.id === value?.id}
                         />
                     </Grid>
 
@@ -253,12 +279,20 @@ const EditEntreprise = ({
                         <Autocomplete
                             fullWidth
                             options={users}
-                            getOptionLabel={(option: User) => option.name || ""}
+                            getOptionLabel={(option: User) =>`${option.name} - ${option.id}` || ""}
                             renderInput={(params) => <TextField {...params} label="Responsable chantier" />}
-                            value={entreprise?.responsableChantier || users[0]}
-                            onChange={(e, value: User | null) =>
-                                setEntreprise({ ...entreprise, responsableChantier: value || undefined })
+                            value={
+                                entreprise?.responsableChantier
+                                    ? users.find(user => user.id === entreprise.responsableChantier?.id) || null
+                                    : null
                             }
+                            onChange={(e, value: User | null) =>
+                                setEntreprise({
+                                    ...entreprise,
+                                    responsableChantier: value || undefined
+                                })
+                            }
+                            isOptionEqualToValue={(option, value) => option.id === value?.id}
                         />
                     </Grid>
 
