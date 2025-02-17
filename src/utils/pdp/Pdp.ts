@@ -7,6 +7,7 @@ import ObjectAnswered from "./ObjectAnswered.ts";
 import Dispositif from "../dispositif/Dispositif.ts";
 import ObjectAnsweredEntreprises from "./ObjectAnsweredEntreprises.ts";
 import Localisation from "../Localisation/Localisation.ts";
+import Permit from "../permit/Permit.ts";
 
 export class Pdp  {
     id?: number;
@@ -36,6 +37,8 @@ export class Pdp  {
     entrepriseDInspection?: Entreprise;
 
     localisation?: Localisation;
+
+    permits?: ObjectAnswered[];
 
     constructor() {
 

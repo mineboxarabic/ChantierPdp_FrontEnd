@@ -19,7 +19,7 @@ import SelectOrCreateEntreprise from "../../components/Pdp/SelectOrCreateEntrepr
 import Grid from "@mui/material/Grid2";
 import {debounce} from "lodash";
 import SelectEntreprise from "../../components/Entreprise/SelectEntreprise.tsx";
-
+import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 interface StepsProps {
     currentPdp: Pdp | null
     saveCurrentPdp: (pdp: Pdp) => void
@@ -116,50 +116,7 @@ const Step1 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
                                 padding={"0 20px 0 20px"}
                             >
                                 <TitleHeading severity={"indecation"} title={"Entreprise EXTERIEURE " + (index+1) + " :"}/>
-                                {/*<Select
-                                    fullWidth
-                                    label={`Entreprise EXTERIEURE ${index + 1}`}
-                                    variant="outlined"
-                                    value={
-                                        entreprises.some(
-                                            (entrepriseItem) => entrepriseItem.id?.toString() === entreprise?.id?.toString()
-                                        )
-                                            ? entreprise?.id?.toString()
-                                            : "" // Default to an empty string if no match is found
-                                    }
-                                    onChange={(e) => {
-                                        if (currentPdp) {
-                                            // Parse the selected value safely
-                                            const selectedId = e.target.value === "" ? null : Number(e.target.value);
-
-                                            // Find the corresponding entreprise
-                                            const selectedEntreprise:Entreprise =entreprises.find((entrepriseItem) => entrepriseItem.id === selectedId) as Entreprise;
-
-
-                                                    const updatedPdp:Pdp = { ...currentPdp, entrepriseexterieure: currentPdp?.entrepriseexterieure?.map((entrepriseItem, i) => { return i === index ? selectedEntreprise : entrepriseItem }) };
-
-
-
-                                                    saveCurrentPdp(updatedPdp);
-
-                                                    setIsChanged(true);
-
-
-
-                                        }
-                                    }}
-                                >
-                                    <MenuItem value="">Select an Entreprise</MenuItem>
-                                    {entreprises.map((entreprise1: Entreprise) => (
-                                        <MenuItem
-                                            key={entreprise1.id}
-                                            value={entreprise1.id?.toString() ?? ""} // Ensure value is a string
-                                        >
-                                            {`${entreprise1.nom || "No Name"} (${entreprise1.id})`}
-                                        </MenuItem>
-                                    ))}
-                                </Select>*/}
-
+                                <HorizontalBox>
                                 <SelectEntreprise label={""} entreprises={entreprises} selectedEntrepriseId={entreprise.id as number} onSelectEntreprise={(entreprise: Entreprise | null) => {
                                     if(entreprise) {
                                        saveCurrentPdp({...currentPdp, entrepriseexterieure: currentPdp?.entrepriseexterieure?.map((entrepriseItem, i) => { return i === index ? entreprise : entrepriseItem })});
@@ -171,13 +128,21 @@ const Step1 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
                                     color={"error"}
                                     onClick={() => {
                                     if (currentPdp) {
-
+                                        console.log('index', currentPdp);
                                        currentPdp?.entrepriseexterieure?.splice(index, 1);
-                                        saveCurrentPdp(currentPdp);
-                                        setIsChanged(true);
+
+                                       saveCurrentPdp({...currentPdp, entrepriseexterieure: currentPdp?.entrepriseexterieure});
+
+                                       setIsChanged(true);
 
                                     }
-                                }}>Remove</Button>
+                                }}
+                                startIcon={<RemoveCircleIcon/>}
+                                ></Button>
+
+
+
+                                </HorizontalBox>
                                 {/**/}
 
                             </VerticalBox>
@@ -187,7 +152,7 @@ const Step1 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
 
                     }
                     <Grid size={{xs:12, sm:6, md:4, lg:3}}>
-                    <EntrepriseAddButton openModal={setOpenCreateEntreprise}/>
+                        <EntrepriseAddButton openModal={setOpenCreateEntreprise}/>
                     </Grid>
 
                 </Grid>

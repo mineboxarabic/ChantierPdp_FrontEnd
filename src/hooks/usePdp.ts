@@ -127,7 +127,7 @@ const usePdp = ()=>{
 
     };
 
-    const getRecentPdps= async ():Promise<PdpDTO[]> => {
+    const getRecentPdps= async ():Promise<Pdp[]> => {
 
         return fetch('api/pdp/recent', 'GET', null,
             [{
@@ -142,11 +142,11 @@ const usePdp = ()=>{
             if(response?.status === 200){
                // setLastId(response.data);
                 console.log('response',response);
-                return response.data?.data as PdpDTO[];
+                return response.data?.data as Pdp[];
             }
             return null;
         }
-        ) as Promise<PdpDTO[]>;
+        ) as Promise<Pdp[]>;
     }
 
 
@@ -203,7 +203,27 @@ const usePdp = ()=>{
             }
         }) as Promise<ObjectAnsweredEntreprises>;
     }
-    return {loading,error, response, lastId,linkAnalyseToPdp, getPlanDePrevention, createPdp, getLastId, linkDispositifToPdp,getRecentPdps, savePdp,linkRisqueToPdp};
+
+
+    const linkPermitToPdp = async (permitId:number, pdpId:number):Promise<ObjectAnswered> => {
+        return fetch('api/pdp/' + pdpId + '/permit/' + permitId, 'POST', null,
+            [{
+                status: 409,
+                message: 'Error pdp already exists',
+            },
+                {
+                    status: 404,
+                    message: 'Error pdp or api link not found',
+                }
+            ]).then(r => {
+            if(r != undefined){
+                setReponse(r.data?.data as ObjectAnswered);
+                return r.data?.data as ObjectAnswered;
+            }
+        }) as Promise<ObjectAnswered>;
+    }
+
+    return {loading,error, response, lastId,linkAnalyseToPdp,linkPermitToPdp, getPlanDePrevention, createPdp, getLastId, linkDispositifToPdp,getRecentPdps, savePdp,linkRisqueToPdp};
 
 }
 

@@ -17,22 +17,24 @@ import Section from "../components/Section.tsx";
 import {HorizontalSplit} from "@mui/icons-material";
 import Typography from "@mui/material/Typography";
 import usePdp from "../hooks/usePdp.ts";
+import {Pdp} from "../utils/pdp/Pdp.ts";
 //https://github.com/mui/material-ui/blob/v6.1.10/docs/data/material/getting-started/templates/dashboard/components/AppNavbar.js
 
 interface DataToDisplay {
     id?: number;
     operation?: string;
-    startDate?: string;
-    endDate?: string;
+    datedebuttravaux?: string;
+    datefintravaux?: string;
 }
 
 
-let rows: DataToDisplay[] = [];
+//let rows: DataToDisplay[] = [];
 const Home: FC = () => {
 
 
     const [modalPdpCreate, setModalPdpCreate] = useState<boolean>(false);
     const [modalPdpCreateResponse, setModalPdpCreateResponse] = useState<boolean>(false);
+    const [recentPdps, setRecentPdps] = useState<DataToDisplay[]>([]);
     const {getRecentPdps} = usePdp();
 
 
@@ -42,17 +44,27 @@ const Home: FC = () => {
 
 
     useEffect(() => {
-        getRecentPdps().then(response =>{
-            rows = [];
-            for (let i = 0; i < response.length; i++) {
-                rows.push({
+        getRecentPdps().then((response:Pdp[]) =>{
+            console.log('xx',response);
+
+       /*     for (let i = 0; i < response.length; i++) {
+                /!*rows.push({
                     id: response[i].id,
                     operation: response[i].operation,
                     startDate: response[i].datedebuttravaux?.toDateString(),
                     endDate: response[i].datefintravaux?.toDateString()
-                })
-            }
-            console.log(response);
+                })*!/
+                setRecentPdps([...recentPdps, {
+                    id: response[i].id,
+                    operation: response[i].operation,
+                    startDate: "",
+                    endDate: ""
+                }]);
+
+            }*/
+
+            setRecentPdps(response as DataToDisplay[]);
+
         });
     }, []);
 
@@ -127,7 +139,7 @@ const Home: FC = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {rows.map((row) => (
+                        {recentPdps.map((row) => (
                             <TableRow
                                 key={row.id}
                                 sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
@@ -138,10 +150,10 @@ const Home: FC = () => {
                                 <TableCell component="th" scope="row">
                                     {row.operation}
                                 </TableCell>
-                                <TableCell align="right">{row.startDate}</TableCell>
-                                <TableCell align="right">{row.endDate}</TableCell>
+                                <TableCell align="right">{row.datedebuttravaux}</TableCell>
+                                <TableCell align="right">{row.datefintravaux}</TableCell>
                                 <TableCell align="right">
-                                    <Link href={'create/pdp/'+row.id}>Voir</Link>
+                                    <Link href={`/create/pdp/${row.id}/1`}>Voir</Link>
                                 </TableCell>
                             </TableRow>
                         ))}

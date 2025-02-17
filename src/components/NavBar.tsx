@@ -14,6 +14,7 @@ import MenuItem from '@mui/material/MenuItem';
 import AdbIcon from '@mui/icons-material/Adb';
 import { useNotifications } from '@toolpad/core/useNotifications';
 import { useState } from 'react';
+import DanoneLogo from "./DanoneLogo.tsx";
 
 const pages = [
     { name: 'Products', link: '/products' },
@@ -22,7 +23,9 @@ const pages = [
     { name: 'CRUD', submenu: [
             { name: 'View Users', link: '/view/users' },
             { name: 'View Risks', link: '/view/risques' },
-            { name: 'View Enterprises', link: '/view/entreprises' }
+            { name: 'View Enterprises', link: '/view/entreprises' },
+            { name: 'View Localisations', link: '/view/localisations' },
+            {name: 'View Permits', link: '/view/permits'}
         ]}
 ];
 const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
@@ -47,7 +50,8 @@ function EnhancedNavBar() {
         <AppBar position="static">
             <Container maxWidth="xl">
                 <Toolbar disableGutters>
-                    <AdbIcon sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />
+              {/*      <AdbIcon sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />*/}
+                    <DanoneLogo simple sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />
                     <Typography
                         variant="h6"
                         noWrap
@@ -63,7 +67,7 @@ function EnhancedNavBar() {
                             textDecoration: 'none',
                         }}
                     >
-                        {isLoggedIn ? 'LOGO LOGGED IN' : 'LOGO'}
+                        {isLoggedIn ? 'PDanP' : 'PDanP'}
                     </Typography>
 
                     <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>

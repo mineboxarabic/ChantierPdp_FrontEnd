@@ -7,10 +7,13 @@ import {ComponentPreviews} from "./dev";
 import { NotificationsProvider } from '@toolpad/core/useNotifications';
 import {LocalizationProvider} from "@mui/x-date-pickers";
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import {ThemeProvider} from "@mui/material";
+import theme from "./Theme.tsx";
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <ThemeProvider theme={theme}>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
 
         <DevSupport ComponentPreviews={ComponentPreviews}>
                 <NotificationsProvider>
@@ -19,6 +22,6 @@ createRoot(document.getElementById('root')!).render(
 
         </DevSupport>
         </LocalizationProvider>
-
+        </ThemeProvider>
     </StrictMode>,
 )

@@ -16,7 +16,8 @@ const EntrepriseAddButton = ({openModal}:EntrepriseAddButtonProps) => {
                  backgroundColor: '#d8e0ed',
                  color: '#222222',
                  fontWeight: 'bold',
-                 fontSize: '10rem',
+                 fontSize: '5rem',
+                  marginLeft: '10px',
                 }}
 
                 onClick={() => {

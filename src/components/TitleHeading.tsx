@@ -24,7 +24,7 @@ const TitleHeading: React.FC<TitleHeadingProps> = ({
             case "info": return "#00fff7";
             case "success": return "#22ff00";
             case "danger": return "#FF0000";
-            case "indecation": return "#708FD3";
+            case "indecation": return "primary.main";
         }
         return "";
     }

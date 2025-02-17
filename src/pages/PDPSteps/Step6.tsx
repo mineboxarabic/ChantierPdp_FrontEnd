@@ -2,7 +2,7 @@ import Section from "../../components/Section.tsx";
 import Typography from "@mui/material/Typography";
 import TitleHeading from "../../components/TitleHeading.tsx";
 import {
-    Box, Divider, MenuItem, Select,
+    Box, Button, Divider, MenuItem, Select,
 } from "@mui/material";
 import {HorizontalBox, VerticalBox} from "../../components/Layout/Layouts.tsx";
 import BottomToolBar from "../../components/Steps/BottomToolBar.tsx";
@@ -14,6 +14,8 @@ import useLocalisation from "../../hooks/useLocalisation.ts";
 import {useEffect, useState} from "react";
 import Localisation from "../../utils/Localisation/Localisation.ts";
 import {Pdp} from "../../utils/pdp/Pdp.ts";
+import Permit from "../../utils/permit/Permit.ts";
+import SelectOrCreatePermit from "../../components/Pdp/SelectOrCreatePermit.tsx";
 
 interface StepsProps {
     currentPdp: Pdp | null
@@ -25,7 +27,7 @@ const Step6 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
     const {getAllLocalisations} = useLocalisation();
 
     const [localisations, setLocalisations] = useState<Localisation[]>([]);
-
+    const [openSelectOrCreatePermit, setOpenSelectOrCreatePermit] = useState(false);
 
     useEffect(() => {
         getAllLocalisations().then((response) => {
@@ -72,8 +74,8 @@ const Step6 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
 
             <Divider/>
 
-            <Grid justifyContent={'space-between'} container spacing={2} size={{xs:6,md:12}}>
-                <VerticalBox gap={1} width={"49%"}>
+            <Grid justifyContent={'space-between'} container spacing={2}>
+        {/*        <VerticalBox gap={1} width={"49%"}>
                     <PapierDemander/>
                     <PapierDemander/>
                     <PapierDemander/>
@@ -89,8 +91,26 @@ const Step6 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
                     <PapierDemander/>
                     <PapierDemander/>
 
-                </VerticalBox>
+                </VerticalBox>*/}
+                {
+                    currentPdp?.permits?.map((permit, index:number) => (
+                        <Grid size={{sm:6,md:6}}>
+                            <PapierDemander key={index} permit={permit}/>
+                        </Grid>
+                            ))
+
+                }
+
+
             </Grid>
+
+            <Button onClick={() => setOpenSelectOrCreatePermit(true)} variant="contained" color="primary">Ajouter un papier</Button>
+
+            <SelectOrCreatePermit open={
+                openSelectOrCreatePermit
+            } setOpen={setOpenSelectOrCreatePermit} currentPdp={currentPdp as Pdp} savePdp={saveCurrentPdp} where={"Step6"}/>
+
+
 
         </VerticalBox>
     )

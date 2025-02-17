@@ -5,7 +5,14 @@ import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import MenuItem from "@mui/material/MenuItem";
 import {Checkbox} from "@mui/material";
-const PapierDemander = () => {
+import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+
+
+interface PapierDemanderProps {
+    permit?: ObjectAnswered;
+}
+
+const PapierDemander = ({permit}:PapierDemanderProps) => {
     return (
         <Box display={"flex"} alignItems={'center'}>
 
@@ -24,8 +31,10 @@ const PapierDemander = () => {
                     }}/>
 
 
-                    <Typography fontWeight={'bold'} color={'purple'}>APTITUDE MEDICALE (si demandé dans le permis)</Typography>
-                  <Checkbox color={'primary'}/>
+                    <Typography fontWeight={'bold'} color={'purple'}>{permit?.permit?.title}</Typography>
+                  <Checkbox
+                        checked={permit?.answer || false}
+                      color={'primary'}/>
                 </CardContent>
             </Card>
 

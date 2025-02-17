@@ -19,6 +19,7 @@ import ViewAllEntreprises from "./pages/Entreprise/ViewAllEntreprises.tsx";
 import ViewAllUser from "./pages/User/ViewAllUser.tsx";
 import ViewAllRisques from "./pages/Risque/ViewAllRsiques.tsx";
 import ViewAllLocalisations from "./pages/Localisation/ViewAllLocalisations.tsx";
+import ViewAllPermits from "./pages/Permit/ViewAllPermits.tsx";
 
 
 function App() {
@@ -40,7 +41,8 @@ function App() {
                  <Route path={"view/entreprises"} element={<ViewAllEntreprises/>}/>
                     <Route path={"view/users"} element={<ViewAllUser/>}/>
                  <Route path={"view/risques"} element={<ViewAllRisques/>}/>
-                 <Route path={"view/localisation"} element={<ViewAllLocalisations/>}/>
+                 <Route path={"view/localisations"} element={<ViewAllLocalisations/>}/>
+                 <Route path={"view/permits"} element={<ViewAllPermits/>}/>
 
              </Route>
 
