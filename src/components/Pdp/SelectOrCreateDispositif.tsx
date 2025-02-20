@@ -1,45 +1,56 @@
-import { Box, Card, CardContent, Typography, Button, Modal } from "@mui/material";
+/*
+import {
+    Box,
+    List,
+    ListItem,
+    ListItemAvatar,
+    ListItemText,
+    Avatar,
+    Typography,
+    Button,
+    Modal,
+    Divider,
+} from "@mui/material";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { useEffect, useState } from "react";
-import Dispositif from "../../utils/dispositif/Dispositif";
-import useDispositif from "../../hooks/useDispositif.ts";
 import EditDispositif from "../Dispositif/EditDispositif.tsx";
+import useDispositif from "../../hooks/useDispositif.ts";
+import Dispositif from "../../utils/dispositif/Dispositif.ts";
 import defaultImage from "../../assets/default_entreprise_image.png";
-import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
-import {Pdp} from "../../utils/pdp/Pdp.ts";
-import usePdp from "../../hooks/usePdp.ts"; // Default image for dispositifs
+import usePdp from "../../hooks/usePdp.ts";
 
 interface SelectOrCreateDispositifProps {
     open: boolean;
     setOpen: (open: boolean) => void;
-    currentPdp: Pdp; // Replace `any` with your `Pdp` type
-    savePdp: (pdp: Pdp) => void; // Replace `any` with your `Pdp` type
-    where: string; // To specify where to add the dispositif (e.g., "dispositifs" or "sousTraitants")
+    currentPdp: any;
+    savePdp: (pdp: any) => void;
+    where: string;
+    setIsChanged: (isChanged: boolean) => void;
 }
 
-const SelectOrCreateDispositif = ({ open, setOpen, currentPdp, savePdp, where }: SelectOrCreateDispositifProps) => {
+const SelectOrCreateDispositif = ({ open, setOpen,setIsChanged, currentPdp, savePdp, where }: SelectOrCreateDispositifProps) => {
     const [openCreateDispositif, setOpenCreateDispositif] = useState(false);
     const [dispositifs, setDispositifs] = useState<Dispositif[]>([]);
-    const [currentDispositif, setCurrentDispositif] = useState<Dispositif | null>(null); // Track the selected dispositif
-    const { getAllDispositifs } = useDispositif(); // Hook to fetch all dispositifs
-    const { linkDispositifToPdp } = usePdp(); // Hook to link a dispositif to a Pdp
+    const [selectedDispositif, setSelectedDispositif] = useState<Dispositif | null>(null);
+    const { getAllDispositifs } = useDispositif();
+    const { linkDispositifToPdp } = usePdp();
 
-    // Fetch all dispositifs when the modal opens
     useEffect(() => {
-        if (open) {
-            getAllDispositifs().then((response) => {
-                setDispositifs(response);
-            });
-        }
-    }, [open]);
+        getAllDispositifs().then((response) => {
+            setDispositifs(response);
+        });
+    }, [openCreateDispositif]);
 
-    // Handle selecting a dispositif
-    const handleSelectDispositif = (dispositif: Dispositif) => {
-        setCurrentDispositif(dispositif); // Set the selected dispositif
+    const alreadySelected = (dispositif: Dispositif) => {
+        return currentPdp?.dispositifs?.some((r: any) => r.dispositif.id === dispositif.id);
     };
 
-    // Save the selected dispositif to the currentPdp
-
+    const handleSelectDispositif = (dispositif: Dispositif) => {
+        console.log('dispositif', dispositif);
+        if (!alreadySelected(dispositif)) {
+            setSelectedDispositif(selectedDispositif?.id === dispositif.id ? null : dispositif);
+        }
+    };
 
     return (
         <Modal open={open} onClose={() => setOpen(false)}>
@@ -49,100 +60,100 @@ const SelectOrCreateDispositif = ({ open, setOpen, currentPdp, savePdp, where }:
                     top: "50%",
                     left: "50%",
                     transform: "translate(-50%, -50%)",
-                    width: "60%",
+                    width: "50%",
                     bgcolor: "background.paper",
                     boxShadow: 24,
-                    p: 4,
+                    p: 2,
+                    display: "flex",
+                    flexDirection: "column",
                     maxHeight: "80vh",
                     overflowY: "auto",
                 }}
             >
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                    Select or Create Dispositif
-                </Typography>
+                <Typography variant="h6" sx={{ mb: 2 }}>Select a Risk</Typography>
+                <List>
+                    {dispositifs && dispositifs.map((dispositif, index) => {
+                        const isAlreadySelected = alreadySelected(dispositif);
 
-                {/* List of existing dispositifs */}
-                {dispositifs.map((dispositif) => (
-                    <Card
-                        key={dispositif.id}
-                        sx={{
-                            width: "100%",
-                            margin: "10px auto",
-                            cursor: "pointer",
-                            border: currentDispositif?.id === dispositif.id ? "2px solid blue" : "1px solid gray", // Highlight selected dispositif
-                            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "center",
-                        }}
-                        onClick={() => handleSelectDispositif(dispositif)}
-                    >
-                        <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                            <img
-                                src={dispositif.logo?.imageData ? `data:${dispositif.logo.mimeType};base64,${dispositif.logo.imageData}` : defaultImage}
-                                alt={dispositif.title}
-                                style={{ width: 50, height: 50, borderRadius: 4 }}
-                            />
-                            <Typography variant="h6">{dispositif.title}</Typography>
-                            <Typography variant="body2">{dispositif.description}</Typography>
-                        </CardContent>
-                    </Card>
-                ))}
+                        return (
+                            <ListItem
+                                key={index}
+                                onClick={() => handleSelectDispositif(dispositif)}
+                                sx={{
+                                    borderRadius: 2,
+                                    border: "1px solid gray",
+                                    mb: 1,
+                                    cursor: isAlreadySelected ? "not-allowed" : "pointer",
+                                    transition: "0.3s",
+                                    backgroundColor: isAlreadySelected
+                                        ? "lightgray"
+                                        : selectedDispositif?.id === dispositif.id
+                                            ? "lightblue"
+                                            : "white",
+                                    opacity: isAlreadySelected ? 0.6 : 1,
+                                    "&:hover": {
+                                        backgroundColor: isAlreadySelected
+                                            ? "lightgray"
+                                            : "lightgray",
+                                    },
+                                }}
+                                component="button"
+                                disabled={isAlreadySelected}
+                            >
+                                <ListItemAvatar>
+                                    <Avatar
+                                        src={dispositif?.logo ? `data:${dispositif.logo.mimeType};base64,${dispositif.logo.imageData}` : defaultImage}
+                                        alt={dispositif.title}
+                                    />
+                                </ListItemAvatar>
+                                <ListItemText primary={dispositif.title} secondary={dispositif.description} />
+                            </ListItem>
+                        );
+                    })}
+                </List>
 
-                {/* Button to save selected dispositif */}
+                <Divider sx={{ my: 2 }} />
+
                 <Button
                     variant="contained"
-                    color="primary"
-                    fullWidth
-                    sx={{ mt: 2 }}
-                    onClick={()=>{
-                        linkDispositifToPdp(currentDispositif?.id as number, currentPdp?.id as number).then((response:ObjectAnswered) => {
-                            //const dispositifAnswered:DispositifAnswered = {dispositif: currentDispositif, answer: false } as DispositifAnswered;
-
-                            currentPdp.dispositifs = currentPdp.dispositifs || [];
-                            currentPdp.dispositifs.push(response); // Add the new dispositif to the Pdp
-                            console.log('res',response);
-                            savePdp({
-                                ...currentPdp,
-                                dispositifs: currentPdp.dispositifs,
-                            }); // Save the updated Pdp
-                            setOpen(false); // Close the modal
-                        });
-
-
-                        setOpen(false);
-
-                    }}
-                    disabled={!currentDispositif} // Disable button if no dispositif is selected
+                    startIcon={<AddCircleIcon />}
+                    onClick={() => setOpenCreateDispositif(true)}
+                    sx={{ mb: 2 }}
                 >
-                    Save Selected Dispositif
+                    Create New Dispositif
                 </Button>
 
-                {/* Button to create a new dispositif */}
-                <Card
-                    sx={{
-                        width: 200,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
-                        border: "2px dashed gray",
-                        margin: "10px auto",
-                    }}
-                    onClick={() => setOpenCreateDispositif(true)}
-                >
-                    <AddCircleIcon fontSize="large" />
-                    <Typography>Save New Dispositif</Typography>
-                </Card>
+                <Box sx={{ position: "sticky", bottom: -20, bgcolor: "background.paper", p: 2, display: "flex", justifyContent: "space-between" }}>
+                    <Button onClick={() => setOpen(false)} color={"error"}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => {
+                            if (currentPdp && selectedDispositif) {
 
-                {/* Modal for creating a new dispositif */}
+
+                            linkDispositifToPdp(selectedDispositif.id, currentPdp.id).then(() => {
+                                // savePdp({ ...currentPdp, dispositifs: [...currentPdp.dispositifs, { dispositif: selectedDispositif }] });
+                                currentPdp.dispositifs.push({ dispositif: selectedDispositif });
+                                savePdp(currentPdp);
+                                setIsChanged(true);
+                            });
+                        }
+
+                            setOpen(false);
+                        }}
+                        disabled={!selectedDispositif}
+                    >
+                        Validate
+                    </Button>
+                </Box>
+
                 <EditDispositif
                     dispositif={null}
                     setDispositif={(newDispositif) => {
-                        setDispositifs([...dispositifs, newDispositif]); // Add the new dispositif to the list
-                        setCurrentDispositif(newDispositif); // Set the new dispositif as the selected dispositif
-                        setOpenCreateDispositif(false); // Close the create modal
+                        setDispositifs([...dispositifs, newDispositif]);
+                      //  setSelectedDispositif(newDispositif);
+                        setOpenCreateDispositif(false);
                     }}
                     open={openCreateDispositif}
                     setOpen={setOpenCreateDispositif}
@@ -150,6 +161,56 @@ const SelectOrCreateDispositif = ({ open, setOpen, currentPdp, savePdp, where }:
                 />
             </Box>
         </Modal>
+    );
+};
+
+export default SelectOrCreateDispositif;*/
+
+
+import useDispositif from "../../hooks/useDispositif.ts";
+import usePdp from "../../hooks/usePdp.ts";
+import {useState} from "react";
+import SelectOrCreate from "./SelectOrCreate.tsx";
+import Dispositif from "../../utils/dispositif/Dispositif.ts";
+import defaultImage from "../../assets/default_entreprise_image.png";
+import EditDispositif from "../Dispositif/EditDispositif.tsx";
+interface SelectOrCreateDispositifProps {
+    open: boolean;
+    setOpen: (open: boolean) => void;
+    currentPdp: any;
+    savePdp: (pdp: any) => void;
+    setIsChanged: (isChanged: boolean) => void;
+}
+const SelectOrCreateDispositif = (props: SelectOrCreateDispositifProps) => {
+    const { getAllDispositifs } = useDispositif();
+    const { linkDispositifToPdp } = usePdp();
+
+    const [openCreateDispositif, setOpenCreateDispositif] = useState(false);
+    return (
+        <SelectOrCreate<Dispositif>
+            {...props}
+            where="dispositifs"
+            fetchItems={getAllDispositifs}
+            linkItem={linkDispositifToPdp}
+            alreadySelected={(dispositif) => props.currentPdp?.dispositifs?.some((r: any) => r.dispositif.id === dispositif.id)}
+            getItemId={(dispositif) => dispositif.id}
+            getItemTitle={(dispositif) => dispositif.title}
+            getItemDescription={(dispositif) => dispositif.description}
+            getItemImage={(dispositif) => dispositif?.logo ? `data:${dispositif.logo.mimeType};base64,${dispositif.logo.imageData}` : defaultImage}
+
+            openCreate={openCreateDispositif}
+            setOpenCreate={setOpenCreateDispositif}
+
+            createComponent={
+                <EditDispositif
+                    dispositif={null}
+                    setDispositif={(newDispositif: Dispositif) => props.setIsChanged(true)}
+                    open={openCreateDispositif}
+                    setOpen={setOpenCreateDispositif}
+                    isEdit={false}
+                />
+            }
+        />
     );
 };
 

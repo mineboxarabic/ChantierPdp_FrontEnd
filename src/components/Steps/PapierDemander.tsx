@@ -1,3 +1,4 @@
+/*
 import {Box, Card, FormControlLabel, Select} from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import worning from "../../assets/wornings/worning.webp"
@@ -10,9 +11,10 @@ import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
 
 interface PapierDemanderProps {
     permit?: ObjectAnswered;
+    savePermi: (value:boolean) => void;
 }
 
-const PapierDemander = ({permit}:PapierDemanderProps) => {
+const PapierDemander = ({permit,savePermi}:PapierDemanderProps) => {
     return (
         <Box display={"flex"} alignItems={'center'}>
 
@@ -34,6 +36,7 @@ const PapierDemander = ({permit}:PapierDemanderProps) => {
                     <Typography fontWeight={'bold'} color={'purple'}>{permit?.permit?.title}</Typography>
                   <Checkbox
                         checked={permit?.answer || false}
+                    onChange={(e) => savePermi(e.target.checked)}
                       color={'primary'}/>
                 </CardContent>
             </Card>
@@ -41,6 +44,21 @@ const PapierDemander = ({permit}:PapierDemanderProps) => {
 
         </Box>
     );
+}
+
+export default PapierDemander;*/
+
+import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+import ObjectAnsweredComponent from "./ObjectAnsweredComponent.tsx";
+
+interface PapierDemanderProps {
+    permit: ObjectAnswered;
+    onChangeCheckBox: (value:boolean) => void;
+}
+const PapierDemander = ({permit,onChangeCheckBox}:PapierDemanderProps) => {
+    return (
+        <ObjectAnsweredComponent item={permit} onChangeCheckBox={onChangeCheckBox} componentName={'permit'} />
+    )
 }
 
 export default PapierDemander;

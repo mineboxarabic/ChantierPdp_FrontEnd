@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import Grid from '@mui/material/Grid2';
 import {TextField} from "@mui/material";
-import EntrepriseAddButton from "../../components/EntrepriseAddButton.tsx";
+import AddButtonComponent from "../../components/AddButtonComponent.tsx";
 import {DatePicker} from "@mui/x-date-pickers";
 import {HorizontalBox, VerticalBox} from "../../components/Layout/Layouts.tsx";
 import BottomToolBar from "../../components/Steps/BottomToolBar.tsx";

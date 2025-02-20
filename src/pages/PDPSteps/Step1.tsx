@@ -4,7 +4,7 @@ import TitleHeading from "../../components/TitleHeading.tsx";
 import {Box, Button, Checkbox, FormControlLabel, MenuItem, Select} from "@mui/material";
 
 import {TextField} from "@mui/material";
-import EntrepriseAddButton from "../../components/EntrepriseAddButton.tsx";
+import AddButtonComponent from "../../components/AddButtonComponent.tsx";
 import {DatePicker} from "@mui/x-date-pickers";
 import {HorizontalBox, VerticalBox} from "../../components/Layout/Layouts.tsx";
 import BottomToolBar from "../../components/Steps/BottomToolBar.tsx";
@@ -104,7 +104,7 @@ const Step1 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
 
                     </VerticalBox>
                     </Grid>
-                    <SelectOrCreateEntreprise open={openCreateEntreprise} setOpen={setOpenCreateEntreprise} savePdp={save} currentPdp={currentPdp} where={'entrepriseExterieure'}/>
+                    <SelectOrCreateEntreprise open={openCreateEntreprise} setOpen={setOpenCreateEntreprise} savePdp={saveCurrentPdp} setIsChanged={setIsChanged} currentPdp={currentPdp} where={'entrepriseexterieure'}/>
 
 
                     {
@@ -152,7 +152,7 @@ const Step1 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
 
                     }
                     <Grid size={{xs:12, sm:6, md:4, lg:3}}>
-                        <EntrepriseAddButton openModal={setOpenCreateEntreprise}/>
+                        <AddButtonComponent openModal={setOpenCreateEntreprise}/>
                     </Grid>
 
                 </Grid>

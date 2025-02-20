@@ -4,7 +4,7 @@ import TitleHeading from "../../components/TitleHeading.tsx";
 import {Box, Checkbox, Divider, FormControlLabel} from "@mui/material";
 import Grid from '@mui/material/Grid2';
 import {TextField} from "@mui/material";
-import EntrepriseAddButton from "../../components/EntrepriseAddButton.tsx";
+import AddButtonComponent from "../../components/AddButtonComponent.tsx";
 import {DatePicker} from "@mui/x-date-pickers";
 import {HorizontalBox, VerticalBox} from "../../components/Layout/Layouts.tsx";
 import BottomToolBar from "../../components/Steps/BottomToolBar.tsx";
@@ -63,9 +63,9 @@ const [openSelectOrCreateRisque, setOpenSelectOrCreateRisque] = useState(false);
                 </Grid>
             </Grid>
 
-            <Grid justifyContent={'space-between'} container spacing={2} size={{xs:6,md:12}}>
+            <Grid p={2} justifyContent={'space-between'} container spacing={2} size={{xs:6,md:12}}>
                 <Grid container spacing={2}>
-                    {currentPdp?.risques?.map((risque: ObjectAnswered, index) => (
+                    {currentPdp?.risques && currentPdp?.risques?.map((risque: ObjectAnswered, index) => (
                         <Grid key={index} size={{sm:6,md:6}}>
                             <RisqueComponent
                                 risque={risque}
@@ -92,34 +92,23 @@ const [openSelectOrCreateRisque, setOpenSelectOrCreateRisque] = useState(false);
 
             </Grid>
 
-            <Button
-                sx={{
-                    display: 'block',
-                    margin: 'auto',
-                    marginTop: 2,
-                    width: '50%',
-                    borderRadius: 2,
-                    borderColor: '#b3b3b3',
-                    borderWidth: 2,
-                    borderStyle: 'solid'
-                }}
 
-                onClick={() => setOpenSelectOrCreateRisque(true)}
+            <AddButtonComponent openModal={setOpenSelectOrCreateRisque} text={"Ajouter un risque"} style={{
+                borderRadius: 2,
+            }}/>
 
-                color="primary">+ Ajouter un risque</Button>
             <Divider/>
-            <SelectOrCreateRisque open={openSelectOrCreateRisque} setOpen={setOpenSelectOrCreateRisque} currentPdp={currentPdp as Pdp} savePdp={(pdp)=>{
-                saveCurrentPdp(pdp);
-                setIsChanged(true);
-            }} where={"risques"}/>
+            <SelectOrCreateRisque open={openSelectOrCreateRisque} setOpen={setOpenSelectOrCreateRisque} currentPdp={currentPdp as Pdp}
+                                  setIsChanged={setIsChanged}
+                                  savePdp={saveCurrentPdp}/>
 
 
             <TitleHeading title={"DISPOSITIFS DE SÉCURITÉ A FOURNIR PAR L'EE"} severity={"indecation"} />
 
 
-            <Grid justifyContent={'space-between'} container spacing={2} size={{xs:6,md:12}}>
+            <Grid p={2} justifyContent={'space-between'} container spacing={2} size={{xs:6,md:12}}>
                 {
-                    currentPdp?.dispositifs?.map((dispo, index) => (
+                    currentPdp?.dispositifs && currentPdp?.dispositifs?.map((dispo, index) => (
                         <Grid key={index} size={{sm:6,md:6}}>
                             <DispositifComponent dispositif={dispo} onSelectChange={
                                 (value: boolean) => {
@@ -141,23 +130,13 @@ const [openSelectOrCreateRisque, setOpenSelectOrCreateRisque] = useState(false);
 
 
                 }
-                <Button
-                    sx={{
-                        display: 'block',
-                        margin: 'auto',
-                        marginTop: 2,
-                        width: '50%',
-                        borderRadius: 2,
-                        borderColor: '#b3b3b3',
-                        borderWidth: 2,
-                        borderStyle: 'solid'
-                    }}
 
-                    onClick={() => setOpenSelectOrCreateDispositif(true)}
 
-                    color="primary">+ Ajouter un Dispositif</Button>
+                <AddButtonComponent openModal={setOpenSelectOrCreateDispositif} text={"Ajouter un dispositif"} style={{
+                    borderRadius: 2,
+                }}/>
                 <Divider/>
-                <SelectOrCreateDispositif open={openSelectOrCreateDispositif} setOpen={setOpenSelectOrCreateDispositif} currentPdp={currentPdp as Pdp} savePdp={(pdp)=>{
+                <SelectOrCreateDispositif setIsChanged={setIsChanged} open={openSelectOrCreateDispositif} setOpen={setOpenSelectOrCreateDispositif} currentPdp={currentPdp as Pdp} savePdp={(pdp)=>{
                     saveCurrentPdp(pdp);
                     setIsChanged(true);
                 }} where={"risques"}/>

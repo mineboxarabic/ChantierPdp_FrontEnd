@@ -16,12 +16,13 @@ interface EditAnalyseRisqueProps {
     savePdp: (pdp: Pdp) => void;
     currentPdp: Pdp;
     isEdit: boolean;
+    setIsChanged: (isChanged: boolean) => void;
 }
 
-const EditAnalyseRisque = ({ analyse, savePdp,setAnalyse, open, setOpen, isEdit,currentPdp }: EditAnalyseRisqueProps) => {
+const EditAnalyseRisque = ({ analyse, setIsChanged,savePdp,setAnalyse, open, setOpen, isEdit,currentPdp }: EditAnalyseRisqueProps) => {
     const [localAnalyse, setLocalAnalyse] = useState<AnalyseDeRisque | null>(null);
     const [openRisqueSelector, setOpenRisqueSelector] = useState(false);
-    const { createAnalyse, updateAnalyse } = useAnalyseRisque();
+    const { createAnalyse, updateAnalyse,linkRisqueToAnalyse } = useAnalyseRisque();
     const { getRisque } = useRisque();
 
     useEffect(() => {
@@ -40,6 +41,7 @@ const EditAnalyseRisque = ({ analyse, savePdp,setAnalyse, open, setOpen, isEdit,
 
 
 
+
     const handleSave = async () => {
         if (!localAnalyse?.risque) {
             alert("Please select a Risque before saving.");
@@ -52,6 +54,7 @@ const EditAnalyseRisque = ({ analyse, savePdp,setAnalyse, open, setOpen, isEdit,
                 savedAnalyse = await updateAnalyse(localAnalyse.id, localAnalyse);
             } else {
                 savedAnalyse = await createAnalyse(localAnalyse);
+                linkRisqueToAnalyse(savedAnalyse.id,localAnalyse.risque.id);
             }
             setAnalyse(savedAnalyse);
             setOpen(false);
@@ -115,9 +118,10 @@ const EditAnalyseRisque = ({ analyse, savePdp,setAnalyse, open, setOpen, isEdit,
                     setOpen={setOpenRisqueSelector}
                     currentPdp={currentPdp}
                     savePdp={savePdp}
-                    where="risques"
+                    setIsChanged={setIsChanged}
+                    linkRisqueToAnalyse={linkRisqueToAnalyse}
                     analyseDeRisque={localAnalyse as AnalyseDeRisque}
-                    saveAnalyseDeRisque={setLocalAnalyse}
+                    setAnalyseDeRisque={setLocalAnalyse}
                 />
             </Box>
 

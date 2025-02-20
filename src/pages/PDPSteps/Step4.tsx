@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import Grid from '@mui/material/Grid2';
 import {TextField} from "@mui/material";
-import EntrepriseAddButton from "../../components/EntrepriseAddButton.tsx";
+import AddButtonComponent from "../../components/AddButtonComponent.tsx";
 import {DatePicker} from "@mui/x-date-pickers";
 import {HorizontalBox, VerticalBox} from "../../components/Layout/Layouts.tsx";
 import BottomToolBar from "../../components/Steps/BottomToolBar.tsx";
@@ -40,10 +40,11 @@ const Step4 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
     const [openSelectOrCreateAnalyse, setOpenSelectOrCreateAnalyse] = useState(false);
 
     useEffect(() => {
+        console.log("analyseDeRisqueEntreprise", currentPdp);
         currentPdp?.analyseDeRisques?.map((analyseDeRisqueEntreprise:ObjectAnsweredEntreprises, index) => (
-            console.log("analyseDeRisqueEntreprise", analyseDeRisqueEntreprise.ee)
+            console.log("analyseDeRisqueEntreprisess", analyseDeRisqueEntreprise.ee)
         ))
-    }, []);
+    }, [currentPdp]);
 
 
     return (
@@ -65,7 +66,7 @@ const Step4 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {currentPdp?.analyseDeRisques?.map((analyseDeRisqueEntreprise:ObjectAnsweredEntreprises, index) => (
+                        {currentPdp?.analyseDeRisques && currentPdp?.analyseDeRisques?.map((analyseDeRisqueEntreprise:ObjectAnsweredEntreprises, index) => (
                             <TableRow key={index}>
                                 <TableCell sx={{ border: "1px solid #ccc", height: 50,}}>{
                                     analyseDeRisqueEntreprise.analyseDeRisque?.deroulementDesTaches || "no data"
@@ -132,7 +133,7 @@ const Step4 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
                 setOpen={setOpenSelectOrCreateAnalyse}
                 currentPdp={currentPdp as Pdp}
                 savePdp={(saveCurrentPdp)}
-                where={"analyseDeRisques"}
+                setIsChanged={setIsChanged}
             />
 
 

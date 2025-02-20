@@ -1,3 +1,4 @@
+/*
 import { Box, Card, CardContent, Typography, Button, Modal } from "@mui/material";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { useEffect, useState } from "react";
@@ -135,6 +136,57 @@ const SelectOrCreatePermit = ({ open, setOpen, currentPdp, savePdp, where }: Sel
                 />
             </Box>
         </Modal>
+    );
+};
+
+export default SelectOrCreatePermit;
+*/
+
+
+import usePermit from "../../hooks/usePermit.ts";
+import usePdp from "../../hooks/usePdp.ts";
+import {useState} from "react";
+import SelectOrCreate from "./SelectOrCreate.tsx";
+import Permit from "../../utils/permit/Permit.ts";
+import defaultImage from "../../assets/default_entreprise_image.png";
+import EditPermit from "../Permit/EditPermit.tsx";
+interface SelectOrCreatePermitProps {
+    open: boolean;
+    setOpen: (open: boolean) => void;
+    currentPdp: any;
+    savePdp: (pdp: any) => void;
+    setIsChanged: (isChanged: boolean) => void;
+}
+const SelectOrCreatePermit = (props: SelectOrCreatePermitProps) => {
+    const { getAllPermits } = usePermit();
+    const { linkPermitToPdp } = usePdp();
+
+    const [openCreatePermit, setOpenCreatePermit] = useState(false);
+    return (
+        <SelectOrCreate<Permit>
+            {...props}
+            where="permits"
+            fetchItems={getAllPermits}
+            linkItem={linkPermitToPdp}
+            alreadySelected={(permit) => props.currentPdp?.permits?.some((r: Permit) => r?.id === permit?.id)}
+            getItemId={(permit) => permit?.id}
+            getItemTitle={(permit) => permit?.title}
+            getItemDescription={(permit) => permit?.description}
+            getItemImage={(permit) => permit?.logo ? `data:${permit.logo.mimeType};base64,${permit.logo.imageData}` : defaultImage}
+
+            openCreate={openCreatePermit}
+            setOpenCreate={setOpenCreatePermit}
+
+            createComponent={
+                <EditPermit
+                    permit={null}
+                    setPermit={(newPermit: Permit) => props.setIsChanged(true)}
+                    open={openCreatePermit}
+                    setOpen={setOpenCreatePermit}
+                    isEdit={false}
+                />
+            }
+        />
     );
 };
 

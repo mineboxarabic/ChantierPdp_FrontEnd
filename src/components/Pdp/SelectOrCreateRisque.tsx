@@ -1,50 +1,60 @@
-import { Box, Card, CardContent, Typography, Button, Modal } from "@mui/material";
+/*
+import {
+    Box,
+    List,
+    ListItem,
+    ListItemAvatar,
+    ListItemText,
+    Avatar,
+    Typography,
+    Button,
+    Modal,
+    Divider,
+} from "@mui/material";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { useEffect, useState } from "react";
-import Risque from "../../utils/Risque/Risque";
-import useRisque from "../../hooks/useRisque.ts";
 import EditRisque from "../Risque/EditRisque.tsx";
+import useRisque from "../../hooks/useRisque.ts";
+import  Risque  from "../../utils/Risque/Risque.ts";
 import defaultImage from "../../assets/default_entreprise_image.png";
-import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
-import {Pdp} from "../../utils/pdp/Pdp.ts";
 import usePdp from "../../hooks/usePdp.ts";
 import useAnalyseRisque from "../../hooks/useAnalyseRisque.ts";
-import AnalyseDeRisque from "../../utils/AnalyseDeRisque/AnalyseDeRisque.ts";
-import ObjectAnsweredEntreprises from "../../utils/pdp/ObjectAnsweredEntreprises.ts";
-import risque from "../../utils/Risque/Risque"; // Default image for risques
 
 interface SelectOrCreateRisqueProps {
     open: boolean;
     setOpen: (open: boolean) => void;
-    currentPdp: Pdp; // Replace `any` with your `Pdp` type
-    savePdp: (pdp: Pdp) => void; // Replace `any` with your `Pdp` type
-    where: string; // To specify where to add the risque (e.g., "risques" or "sousTraitants")
-    analyseDeRisque?:AnalyseDeRisque;
-    saveAnalyseDeRisque?: (analyseDeRisque: AnalyseDeRisque) => void;
+    currentPdp: any;
+    savePdp: (pdp: any) => void;
+    where: string;
+    analyseDeRisque?: any;
+    saveAnalyseDeRisque?: (analyseDeRisque: any) => void;
+    setIsChanged: (isChanged: boolean) => void;
 }
 
-const SelectOrCreateRisque = ({ open, setOpen, currentPdp, savePdp, where ,analyseDeRisque, saveAnalyseDeRisque}: SelectOrCreateRisqueProps) => {
+const SelectOrCreateRisque = ({ open, setOpen,setIsChanged, currentPdp, savePdp, where, analyseDeRisque, saveAnalyseDeRisque }: SelectOrCreateRisqueProps) => {
     const [openCreateRisque, setOpenCreateRisque] = useState(false);
     const [risques, setRisques] = useState<Risque[]>([]);
-    const [currentRisque, setCurrentRisque] = useState<Risque | null>(null); // Track the selected risque
-    const { getAllRisques } = useRisque(); // Hook to fetch all risques
+    const [selectedRisque, setSelectedRisque] = useState<Risque | null>(null);
+    const { getAllRisques } = useRisque();
+    const { linkRisqueToPdp } = usePdp();
+    const { linkRisqueToAnalyse } = useAnalyseRisque();
 
-    const { linkRisqueToPdp } = usePdp(); // Hook to link a risque to a Pdp
-    const {linkRisqueToAnalyse } = useAnalyseRisque();
-    // Fetch all risques when the modal opens
     useEffect(() => {
-        if (open) {
-            getAllRisques().then((response) => {
-                setRisques(response);
-            });
-        }
-    }, [open]);
+        getAllRisques().then((response) => {
+            setRisques(response);
+        });
+    }, [openCreateRisque]);
 
-    // Handle selecting a risque
-    const handleSelectRisque = (risque: Risque) => {
-        setCurrentRisque(risque); // Set the selected risque
+    const alreadySelected = (risque: Risque) => {
+        return currentPdp?.risques?.some((r: any) => r.risque.id === risque.id);
     };
 
+    const handleSelectRisque = (risque: Risque) => {
+        console.log('risque', risque);
+        if (!alreadySelected(risque)) {
+            setSelectedRisque(selectedRisque?.id === risque.id ? null : risque);
+        }
+    };
 
     return (
         <Modal open={open} onClose={() => setOpen(false)}>
@@ -54,131 +64,106 @@ const SelectOrCreateRisque = ({ open, setOpen, currentPdp, savePdp, where ,analy
                     top: "50%",
                     left: "50%",
                     transform: "translate(-50%, -50%)",
-                    width: "60%",
+                    width: "50%",
                     bgcolor: "background.paper",
                     boxShadow: 24,
-                    p: 4,
+                    p: 2,
+                    display: "flex",
+                    flexDirection: "column",
                     maxHeight: "80vh",
                     overflowY: "auto",
                 }}
             >
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                    Select or Create Risque
-                </Typography>
+                <Typography variant="h6" sx={{ mb: 2 }}>Select a Risk</Typography>
+                <List>
+                    {risques && risques.map((risque,index) => {
+                        const isAlreadySelected = alreadySelected(risque);
 
-                {/* List of existing risques */}
-                {risques.map((risque) => (
-                    <Card
-                        key={risque.id}
-                        sx={{
-                            width: "100%",
-                            margin: "10px auto",
-                            cursor: "pointer",
-                            border: currentRisque?.id === risque.id ? "2px solid blue" : "1px solid gray", // Highlight selected risque
-                            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "center",
-                        }}
-                        onClick={() => handleSelectRisque(risque)}
-                    >
-                        <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                            <img
-                                src={risque.logo?.imageData ? `data:${risque.logo.mimeType};base64,${risque.logo.imageData}` : defaultImage}
-                                alt={risque.title}
-                                style={{ width: 50, height: 50, borderRadius: 4 }}
-                            />
-                            <Typography variant="h6">{risque.title}</Typography>
-                            <Typography variant="body2">{risque.description}</Typography>
-                        </CardContent>
-                    </Card>
-                ))}
+                        return (
+                            <ListItem
+                                key={index}
+                                onClick={() => handleSelectRisque(risque)}
+                                sx={{
+                                    borderRadius: 2,
+                                    border: "1px solid gray",
+                                    mb: 1,
+                                    cursor: isAlreadySelected ? "not-allowed" : "pointer",
+                                    transition: "0.3s",
+                                    backgroundColor: isAlreadySelected
+                                        ? "lightgray"
+                                        : selectedRisque?.id === risque.id
+                                            ? "lightblue"
+                                            : "white",
+                                    opacity: isAlreadySelected ? 0.6 : 1,
+                                    "&:hover": {
+                                        backgroundColor: isAlreadySelected
+                                            ? "lightgray"
+                                            : "lightgray",
+                                    },
+                                }}
+                                component="button"
+                                disabled={isAlreadySelected}
+                            >
+                                <ListItemAvatar>
+                                    <Avatar
+                                        src={risque?.logo ? `data:${risque.logo.mimeType};base64,${risque.logo.imageData}` : defaultImage}
+                                        alt={risque.title}
+                                    />
+                                </ListItemAvatar>
+                                <ListItemText primary={risque.title} secondary={risque.description} />
+                            </ListItem>
+                        );
+                    })}
+                </List>
 
-                {/* Button to save selected risque */}
+                <Divider sx={{ my: 2 }} />
+
                 <Button
                     variant="contained"
-                    color="primary"
-                    fullWidth
-                    sx={{ mt: 2 }}
-                    onClick={()=>{
-
-                        if(analyseDeRisque !== undefined && analyseDeRisque !== null){
-                            linkRisqueToAnalyse(currentRisque?.id as number, analyseDeRisque?.id as number).then((response:ObjectAnsweredEntreprises) => {
-                                currentPdp.analyseDeRisques = currentPdp.analyseDeRisques || [];
-                                currentPdp.analyseDeRisques.push(response); // Add the new risque to the Pdp
-                                console.log('res',currentRisque);
-                               /* savePdp({
-                                    ...currentPdp,
-                                    analyseDeRisques: currentPdp.analyseDeRisques,
-                                }); // Save the updated Pdp*/
-                                if(saveAnalyseDeRisque !== undefined){
-                                    console.log('saveAnalyseDeRisque',
-                                    {
-                                    ...analyseDeRisque,
-                                        risque: currentRisque as Risque,
-                                    }
-                                    );
-                                    saveAnalyseDeRisque({
-                                        ...analyseDeRisque,
-                                        risque: currentRisque as Risque,
-                                    });
-                                }
-
-                                setOpen(false); // Close the modal
-                            }
-                            );
-                        }else {
-
-                            linkRisqueToPdp(currentRisque?.id as number, currentPdp?.id as number).then((response:ObjectAnswered) => {
-                                //const risqueAnswered:RisqueAnswered = {risque: currentRisque, answer: false } as RisqueAnswered;
-
-                                currentPdp.risques = currentPdp.risques || [];
-                                currentPdp.risques.push(response); // Add the new risque to the Pdp
-                                console.log('res',response);
-                                savePdp({
-                                    ...currentPdp,
-                                    risques: currentPdp.risques,
-                                }); // Save the updated Pdp
-                                setOpen(false); // Close the modal
-                            });
-                        }
-
-
-
-
-                        setOpen(false);
-
-                    }}
-                    disabled={!currentRisque} // Disable button if no risque is selected
+                    startIcon={<AddCircleIcon />}
+                    onClick={() => setOpenCreateRisque(true)}
+                    sx={{ mb: 2 }}
                 >
-                    Save Selected Risque
+                    Create New Risk
                 </Button>
 
-                {/* Button to create a new risque */}
-                <Card
-                    sx={{
-                        width: 200,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
-                        border: "2px dashed gray",
-                        margin: "10px auto",
-                    }}
-                    onClick={() => setOpenCreateRisque(true)}
-                >
-                    <AddCircleIcon fontSize="large" />
-                    <Typography>Save New Risque</Typography>
-                </Card>
+                <Box sx={{ position: "sticky", bottom: -20, bgcolor: "background.paper", p: 2, display: "flex", justifyContent: "space-between" }}>
+                    <Button onClick={() => setOpen(false)} color={"error"}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => {
+                            if (currentPdp && selectedRisque) {
+                                if (analyseDeRisque) {
+                                    saveAnalyseDeRisque?.({ ...analyseDeRisque, risque: selectedRisque });
+                                    setIsChanged(true);
+                                    linkRisqueToAnalyse(selectedRisque.id, analyseDeRisque.id).then(() => {
 
-                {/* Modal for creating a new risque */}
+                                    });
+                                } else {
+
+                                    linkRisqueToPdp(selectedRisque.id, currentPdp.id).then(() => {
+                                       // savePdp({ ...currentPdp, risques: [...currentPdp.risques, { risque: selectedRisque }] });
+                                        currentPdp.risques.push({ risque: selectedRisque });
+                                        savePdp(currentPdp);
+                                        setIsChanged(true);
+                                    });
+                                }
+                            }
+                            setOpen(false);
+                        }}
+                        disabled={!selectedRisque}
+                    >
+                        Validate
+                    </Button>
+                </Box>
+
                 <EditRisque
                     risque={null}
                     setRisque={(newRisque) => {
-                        setRisques([...risques, newRisque]); // Add the new risque to the list
-                        setCurrentRisque(newRisque); // Set the new risque as the selected risque
-                        setOpenCreateRisque(false); // Close the create modal
+                        setRisques([...risques, newRisque]);
+                        setSelectedRisque(newRisque);
+                        setOpenCreateRisque(false);
                     }}
                     open={openCreateRisque}
                     setOpen={setOpenCreateRisque}
@@ -189,4 +174,93 @@ const SelectOrCreateRisque = ({ open, setOpen, currentPdp, savePdp, where ,analy
     );
 };
 
+export default SelectOrCreateRisque;*/
+
+import SelectOrCreate from "./SelectOrCreate";
+import useRisque from "../../hooks/useRisque";
+import usePdp from "../../hooks/usePdp";
+import EditRisque from "../Risque/EditRisque";
+import defaultImage from "../../assets/default_entreprise_image.png";
+import  Risque  from "../../utils/Risque/Risque";
+import {useState} from "react";
+import ObjectAnsweredEntreprises from "../../utils/pdp/ObjectAnsweredEntreprises.ts";
+import AnalyseDeRisque from "../../utils/AnalyseDeRisque/AnalyseDeRisque.ts";
+
+interface SelectOrCreateRisqueProps {
+    open: boolean;
+    setOpen: (open: boolean) => void;
+    currentPdp: any;
+    savePdp: (pdp: any) => void;
+    setIsChanged: (isChanged: boolean) => void;
+    linkRisqueToAnalyse?: (analyseId: number, risqueId: number) => Promise<ObjectAnsweredEntreprises>;
+    analyseDeRisque?: AnalyseDeRisque;
+    setAnalyseDeRisque?: (analyseDeRisque: AnalyseDeRisque) => void;
+}
+
+const SelectOrCreateRisque = (props: SelectOrCreateRisqueProps) => {
+    const { getAllRisques } = useRisque();
+    const { linkRisqueToPdp } = usePdp();
+
+    const [openCreateRisque, setOpenCreateRisque] = useState(false);
+
+
+    const alreadySelected = (risque: Risque) => {
+        if(props.analyseDeRisque){
+            return props.analyseDeRisque?.risque?.id === risque?.id;
+        }
+        return props.currentPdp?.risques?.some((r: any) => r.risque.id === risque.id);
+
+    }
+
+
+    const onValidate = (selectedRisque:Risque) => {
+        if (selectedRisque) {
+            if (props.linkRisqueToAnalyse && props.analyseDeRisque) {
+              //  props.savePdp({ ...props.analyseDeRisque, risque: selectedRisque });
+
+                props.setIsChanged(true);
+                console.log('selectedRisque', selectedRisque);
+                if(props.setAnalyseDeRisque){
+                    props.setAnalyseDeRisque({ ...props.analyseDeRisque, risque: selectedRisque } as AnalyseDeRisque);
+                }
+            } else {
+                linkRisqueToPdp(selectedRisque.id, props.currentPdp.id).then(() => {
+                    props.currentPdp.risques.push({risque: selectedRisque});
+                    props.savePdp(props.currentPdp);
+                    props.setIsChanged(true);
+                });
+            }
+        }
+        props.setOpen(false);
+    }
+
+    return (
+        <SelectOrCreate<Risque>
+            {...props}
+            where="risques"
+            fetchItems={getAllRisques}
+            linkItem={props.linkRisqueToAnalyse ? props.linkRisqueToAnalyse : linkRisqueToPdp}
+            alreadySelected={alreadySelected}
+            getItemId={(risque) => risque.id}
+            getItemTitle={(risque) => risque.title}
+            getItemDescription={(risque) => risque.description}
+            getItemImage={(risque) => risque?.logo ? `data:${risque.logo.mimeType};base64,${risque.logo.imageData}` : defaultImage}
+            onValidate={onValidate}
+            openCreate={openCreateRisque}
+            setOpenCreate={setOpenCreateRisque}
+
+            createComponent={
+                <EditRisque
+                    risque={null}
+                    setRisque={(newRisque: Risque) => props.setIsChanged(true)}
+                    open={openCreateRisque}
+                    setOpen={setOpenCreateRisque}
+                    isEdit={false}
+                />
+            }
+        />
+    );
+};
+
 export default SelectOrCreateRisque;
+

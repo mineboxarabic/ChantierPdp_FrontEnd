@@ -33,7 +33,15 @@ const Step6 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
         getAllLocalisations().then((response) => {
             setLocalisations(response);
         });
+
+
+
     }, []);
+
+
+    useEffect(() => {
+        console.log("permis", currentPdp);
+    }, [currentPdp]);
 
 
     return (
@@ -61,8 +69,8 @@ const Step6 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
                     <MenuItem value={20}>Location 2</MenuItem>
                     <MenuItem value={30}>Location 3</MenuItem>*/}
 
-                    {localisations.map((localisation) => (
-                        <MenuItem value={localisation.id}>{localisation.nom}</MenuItem>
+                    {localisations.map((localisation,index) => (
+                        <MenuItem key={index} value={localisation.id}>{localisation.nom}</MenuItem>
                     ))}
 
                 </Select>
@@ -75,27 +83,22 @@ const Step6 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
             <Divider/>
 
             <Grid justifyContent={'space-between'} container spacing={2}>
-        {/*        <VerticalBox gap={1} width={"49%"}>
-                    <PapierDemander/>
-                    <PapierDemander/>
-                    <PapierDemander/>
-                    <PapierDemander/>
-
-
-                </VerticalBox>
-
-                <VerticalBox gap={1} width={"49%"}>
-                    <PapierDemander/>
-                    <PapierDemander/>
-                    <PapierDemander/>
-                    <PapierDemander/>
-                    <PapierDemander/>
-
-                </VerticalBox>*/}
                 {
                     currentPdp?.permits?.map((permit, index:number) => (
-                        <Grid size={{sm:6,md:6}}>
-                            <PapierDemander key={index} permit={permit}/>
+                        <Grid key={index} size={{sm:12,md:6}}>
+                            <PapierDemander key={index} permit={permit} onChangeCheckBox={(value:boolean)=>{
+                                saveCurrentPdp({
+                                    ...currentPdp,
+                                    permits: currentPdp.permits?.map((p) => {
+                                        if(p.id === permit.id){
+                                            p.answer = value;
+                                        }
+                                        return p;
+                                    }
+                                    ),
+                                });
+                                setIsChanged(true);
+                            }}/>
                         </Grid>
                             ))
 
@@ -104,11 +107,11 @@ const Step6 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
 
             </Grid>
 
+
+
             <Button onClick={() => setOpenSelectOrCreatePermit(true)} variant="contained" color="primary">Ajouter un papier</Button>
 
-            <SelectOrCreatePermit open={
-                openSelectOrCreatePermit
-            } setOpen={setOpenSelectOrCreatePermit} currentPdp={currentPdp as Pdp} savePdp={saveCurrentPdp} where={"Step6"}/>
+            <SelectOrCreatePermit open={openSelectOrCreatePermit} setOpen={setOpenSelectOrCreatePermit} currentPdp={currentPdp as Pdp} savePdp={saveCurrentPdp} setIsChanged={setIsChanged}/>
 
 
 

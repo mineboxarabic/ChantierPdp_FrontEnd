@@ -19,7 +19,7 @@ const TitleHeading: React.FC<TitleHeadingProps> = ({
 
     const getColor = ():string=>{
         switch (severity) {
-            case "error": return "#D37070";
+            case "error": return "error.main";
             case "warning": return "#ffc400";
             case "info": return "#00fff7";
             case "success": return "#22ff00";
