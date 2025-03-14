@@ -22,7 +22,6 @@ import Cas from "../../components/static/Cas.tsx";
 import Button from "@mui/material/Button";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import RisqueComponent from "../../components/Steps/RisqueComponent.tsx";
-import Dispositive from "../../components/Steps/Dispositive.tsx";
 const Step5 = () => {
     return (
         <Box sx={{ padding: 3 }}>
@@ -49,7 +48,6 @@ const Step5 = () => {
                                 <TableCell sx={{ border: "1px solid #ccc", height: 50,}}></TableCell>
                                 <TableCell sx={{ border: "1px solid #ccc", height: 50,}}></TableCell>
                                 <TableCell sx={{ border: "1px solid #ccc", height: 50,}}></TableCell>
-
                                 <TableCell align="center" sx={{border: "1px solid #ccc",}}><Checkbox /></TableCell>
                                 <TableCell align="center" sx={{border: "1px solid #ccc",}}><Checkbox /></TableCell>
                             </TableRow>

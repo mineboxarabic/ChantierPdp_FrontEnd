@@ -34,6 +34,9 @@ const EditEntreprise = ({
                             setOpen,
                             isEdit,
                         }: EditEntrepriseProps) => {
+
+
+
     const [users, setUsers] = useState<User[]>([]);
     const { getUsers } = useUser();
     const { updateEntreprise, deleteEntreprise, createEntreprise } =
@@ -58,7 +61,7 @@ const EditEntreprise = ({
             updateEntreprise(entreprise, entreprise.id as number)
                 .then(() => {
                         notifications.show("Entreprise updated successfully", {severity: "success", autoHideDuration: 2000});
-                        handleClose(); // Close the modal after success
+                        handleClose();
                     })
                 .catch(() =>
                     notifications.show("Error updating entreprise", { severity: "error" })

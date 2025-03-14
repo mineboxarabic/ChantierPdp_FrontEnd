@@ -18,6 +18,14 @@ import {HorizontalSplit} from "@mui/icons-material";
 import Typography from "@mui/material/Typography";
 import usePdp from "../hooks/usePdp.ts";
 import {Pdp} from "../utils/pdp/Pdp.ts";
+import {useNavigate} from 'react-router-dom'
+import {PdpDTO} from "../utils/pdp/PdpDTO.ts";
+import CircularProgress from '@mui/material/CircularProgress';
+import useBdt from "../hooks/useBdt.ts";
+import {BDT} from "../utils/bdt/BDT.ts";
+import {useAuth} from "../hooks/useAuth.tsx";
+
+
 //https://github.com/mui/material-ui/blob/v6.1.10/docs/data/material/getting-started/templates/dashboard/components/AppNavbar.js
 
 interface DataToDisplay {
@@ -31,42 +39,46 @@ interface DataToDisplay {
 //let rows: DataToDisplay[] = [];
 const Home: FC = () => {
 
+    const navigate = useNavigate();
 
     const [modalPdpCreate, setModalPdpCreate] = useState<boolean>(false);
     const [modalPdpCreateResponse, setModalPdpCreateResponse] = useState<boolean>(false);
     const [recentPdps, setRecentPdps] = useState<DataToDisplay[]>([]);
-    const {getRecentPdps} = usePdp();
+    const {loading, getRecentPdps, getLastId:getPdpLastId, createPdp, getPlanDePrevention} = usePdp();
+
+
+
+    const [modalBdtCreate, setModalBdtCreate] = useState<boolean>(false);
+    const [modalBdtCreateResponse, setModalBdtCreateResponse] = useState<boolean>(false);
+    const [recentBdts, setRecentBdts] = useState<DataToDisplay[]>([]);
+    const {loading:loadingBDT, getAllBDTs, createBDT} = useBdt();
+
+    const {connectedUser} = useAuth();
 
 
     useEffect(() => {
-        if(modalPdpCreateResponse) window.location.href = 'create/pdp';
+
+
     }, [modalPdpCreateResponse]);
 
 
+    const createPdpAndRedirect =async () => {
+         const createdPdp:Pdp = await createPdp(Pdp.createEmpty() as PdpDTO);
+         navigate(`/create/pdp/${(createdPdp?.id as number )}/1`);
+    }
+
+    async function createBdtAndRedirect() {
+        const createdBdt:BDT = await createBDT(BDT.createEmpty() as BDT);
+        console.log('createdBdt', createdBdt);
+        navigate(`/create/bdt/${(createdBdt?.id as number )}/1`);
+    }
     useEffect(() => {
         getRecentPdps().then((response:Pdp[]) =>{
-            console.log('xx',response);
-
-       /*     for (let i = 0; i < response.length; i++) {
-                /!*rows.push({
-                    id: response[i].id,
-                    operation: response[i].operation,
-                    startDate: response[i].datedebuttravaux?.toDateString(),
-                    endDate: response[i].datefintravaux?.toDateString()
-                })*!/
-                setRecentPdps([...recentPdps, {
-                    id: response[i].id,
-                    operation: response[i].operation,
-                    startDate: "",
-                    endDate: ""
-                }]);
-
-            }*/
-
             setRecentPdps(response as DataToDisplay[]);
-
         });
     }, []);
+
+
 
     return (
       <Box sx={{width:"100%"}}>
@@ -97,7 +109,35 @@ const Home: FC = () => {
                   </Typography>
 
                   <Button  onClick={() => setModalPdpCreate(false)}>Non</Button>
-                  <Button variant={'contained'} onClick={() => setModalPdpCreateResponse(true)}>Oui</Button>
+                  <Button variant={'contained'} onClick={() => createPdpAndRedirect()}>Oui</Button>
+              </Box>
+          </Modal>
+          <Modal
+              open={modalBdtCreate}
+              onClose={() => setModalBdtCreate(false)}
+              aria-labelledby="modal-modal-title"
+              aria-describedby="modal-modal-description"
+          >
+              <Box sx={ {
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: 400,
+                  bgcolor: 'background.paper',
+                  border: '2px solid #444',
+                  borderRadius: 2,
+                  boxShadow: 24,
+                  p: 4
+              }}>
+                  <Typography id="modal-modal-title" variant="h6" component="h2">
+                      Voulez vous cree un nouveau BDT ?
+                  </Typography>
+                  <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                  </Typography>
+
+                  <Button  onClick={() => setModalBdtCreate(false)}>Non</Button>
+                  <Button variant={'contained'} onClick={() => createBdtAndRedirect()}>Oui</Button>
               </Box>
           </Modal>
 
@@ -106,11 +146,18 @@ const Home: FC = () => {
         >
             <ButtonGroup orientation="vertical" variant="contained" aria-label="Basic button group">
 
+
+                <Button onClick={() =>{
+                    window.location.href = '/create/chantier'
+                }}>
+                    Chantier
+                </Button>
+
                 <Button onClick={() => setModalPdpCreate(true)}>
                     Plan de prevention
                 </Button>
 
-                <Button>
+                <Button onClick={() => setModalBdtCreate(true)}>
                     BT
                 </Button>
 
@@ -139,7 +186,8 @@ const Home: FC = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {recentPdps.map((row) => (
+
+                        {recentPdps && recentPdps.length > 0 && recentPdps.map((row) => (
                             <TableRow
                                 key={row.id}
                                 sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
@@ -157,6 +205,25 @@ const Home: FC = () => {
                                 </TableCell>
                             </TableRow>
                         ))}
+                        {
+                            !recentPdps &&(
+                                <TableRow>
+                                    <TableCell colSpan={5} align="center">Pas de PDP</TableCell>
+                                </TableRow>
+                            )
+
+
+
+                        }
+
+                        {loading && (
+                            <TableRow>
+                                <TableCell colSpan={5} align="center">
+                                    <CircularProgress />
+                                </TableCell>
+                            </TableRow>
+                        )}
+
                     </TableBody>
                 </Table>
             </TableContainer>

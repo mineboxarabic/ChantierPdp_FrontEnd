@@ -6,6 +6,7 @@ interface SectionProps {
     children: React.ReactNode;
     backgroundColor?: string;
     padding?: string | number;
+    sx?: any;
 }
 
 const Section: React.FC<SectionProps> = ({
@@ -13,11 +14,13 @@ const Section: React.FC<SectionProps> = ({
                                              children,
                                              backgroundColor = "transparent",
                                              padding = "16px",
+                                            sx
                                          }) => {
     return (
         <Box
             component="section"
             sx={{
+                ...sx,
                 backgroundColor,
                 padding,
                 borderRadius: "8px",

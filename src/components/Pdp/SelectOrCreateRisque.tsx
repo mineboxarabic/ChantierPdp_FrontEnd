@@ -185,6 +185,7 @@ import  Risque  from "../../utils/Risque/Risque";
 import {useState} from "react";
 import ObjectAnsweredEntreprises from "../../utils/pdp/ObjectAnsweredEntreprises.ts";
 import AnalyseDeRisque from "../../utils/AnalyseDeRisque/AnalyseDeRisque.ts";
+import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
 
 interface SelectOrCreateRisqueProps {
     open: boolean;
@@ -224,9 +225,13 @@ const SelectOrCreateRisque = (props: SelectOrCreateRisqueProps) => {
                     props.setAnalyseDeRisque({ ...props.analyseDeRisque, risque: selectedRisque } as AnalyseDeRisque);
                 }
             } else {
-                linkRisqueToPdp(selectedRisque.id, props.currentPdp.id).then(() => {
-                    props.currentPdp.risques.push({risque: selectedRisque});
-                    props.savePdp(props.currentPdp);
+                linkRisqueToPdp(selectedRisque.id as number, props.currentPdp.id).then((risque:ObjectAnswered) => {
+                 //   props.currentPdp.risques.push({risque: selectedRisque});
+                    risque.risque = selectedRisque;
+                    props.savePdp({
+                        ...props.currentPdp,
+                        risques: [...props.currentPdp.risques, risque]
+                    });
                     props.setIsChanged(true);
                 });
             }
@@ -241,7 +246,7 @@ const SelectOrCreateRisque = (props: SelectOrCreateRisqueProps) => {
             fetchItems={getAllRisques}
             linkItem={props.linkRisqueToAnalyse ? props.linkRisqueToAnalyse : linkRisqueToPdp}
             alreadySelected={alreadySelected}
-            getItemId={(risque) => risque.id}
+            getItemId={(risque) => risque.id as number}
             getItemTitle={(risque) => risque.title}
             getItemDescription={(risque) => risque.description}
             getItemImage={(risque) => risque?.logo ? `data:${risque.logo.mimeType};base64,${risque.logo.imageData}` : defaultImage}

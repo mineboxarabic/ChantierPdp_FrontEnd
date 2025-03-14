@@ -10,17 +10,29 @@ import Typography from "@mui/material/Typography";
 import { Pdp } from "../../utils/pdp/Pdp.ts";
 import usePdp from "../../hooks/usePdp.ts";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import { Box, Button } from "@mui/material";
+import {Box, Button, Modal} from "@mui/material";
 import {PdpDTO} from "../../utils/pdp/PdpDTO.ts";
+import Step7 from "./Step7.tsx";
+import {useParams} from "react-router-dom";
+import useLocalisation from "../../hooks/useLocalisation.ts";
+import CircularProgress from "@mui/material/CircularProgress";
 
 const Steps = () => {
-    const [currentStep, setCurrentStep] = useState(1);
-    const { lastId, createPdp, getLastId, getPlanDePrevention, savePdp } = usePdp();
+    const {loading, getPlanDePrevention, savePdp} = usePdp();
     const [currentId, setCurrentId] = useState<number | null>(null);
     const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);
     const notifications = useNotifications();
-    const initialized = useRef(false);
+
     const [isChanged, setIsChanged] = useState(false);
+
+    const {pdpId, pageNumber} = useParams();
+    const [currentStep, setCurrentStep] = useState(pageNumber ? Number(pageNumber) : 1);
+
+    const [isParamsValid, setIsParamsValid] = useState(false);
+    const [pageError, setPageError] = useState<string | null>(null);
+
+    const maxPageNumber = 7;
+
 
     const save = async (pdp: Pdp) => {
         const notif = notifications.show("Saving PDP...");
@@ -43,54 +55,54 @@ const Steps = () => {
         }
     }
 
-    useEffect(() => {
-        if (lastId && lastId !== null && lastId !== undefined) {
-            window.location.href = `/create/pdp/${lastId}`;
-        }
-    }, [lastId]);
 
-    useEffect(() => {
-        if (currentId) {
-            window.history.pushState({}, "", `/create/pdp/${currentId}/${currentStep}`);
+    const errorCheck = async () => {
+        if(!pdpId) {
+            setPageError("Invalid Id of PDP");
+            setIsParamsValid(false);
+            return;
         }
-    }, [currentStep, currentId]);
-
-    useEffect(() => {
-        if (!initialized.current) {
-            initialized.current = true;
+        if(!pageNumber) {
+            setPageError("Invalid page number, make sure to provide a page number between 1 and " + maxPageNumber);
+            setIsParamsValid(false);
             return;
         }
 
-        const url_list: string[] = window.location.pathname.split("/");
-        const number = url_list[url_list.length - 2];
-        const pageNumber = url_list[url_list.length - 1];
-
-        console.log("number", number);
-        console.log("pageNumber", pageNumber);
-
-        if (pageNumber) {
-            setCurrentStep(parseInt(pageNumber));
+        if(isNaN(Number(pdpId))) {
+            setPageError("Invalid Id of PDP");
+            setIsParamsValid(false);
+            return;
         }
 
-        if (number && !isNaN(parseInt(number))) {
-            const parsedNumber = parseInt(number);
-            setCurrentId(parsedNumber);
-            getPlanDePrevention(parsedNumber).then((response: Pdp) => {
-                setCurrentPdp(response);
-            });
-        } else {
-            const pdpDataEmpty: Pdp = Pdp.createEmpty();
-            createPdp(pdpDataEmpty as PdpDTO).then(() => {
-                getLastId().then((response: number) => {
-                    if (response && !isNaN(response)) {
-                        setCurrentId(response);
-                        window.location.href = `/create/pdp/${response}`;
-                    } else {
-                        console.error("Failed to get a valid lastId.");
-                    }
-                });
-            });
+        if(isNaN(Number(pageNumber))) {
+            setPageError("Invalid page number, make sure to provide a page number between 1 and " + maxPageNumber);
+            setIsParamsValid(false);
+            return;
         }
+
+        const foundPdp:Pdp = await getPlanDePrevention(Number(pdpId));
+
+        console.log("Found PDP", foundPdp);
+        if(!foundPdp) {
+            setPageError("PDP not found");
+            setIsParamsValid(false);
+            return;
+        }
+        setCurrentPdp(foundPdp);
+        setCurrentId(Number(pdpId));
+        setIsParamsValid(true);
+    }
+
+    useEffect(() => {
+        if(!currentPdp) return;
+
+        window.history.replaceState(null, "", `/create/pdp/${currentPdp?.id}/${currentStep}`);
+    }, [currentStep,currentPdp?.id]);
+
+    useEffect(() => {
+
+        errorCheck();
+
 
         return () => {
             console.log("Cleanup on unmount");
@@ -99,32 +111,54 @@ const Steps = () => {
 
     return (
         <>
-            <Typography variant={"h4"}>Plan de prevention - {currentId || "Loading..."}</Typography>
 
-            {currentStep === 1 && <Step1 save={save} currentPdp={currentPdp} saveCurrentPdp={setCurrentPdp} setIsChanged={setIsChanged} />}
-            {currentStep === 2 && <Step2 save={save} currentPdp={currentPdp} saveCurrentPdp={setCurrentPdp} setIsChanged={setIsChanged} />}
-            {currentStep === 3 && <Step3 save={save} currentPdp={currentPdp} saveCurrentPdp={setCurrentPdp} setIsChanged={setIsChanged} />}
-            {currentStep === 4 && <Step4 save={save} currentPdp={currentPdp} saveCurrentPdp={setCurrentPdp} setIsChanged={setIsChanged} />}
-            {currentStep === 5 && <Step5 />}
-            {currentStep === 6 && <Step6 save={save} currentPdp={currentPdp} saveCurrentPdp={setCurrentPdp} setIsChanged={setIsChanged} />}
+            {
+                loading ? <Modal open={true} sx={{backgroundColor:"transparent"}}>
+                    <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}>
+                        <CircularProgress />
+                    </Box>
+                </Modal> : null
+            }
 
-            {isChanged && (
-                <Box
-                    sx={{
-                        position: "fixed",
-                        bottom: "20px",
-                        right: "20px",
-                        zIndex: 1000,
-                    }}
-                >
-                    <Button variant="contained" color="success" onClick={saveChanges}>
-                        Save Changes
-                    </Button>
-                </Box>
-            )}
+            {
+                !isParamsValid ?
+                    <>
+                        {/*Make beatifull error message*/ }
 
-            <BottomToolBar pageNumber={currentStep} setPageNumber={setCurrentStep} maxNumber={6} />
+                        <Typography variant={"h4"}>Error</Typography>
+                        <Typography variant={"h6"}>{pageError}</Typography>
+                    </> :
+           <>
+                <Typography variant={"h4"}>Plan de prevention - {currentId || "Loading..."}</Typography>
+
+                {currentStep === 1 && <Step1 save={save} currentPdp={currentPdp} saveCurrentPdp={setCurrentPdp} setIsChanged={setIsChanged} />}
+                {currentStep === 2 && <Step2 save={save} currentPdp={currentPdp} saveCurrentPdp={setCurrentPdp} setIsChanged={setIsChanged} />}
+                {currentStep === 3 && <Step3 save={save} currentPdp={currentPdp} saveCurrentPdp={setCurrentPdp} setIsChanged={setIsChanged} />}
+                {currentStep === 4 && <Step4 save={save} currentPdp={currentPdp} saveCurrentPdp={setCurrentPdp} setIsChanged={setIsChanged} />}
+                {currentStep === 5 && <Step5 />}
+                {currentStep === 6 && <Step6 save={save} currentPdp={currentPdp} saveCurrentPdp={setCurrentPdp} setIsChanged={setIsChanged} />}
+                {currentStep === 7 && <Step7 save={save} currentPdp={currentPdp} saveCurrentPdp={setCurrentPdp} setIsChanged={setIsChanged} />}
+
+                {isChanged && (
+                    <Box
+                        sx={{
+                            position: "fixed",
+                            bottom: "20px",
+                            right: "20px",
+                            zIndex: 1000,
+                        }}
+                    >
+                        <Button variant="contained" color="success" onClick={saveChanges}>
+                            Save Changes
+                        </Button>
+                    </Box>
+                )}
+
+                <BottomToolBar pageNumber={currentStep} setPageNumber={setCurrentStep} maxNumber={maxPageNumber} />
+           </>
+            }
         </>
+
     );
 };
 

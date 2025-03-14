@@ -2,6 +2,7 @@ import React, {useEffect} from 'react';
 import {Box, Container, Typography} from '@mui/material';
 import {Outlet} from "react-router-dom";
 import NavBar from "../components/NavBar.tsx";
+import {useAuth} from "../hooks/useAuth.tsx";
 
 type LayoutProps = {
     title?: string;
@@ -9,6 +10,7 @@ type LayoutProps = {
 }
 
 const Layout: React.FC<LayoutProps> = ({title= '', mustLogin=true}) => {
+
 
 
     useEffect(() => {

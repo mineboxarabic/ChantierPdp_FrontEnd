@@ -20,11 +20,21 @@ import ViewAllUser from "./pages/User/ViewAllUser.tsx";
 import ViewAllRisques from "./pages/Risque/ViewAllRsiques.tsx";
 import ViewAllLocalisations from "./pages/Localisation/ViewAllLocalisations.tsx";
 import ViewAllPermits from "./pages/Permit/ViewAllPermits.tsx";
+import LivePDFPreview from "./PDF/LivePDFPreview.tsx";
+
+import { Font } from "@react-pdf/renderer";
+import ViewAllPdps from "./pages/PDP/ViewAllPdps.tsx";
+import StepsBDT from "./pages/BDT/StepsBDT.tsx";
+import CreateChantier from "./pages/Chantier/createChantier.tsx";
+Font.register({
+    family: "Inter",
+    src: "/fonts/Inter-Regular.ttf", // Ensure this path is correct
+});
+
 
 
 function App() {
 //  const [count, setCount] = useState(0)
-
 
     return (
     <>
@@ -34,8 +44,11 @@ function App() {
              <Route path="/" element={<Layout mustLogin />}>
                  <Route index element={<Home />} />
                  <Route path="create/pdp" element={<Steps />} />
-                 <Route path="create/pdp/:id/:pageNumber" element={<Steps />} />
+                 <Route path="create/pdp/:pdpId/:pageNumber" element={<Steps />} />
 
+                 <Route path="create/bdt/:bdtId/:pageNumber" element={<StepsBDT />} />
+
+                 <Route path={"create/chantier"} element={<CreateChantier/>}/>
 
                  <Route path={"profile"} element={<ProfilePage/>}/>
                  <Route path={"view/entreprises"} element={<ViewAllEntreprises/>}/>
@@ -43,6 +56,9 @@ function App() {
                  <Route path={"view/risques"} element={<ViewAllRisques/>}/>
                  <Route path={"view/localisations"} element={<ViewAllLocalisations/>}/>
                  <Route path={"view/permits"} element={<ViewAllPermits/>}/>
+                 <Route path={"view/pdps"} element={<ViewAllPdps/>}/>
+                 <Route path="preview/pdf" element={<LivePDFPreview />} />
+
 
              </Route>
 

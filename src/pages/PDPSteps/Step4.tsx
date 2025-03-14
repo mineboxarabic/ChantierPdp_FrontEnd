@@ -22,12 +22,12 @@ import Cas from "../../components/static/Cas.tsx";
 import Button from "@mui/material/Button";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import RisqueComponent from "../../components/Steps/RisqueComponent.tsx";
-import Dispositive from "../../components/Steps/Dispositive.tsx";
 import useAnalyseRisque from "../../hooks/useAnalyseRisque.ts";
 import {Pdp} from "../../utils/pdp/Pdp.ts";
 import {useEffect, useState} from "react";
 import ObjectAnsweredEntreprises from "../../utils/pdp/ObjectAnsweredEntreprises.ts";
 import SelectOrCreateAnalyseRisque from "../../components/Pdp/SelectOrCreateAnalyseRisque.tsx";
+import usePdp from "../../hooks/usePdp.ts";
 
 interface StepsProps {
     currentPdp: Pdp | null
@@ -38,6 +38,7 @@ interface StepsProps {
 const Step4 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
 
     const [openSelectOrCreateAnalyse, setOpenSelectOrCreateAnalyse] = useState(false);
+    const {unlinkAnalyseToPdp} = usePdp();
 
     useEffect(() => {
         console.log("analyseDeRisqueEntreprise", currentPdp);
@@ -63,10 +64,11 @@ const Step4 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
                             <TableCell sx={{ fontWeight: "bold" }}>MESURES DE PREVENTION</TableCell>
                             <TableCell align="center" sx={{ fontWeight: "bold" }}>EE</TableCell>
                             <TableCell align="center" sx={{ fontWeight: "bold" }}>EU</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: "bold" }}>Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {currentPdp?.analyseDeRisques && currentPdp?.analyseDeRisques?.map((analyseDeRisqueEntreprise:ObjectAnsweredEntreprises, index) => (
+                        {currentPdp?.analyseDeRisques && currentPdp?.analyseDeRisques.length > 0 ? currentPdp?.analyseDeRisques?.map((analyseDeRisqueEntreprise:ObjectAnsweredEntreprises, index) => (
                             <TableRow key={index}>
                                 <TableCell sx={{ border: "1px solid #ccc", height: 50,}}>{
                                     analyseDeRisqueEntreprise.analyseDeRisque?.deroulementDesTaches || "no data"
@@ -113,8 +115,36 @@ const Step4 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
                                         }}
                                     />
                                 </TableCell>
+
+                                <TableCell align="center" sx={{border: "1px solid #ccc",}}>
+                                    <Button
+                                        color={"error"}
+                                        onClick={() => {
+                                            unlinkAnalyseToPdp( analyseDeRisqueEntreprise?.id as number, currentPdp?.id as number ).then(() => {
+                                                currentPdp.analyseDeRisques?.splice(index, 1);
+                                                saveCurrentPdp({
+                                                    ...currentPdp,
+                                                    analyseDeRisques: currentPdp.analyseDeRisques,
+                                                } as Pdp);
+                                                setIsChanged(true);
+                                            })
+
+                                        }}
+                                        startIcon={<AccountCircleIcon />}
+                                        sx={{
+                                            height: '5rem',
+                                        }}
+                                    ></Button>
+                                </TableCell>
+
+
                             </TableRow>
-                        ))}
+                        ))
+                            :
+                            <TableRow>
+                                <TableCell colSpan={6} align="center">Pas de Risques</TableCell>
+                            </TableRow>
+                        }
                     </TableBody>
                 </Table>
             </Box>

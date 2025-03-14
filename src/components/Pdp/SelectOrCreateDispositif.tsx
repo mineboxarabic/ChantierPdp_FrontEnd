@@ -193,7 +193,7 @@ const SelectOrCreateDispositif = (props: SelectOrCreateDispositifProps) => {
             fetchItems={getAllDispositifs}
             linkItem={linkDispositifToPdp}
             alreadySelected={(dispositif) => props.currentPdp?.dispositifs?.some((r: any) => r.dispositif.id === dispositif.id)}
-            getItemId={(dispositif) => dispositif.id}
+            getItemId={(dispositif) => dispositif?.id as number}
             getItemTitle={(dispositif) => dispositif.title}
             getItemDescription={(dispositif) => dispositif.description}
             getItemImage={(dispositif) => dispositif?.logo ? `data:${dispositif.logo.mimeType};base64,${dispositif.logo.imageData}` : defaultImage}

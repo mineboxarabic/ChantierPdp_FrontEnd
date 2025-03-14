@@ -1,3 +1,4 @@
+/*
 import React, { useState, useEffect } from "react";
 import {
     Modal,
@@ -11,7 +12,7 @@ import Permit from "../../utils/permit/Permit";
 import usePermit from "../../hooks/usePermit.ts";
 import { useNotifications } from "@toolpad/core/useNotifications";
 import defaultImage from "../../assets/default_entreprise_image.png";
-import Grid from "@mui/material/Grid";
+import Grid from "@mui/material/Grid2";
 
 interface EditPermitProps {
     permit: Permit | null;
@@ -34,7 +35,6 @@ const EditPermit = ({ permit, setPermit, open, setOpen, isEdit }: EditPermitProp
             setLocalPermit({ ...permit });
         } else {
             setLocalPermit({
-                id: 0,
                 title: "",
                 description: "",
                 logo: { mimeType: "", imageData: "" },
@@ -45,7 +45,7 @@ const EditPermit = ({ permit, setPermit, open, setOpen, isEdit }: EditPermitProp
     const handleSave = () => {
         if (localPermit) {
             if (isEdit) {
-                updatePermit(localPermit, localPermit.id).then((response: Permit) => {
+                updatePermit(localPermit, localPermit?.id as number).then((response: Permit) => {
                     setPermit(response);
                     setOpen(false);
                     notifications.show("Permit updated successfully", { severity: "success", autoHideDuration: 2000 });
@@ -122,13 +122,13 @@ const EditPermit = ({ permit, setPermit, open, setOpen, isEdit }: EditPermitProp
                     justifyContent: "center",
                     alignItems: "center",
                 }}>
-                    <Grid item xs={12}>
+                    <Grid size={{xs:12}} >
                         <Typography variant="h6" sx={{ mb: 2 }}>
                             {isEdit ? "Edit Permit" : "Create Permit"}
                         </Typography>
                     </Grid>
 
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{xs:12, md:6}}>
                         <Paper
                             sx={{
                                 display: "flex",
@@ -161,7 +161,7 @@ const EditPermit = ({ permit, setPermit, open, setOpen, isEdit }: EditPermitProp
                         </Button>
 
                         <input
-                            accept="image/*"
+                            accept="image/!*"
                             id="contained-button-file"
                             type="file"
                             style={{ display: "none" }}
@@ -169,7 +169,7 @@ const EditPermit = ({ permit, setPermit, open, setOpen, isEdit }: EditPermitProp
                         />
                     </Grid>
 
-                    <Grid item xs={12}>
+                    <Grid size={{xs:12, md:6}}>
                         <TextField
                             fullWidth
                             label="Title"
@@ -178,7 +178,7 @@ const EditPermit = ({ permit, setPermit, open, setOpen, isEdit }: EditPermitProp
                             sx={{ mb: 2 }}
                         />
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid size={{xs:12, md:6}}>
                         <TextField
                             fullWidth
                             label="Description"
@@ -234,7 +234,7 @@ const EditPermit = ({ permit, setPermit, open, setOpen, isEdit }: EditPermitProp
                                         color="primary"
                                         onClick={() => {
                                             if (localPermit) {
-                                                deletePermit(localPermit.id).then(() => {
+                                                deletePermit(localPermit.id as number).then(() => {
                                                     setOpenDelete(false);
                                                     notifications.show("Permit deleted successfully", { severity: "success", autoHideDuration: 2000 });
                                                     setOpen(false);
@@ -267,6 +267,133 @@ const EditPermit = ({ permit, setPermit, open, setOpen, isEdit }: EditPermitProp
                 </Box>
             </Box>
         </Modal>
+    );
+};
+
+export default EditPermit;
+*/
+
+import React, {useEffect, useState} from "react";
+import EditItem, {FieldConfig} from "../EditItem.tsx";
+import Permit from "../../utils/permit/Permit.ts";
+import usePermit from "../../hooks/usePermit.ts";
+import PermiTypes from "../../utils/PermiTypes.ts";
+
+interface PermiEditorProps {
+    open: boolean;
+    setOpen: (open: boolean) => void;
+    isEdit: boolean;
+    permit?: Permit | null;
+    setPermit: (permit: Permit) => void;
+}
+
+const EditPermit = ({
+                              open,
+                              setOpen,
+                              isEdit,
+                        permit,
+                        setPermit,
+                          }: PermiEditorProps) => {
+    const { createPermit, updatePermit, deletePermit, getPermit } = usePermit();
+
+    const [localPermi, setLocalPermi] = useState<Permit>(
+        {
+            title: "",
+            description: "",
+            logo: { mimeType: "", imageData: "" },
+            pdfData: "",
+            type: PermiTypes.NONE
+
+        }
+    );
+
+
+    useEffect(() => {
+
+        if (isEdit && permit) {
+                setLocalPermi(permit);
+                console.log(permit);
+        } else {
+            setLocalPermi({
+                title: "",
+                description: "",
+                logo: { mimeType: "", imageData: "" },
+                pdfData: "",
+                type: PermiTypes.NONE
+            });
+        }
+
+
+    }, [open]);
+
+
+    const fieldsConfig:FieldConfig<any>[] = [
+        {
+            label: "Logo",
+            type: "image",
+            getter: () => localPermi.logo,
+            setter: (value: { mimeType: string; imageData: string }) =>
+                setLocalPermi((prev) => ({ ...prev, logo: value })),
+        },
+        {
+            label: "Title",
+            type: "text",
+            getter: () => localPermi.title,
+            setter: (value: string) => setLocalPermi((prev) => ({ ...prev, title: value })),
+        },
+        {
+            label: "Description",
+            type: "text",
+            getter: () => localPermi.description,
+            setter: (value: string) => setLocalPermi((prev) => ({ ...prev, description: value })),
+        },
+        {
+            label: "Permi",
+            type: "permi",
+            getter: () => localPermi.pdfData,
+            setter: (value: string) => setLocalPermi((prev) => ({ ...prev, pdfData: value })),
+        }
+
+    ];
+
+
+    const onSave = async() => {
+        if (isEdit) {
+            console.log("updating permi",localPermi);
+            updatePermit(localPermi, localPermi?.id as number).then((response:Permit) => {
+                    setPermit(response);
+                    setOpen(false);
+                }
+            );
+        } else {
+            console.log("creating permi",localPermi);
+            createPermit(localPermi).then((response:Permit) => {
+                setPermit(response);
+                setOpen(false);
+            });
+        }
+    }
+
+    const onDelete = async () => {
+        console.log("deleting dispositif",localPermi);
+
+        deletePermit(localPermi?.id as number).then(() => {
+            setOpen(false);
+        });
+    }
+
+    return (
+        <EditItem <Permit>
+            open={open}
+            setOpen={setOpen}
+            isEdit={isEdit}
+            title="Dispositif"
+            fieldsConfig={fieldsConfig}
+            initialItem={localPermi}
+            itemId={permit?.id}
+            onSave={onSave}
+            onDelete={onDelete}
+        />
     );
 };
 

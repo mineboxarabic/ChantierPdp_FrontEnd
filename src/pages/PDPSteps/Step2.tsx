@@ -174,7 +174,7 @@ const Step2 = ({ currentPdp, save, saveCurrentPdp, setIsChanged }: StepsProps) =
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {currentPdp?.sousTraitants?.map((sousTraitant, index) => (
+                        {currentPdp?.sousTraitants && currentPdp?.sousTraitants.length > 0 ? currentPdp?.sousTraitants?.map((sousTraitant, index) => (
                             <TableRow key={index}>
                                 <TableCell>
                                     <Avatar
@@ -190,7 +190,14 @@ const Step2 = ({ currentPdp, save, saveCurrentPdp, setIsChanged }: StepsProps) =
                                 <TableCell>{sousTraitant.fonction}</TableCell>
                                 <TableCell>{sousTraitant.numTel}</TableCell>
                             </TableRow>
-                        ))}
+                        ))
+                            :
+                            <TableRow>
+                                <TableCell colSpan={4} align="center">Pas de Sous-Traitants</TableCell>
+                            </TableRow>
+
+
+                        }
                     </TableBody>
                 </Table>
             </TableContainer>

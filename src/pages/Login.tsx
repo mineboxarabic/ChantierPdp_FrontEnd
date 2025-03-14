@@ -3,19 +3,20 @@ import { TextField, Button, Box, Typography } from '@mui/material';
 import {getAllUsers} from "../apiService.ts";
 import useUser from "../hooks/useUser.ts";
 import useLocalStorage from "../hooks/useLocalStorage.ts";
+import {useAuth} from "../hooks/useAuth.tsx";
 const Login: React.FC = () => {
     const [formData, setFormData] = useState({
-        name: '',
+        username: '',
         email: '',
         password: '',
     });
-    const {loading,error, response, loginUser} = useUser();
+    const {loading,error, response, login} = useAuth();
 
-    const [errEmail, setErrEmail] = useState('');
+    const [errUsername, setErrUsername] = useState('');
     const [errPassword, setErrPassword] = useState('');
 
     const RGEX_PASSWORD = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    const RGEX_EMAIL = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const RGEX_USERNAME = /^[a-zA-Z0-9_]{3,15}$/;
 
 
 
@@ -24,17 +25,17 @@ const Login: React.FC = () => {
     }
 
     const nameTyped = useRef(false);
-    const emailTyped = useRef(false);
+    const usernameTyped = useRef(false);
     const passwordTyped = useRef(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
 
         // Detect first time typing logic
-        if (name === 'name' && !nameTyped.current) {
+        if (name === 'username' && !nameTyped.current) {
             nameTyped.current = true;
-        } else if (name === 'email' && !emailTyped.current) {
-            emailTyped.current = true;
+        } else if (name === 'username' && !usernameTyped.current) {
+            usernameTyped.current = true;
         } else if (name === 'password' && !passwordTyped.current) {
             passwordTyped.current = true;
         }
@@ -46,12 +47,16 @@ const Login: React.FC = () => {
     };
 
     useEffect(() => {
-        if (checkRegex(RGEX_EMAIL, formData.email)) {
-            setErrEmail('');
+        console.log('Error:', errUsername);
+    }, [errUsername]);
+
+    useEffect(() => {
+        if (checkRegex(RGEX_USERNAME, formData.username)) {
+            setErrUsername('');
         } else {
-            setErrEmail('Email must be valid');
+            setErrUsername('Username must be valid');
         }
-    }, [formData.email]);
+    }, [formData.username]);
 
     useEffect(() => {
         if (checkRegex(RGEX_PASSWORD, formData.password)) {
@@ -79,9 +84,8 @@ const Login: React.FC = () => {
         e.preventDefault();
         //  console.log('Form Data:', formData);
 
-        loginUser({
-            name: formData.name,
-            email:formData.email,
+        login({
+            username: formData.username,
             password:formData.password,
         });
     };
@@ -114,14 +118,13 @@ const Login: React.FC = () => {
                 }}
             >
                 <TextField
-                    label="Email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
+                    label="Username"
+                    name="username"
+                    value={formData.username}
                     onChange={handleChange}
                     variant="outlined"
-                    error={errEmail !== '' && emailTyped.current}
-                    helperText={errEmail && emailTyped.current ? errEmail : ""}
+                    error={errUsername !== '' && usernameTyped.current}
+                    helperText={errUsername && usernameTyped.current ? errUsername : ""}
                     fullWidth
                     required
                 />
@@ -137,7 +140,7 @@ const Login: React.FC = () => {
                     fullWidth
                     required
                 />
-                <Button type="submit" variant="contained" color="primary" fullWidth disabled={errEmail !== '' || errPassword !== '' }>
+                <Button type="submit" variant="contained" color="primary" fullWidth disabled={errUsername !== '' || errPassword !== '' }>
                     Login
                 </Button>
             </Box>

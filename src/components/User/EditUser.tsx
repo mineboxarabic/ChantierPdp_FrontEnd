@@ -1,3 +1,4 @@
+/*
 import React, { useState, useEffect } from "react";
 import {
     Modal,
@@ -193,5 +194,113 @@ const EditUser = ({ user, setUser, open, setOpen, isEdit }: EditUserProps) => {
         </Modal>
     );
 };
+
+export default EditUser;
+*/
+
+
+import Dispositif from "../../utils/dispositif/Dispositif.ts";
+import User from "../../utils/user/User.ts";
+import EditItem, {FieldConfig} from "../EditItem.tsx";
+import {useEffect, useState} from "react";
+import useUser from "../../hooks/useUser.ts";
+import UserRoles from "../../utils/user/UserRoles.ts";
+
+interface EditUserProps {
+    open: boolean;
+    setOpen: (open: boolean) => void;
+    isEdit: boolean;
+    user?: User | null;
+    setUser: (user: User) => void;
+}
+
+const EditUser = ({ open, setOpen, isEdit, user, setUser }: EditUserProps) => {
+
+    const [localUser, setLocalUser] = useState<User | null>();
+
+
+    useEffect(() => {
+        if(user){
+            console.log("user is present");
+            setLocalUser(user);
+        }else{
+            setLocalUser({
+                name: "",
+                email: "",
+                role: UserRoles.WORKER,
+            });
+        }
+    }, [open]);
+
+    const { updateUser, createUser, deleteUser } = useUser();
+
+    const fieldsConfig:FieldConfig<any>[] = [
+        {
+            label: "Username",
+            type: "text",
+            getter: () => localUser?.username,
+            setter: (value: string) => setLocalUser({...localUser, username: value}),
+        },
+        {
+            label: "Email",
+            type: "text",
+            getter: () => localUser?.email || "",
+            setter: (value: string) => setLocalUser({...localUser, email: value}),
+        },
+        {
+            label: "Role",
+            type: "select",
+            options: [
+                { value: "ADMIN", label: "ADMIN" },
+                { value: "WORKER", label: "WORKER" },
+                { value: "other", label: "Other" },
+            ],
+            getter: () => localUser?.role || "",
+            setter: (value: string) => setLocalUser({...localUser, role: value}),
+        }
+    ]
+
+
+    const onSave = async  () => {
+        if(isEdit){
+            if(localUser){
+                updateUser(localUser)
+                    .then((updatedUser: User) => {
+                        setUser(updatedUser);
+                        setOpen(false);
+                    })
+                    .catch(() => {
+                    });
+            }
+        }else{
+            if(localUser){
+                createUser(localUser)
+                    .then((newUser: User) => {
+                        setUser(newUser);
+                        setOpen(false);
+                    })
+                    .catch(() => {
+                    });
+            }
+        }
+    }
+
+
+    const onDelete = async () => {
+        if(user?.id){
+            deleteUser(user.id)
+                .then(() => {
+                    setOpen(false);
+                })
+                .catch(() => {
+                });
+        }
+    }
+
+
+    return (
+        <EditItem open={open} setOpen={setOpen} isEdit={isEdit} title={"User"} fieldsConfig={fieldsConfig} onSave={onSave} onDelete={onDelete} initialItem={localUser}/>
+    )
+}
 
 export default EditUser;

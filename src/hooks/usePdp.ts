@@ -10,10 +10,11 @@ import {AxiosResponseState} from "../utils/AxiosResponse.ts";
 import {PdpDTO} from "../utils/pdp/PdpDTO.ts";
 import ObjectAnswered from "../utils/pdp/ObjectAnswered.ts";
 import ObjectAnsweredEntreprises from "../utils/pdp/ObjectAnsweredEntreprises.ts";
+import ObjectAnsweredObjects from "../utils/ObjectAnsweredObjects.ts";
 
 
 const apiUrl = import.meta.env.VITE_API_URL;
-type PdpResponse = PdpDTO | PdpDTO[] | Pdp | Pdp[] | number | null; // Could be one Pdp, a list of Pdps, or null.
+type PdpResponse = PdpDTO | PdpDTO[] | Pdp | Pdp[] | number | boolean | null; // Could be one Pdp, a list of Pdps, or null.
 const usePdp = ()=>{
     const [response, setReponse] = useState<PdpResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -90,7 +91,33 @@ const usePdp = ()=>{
 
     }
 
-    const createPdp = (pdpData:PdpDTO): Promise<void>=>{
+    const getAllPDPs = async ():Promise<Pdp[]> => {
+        return fetch('api/pdp/all', 'GET', null,
+            [{
+                status: 404,
+                message: 'Error pdp not found',
+            },
+                {
+                    status: -1,
+                    message: 'Error while getting pdp',
+                }
+            ]).then((response:AxiosResponseState<PdpResponse> | null): Pdp[] =>{
+            setReponse(response?.data?.data as Pdp[]);
+
+            return response?.data?.data as Pdp[];
+
+        }).catch(e=>{
+            setError(e);
+            if(e.status === 404){
+                notifications.show('Error pdp not found', {severity:'error'});
+            }else{
+
+                notifications.show('Error while getting pdp', {severity: 'error'});
+            }
+        }) as Promise<Pdp[]>;
+    }
+
+    const createPdp = (pdpData:PdpDTO): Promise<Pdp>=>{
        return fetch('api/pdp/', 'POST', pdpData,
             [{
                 status: 409,
@@ -100,10 +127,27 @@ const usePdp = ()=>{
                     status: 404,
                     message: 'Error pdp or api link not found',
                 }
-            ]).then(r => {}) as Promise<void>;
+            ]).then(r => {
+            if(r != undefined){
+                setReponse(r.data?.data as Pdp);
+                return r.data?.data as Pdp;
+            }
+       }) as Promise<Pdp>;
 
     }
 
+    const deletePdp = (id:number): Promise<void>=>{
+        return fetch('api/pdp/' + id, 'DELETE', null,
+            [{
+                status: 409,
+                message: 'Error pdp already exists',
+            },
+                {
+                    status: 404,
+                    message: 'Error pdp or api link not found',
+                }
+            ]).then(r => {}) as Promise<void>;
+    }
 
     const getLastId = ():Promise<number> => {
         return fetch('api/pdp/last', 'GET', null,
@@ -223,7 +267,111 @@ const usePdp = ()=>{
         }) as Promise<ObjectAnswered>;
     }
 
-    return {loading,error, response, lastId,linkAnalyseToPdp,linkPermitToPdp, getPlanDePrevention, createPdp, getLastId, linkDispositifToPdp,getRecentPdps, savePdp,linkRisqueToPdp};
+    const unlinkPermitFromPdp = async (permitId:number, pdpId:number):Promise<ObjectAnswered> => {
+        return fetch('api/pdp/' + pdpId + '/permit/' + permitId, 'DELETE', null,
+            [{
+                status: 409,
+                message: 'Error pdp already exists',
+            },
+                {
+                    status: 404,
+                    message: 'Error pdp or api link not found',
+                }
+            ]).then(r => {
+            if(r != undefined){
+                setReponse(r.data?.data as ObjectAnswered);
+                return r.data?.data as ObjectAnswered;
+            }
+        }) as Promise<ObjectAnswered>;
+    }
+
+    const unlinkObjectFromPdp = async (objectId:number, pdpId:number, type:ObjectAnsweredObjects):Promise<ObjectAnswered> => {
+       console.log('unlinkObjectFromPdp',objectId,pdpId,type);
+        return fetch('api/pdp/' + pdpId + '/object/' + objectId + '/type/' + type.toString(), 'DELETE', null,
+            [{
+                status: 409,
+                message: 'Error pdp already exists',
+            },
+                {
+                    status: 404,
+                    message: 'Error pdp or api link not found',
+                },
+                {
+                    status: 400,
+                    message: 'Error pdp or api link not found',
+                }
+            ]).then(r => {
+            if(r != undefined){
+                setReponse(r.data?.data as ObjectAnswered);
+                return r.data?.data as ObjectAnswered;
+            }
+        }) as Promise<ObjectAnswered>;
+
+    }
+
+    const linkObjectToPdp = async (objectId:number, pdpId:number, type:ObjectAnsweredObjects):Promise<ObjectAnswered> => {
+        return fetch('api/pdp/' + pdpId + '/object/' + objectId + '/type/' + type.toString(), 'POST', null,
+            [{
+                status: 409,
+                message: 'Error pdp already exists',
+            },
+                {
+                    status: 404,
+                    message: 'Error pdp or api link not found',
+                }
+            ]).then(r => {
+            if(r != undefined){
+                setReponse(r.data?.data as ObjectAnswered);
+                return r.data?.data as ObjectAnswered;
+            }
+        }) as Promise<ObjectAnswered>;
+    }
+
+
+    const existPdp = async (id:number):Promise<boolean> => {
+        return fetch('api/pdp/' +  '/exist' + id, 'GET', null,
+            [{
+                status: 404,
+                message: 'Error pdp not found',
+            },
+                {
+                    status: -1,
+                    message: 'Error while getting pdp',
+                }
+            ]).then((response:AxiosResponseState<PdpResponse> | null): boolean =>{
+            setReponse(response?.data?.data as boolean);
+            return response?.data?.data as boolean;
+        }).catch(e=>{
+            setError(e);
+            if(e.status === 404){
+                notifications.show('Error pdp not found', {severity:'error'});
+            }else{
+
+                notifications.show('Error while getting pdp', {severity: 'error'});
+            }
+        }) as Promise<boolean>;
+    }
+
+
+    const unlinkAnalyseToPdp = async (analyseId:number, pdpId:number):Promise<ObjectAnsweredEntreprises> => {
+        return fetch('api/pdp/' + pdpId + '/analyse/' + analyseId, 'DELETE', null,
+            [{
+                status: 409,
+                message: 'Error pdp already exists',
+            },
+                {
+                    status: 404,
+                    message: 'Error pdp or api link not found',
+                }
+            ]).then(r => {
+            if(r != undefined){
+                setReponse(r.data?.data as ObjectAnsweredEntreprises);
+                return r.data?.data as ObjectAnsweredEntreprises;
+            }
+        }) as Promise<ObjectAnsweredEntreprises>;
+    }
+
+    return {loading,error, response, existPdp,lastId,getAllPDPs,deletePdp,linkAnalyseToPdp,unlinkAnalyseToPdp,unlinkPermitFromPdp,unlinkObjectFromPdp, linkObjectToPdp, linkPermitToPdp, getPlanDePrevention, createPdp, getLastId, linkDispositifToPdp,getRecentPdps, savePdp,linkRisqueToPdp};
 
 }
 

@@ -50,14 +50,23 @@ export default PapierDemander;*/
 
 import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
 import ObjectAnsweredComponent from "./ObjectAnsweredComponent.tsx";
+import {Pdp} from "../../utils/pdp/Pdp.ts";
+import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
 
 interface PapierDemanderProps {
     permit: ObjectAnswered;
-    onChangeCheckBox: (value:boolean) => void;
+    currentPdp:Pdp;
+    saveCurrentPdp: (pdp:Pdp) => void;
+    setIsChanged: (value:boolean) => void;
 }
-const PapierDemander = ({permit,onChangeCheckBox}:PapierDemanderProps) => {
+const PapierDemander = ({permit,setIsChanged, currentPdp, saveCurrentPdp}:PapierDemanderProps) => {
+
+
+
+
+
     return (
-        <ObjectAnsweredComponent item={permit} onChangeCheckBox={onChangeCheckBox} componentName={'permit'} />
+        <ObjectAnsweredComponent item={permit} type={ObjectAnsweredObjects.PERMIT} saveCurrentPdp={saveCurrentPdp} currentPdp={currentPdp} setIsChanged={setIsChanged} />
     )
 }
 

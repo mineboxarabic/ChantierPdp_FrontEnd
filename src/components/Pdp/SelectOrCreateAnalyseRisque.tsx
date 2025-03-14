@@ -334,11 +334,13 @@ import SelectOrCreate from "./SelectOrCreate.tsx";
 import AnalyseDeRisque from "../../utils/AnalyseDeRisque/AnalyseDeRisque.ts";
 import defaultImage from "../../assets/default_entreprise_image.png";
 import EditAnalyseRisque from "../AnalyseDeRisque/EditAnalyseRisque.tsx";
+import {Pdp} from "../../utils/pdp/Pdp.ts";
+import ObjectAnsweredEntreprises from "../../utils/pdp/ObjectAnsweredEntreprises.ts";
 
 interface SelectOrCreateAnalyseRisqueProps {
     open: boolean;
     setOpen: (open: boolean) => void;
-    currentPdp: any;
+    currentPdp: Pdp;
     savePdp: (pdp: any) => void;
     setIsChanged: (isChanged: boolean) => void;
 }
@@ -354,7 +356,7 @@ const SelectOrCreateAnalyseRisque = (props: SelectOrCreateAnalyseRisqueProps) =>
             where="analyseDeRisques"
             fetchItems={getAllAnalyses}
             linkItem={linkAnalyseToPdp}
-            alreadySelected={(analyseDerisque) => props.currentPdp?.analyseDeRisques?.some((r:AnalyseDeRisque) => r.id === analyseDerisque?.id)}
+            alreadySelected={(analyseDerisque:AnalyseDeRisque) => props.currentPdp?.analyseDeRisques?.some((r:ObjectAnsweredEntreprises) => r?.analyseDeRisque?.id === analyseDerisque?.id)}
             getItemId={(analyseDerisque:AnalyseDeRisque) => analyseDerisque?.id}
             getItemTitle={(analyseDerisque) => analyseDerisque?.deroulementDesTaches}
             getItemDescription={(analyseDerisque) => analyseDerisque.risque?.title}

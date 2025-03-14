@@ -15,6 +15,7 @@ import AdbIcon from '@mui/icons-material/Adb';
 import { useNotifications } from '@toolpad/core/useNotifications';
 import { useState } from 'react';
 import DanoneLogo from "./DanoneLogo.tsx";
+import {useAuth} from "../hooks/useAuth.tsx";
 
 const pages = [
     { name: 'Products', link: '/products' },
@@ -25,7 +26,8 @@ const pages = [
             { name: 'View Risks', link: '/view/risques' },
             { name: 'View Enterprises', link: '/view/entreprises' },
             { name: 'View Localisations', link: '/view/localisations' },
-            {name: 'View Permits', link: '/view/permits'}
+            {name: 'View Permits', link: '/view/permits'},
+            {name: 'View Pdps', link:'/view/pdps'}
         ]}
 ];
 const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
@@ -44,7 +46,10 @@ function EnhancedNavBar() {
     const handleCloseUserMenu = () => setAnchorElUser(null);
     const handleCloseCrudMenu = () => setAnchorElCrud(null);
 
-    const isLoggedIn = localStorage.getItem('user') !== null;
+    const {connectedUser, logout} = useAuth();
+
+
+    const isLoggedIn = connectedUser !== null;
 
     return (
         <AppBar position="static">
@@ -140,8 +145,13 @@ function EnhancedNavBar() {
 
                     {isLoggedIn ? (
                         <Box sx={{ flexGrow: 0 }}>
+
+                            {connectedUser?.username} {' '} {connectedUser?.role}
+
                             <Tooltip title="Open settings">
+
                                 <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+
                                     <Avatar alt="User Avatar" src="/static/images/avatar/2.jpg" />
                                 </IconButton>
                             </Tooltip>
@@ -161,9 +171,8 @@ function EnhancedNavBar() {
                                 ))}
                                 <MenuItem
                                     onClick={() => {
-                                        localStorage.removeItem('user');
-                                        notifications.show('Logged out', { severity: 'error' });
-                                        window.location.reload();
+                                        logout();
+                                        window.location.href = '/login'
                                     }}
                                 >
                                     Logout

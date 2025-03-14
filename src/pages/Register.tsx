@@ -2,13 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { TextField, Button, Box, Typography } from '@mui/material';
 import {getAllUsers} from "../apiService.ts";
 import useUser from "../hooks/useUser.ts";
+import {useAuth} from "../hooks/useAuth.tsx";
 const Register: React.FC = () => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         password: '',
     });
-    const {loading,error, response, registerUser} = useUser();
+    const {loading,error, response, register} = useAuth();
     const [errName, setErrName] = useState('');
     const [errEmail, setErrEmail] = useState('');
     const [errPassword, setErrPassword] = useState('');
@@ -80,10 +81,12 @@ const Register: React.FC = () => {
         e.preventDefault();
       //  console.log('Form Data:', formData);
 
-        registerUser({
-            name: formData.name,
+        register({
+            username: formData.name,
             email:formData.email,
             password:formData.password,
+        }).then((response) => {
+            window.location.href = '/login';
         });
     };
 

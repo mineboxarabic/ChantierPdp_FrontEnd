@@ -1,7 +1,7 @@
 import {ImageModel} from "../image/ImageModel.ts";
 
 class Risque {
-     id: number;
+     id?: number;
      title: string;
      description: string;
      travailleDangereux: boolean;

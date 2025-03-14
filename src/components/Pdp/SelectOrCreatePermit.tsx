@@ -150,26 +150,34 @@ import SelectOrCreate from "./SelectOrCreate.tsx";
 import Permit from "../../utils/permit/Permit.ts";
 import defaultImage from "../../assets/default_entreprise_image.png";
 import EditPermit from "../Permit/EditPermit.tsx";
+import {Pdp} from "../../utils/pdp/Pdp.ts";
+import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
+
 interface SelectOrCreatePermitProps {
     open: boolean;
     setOpen: (open: boolean) => void;
-    currentPdp: any;
+    currentPdp: Pdp;
     savePdp: (pdp: any) => void;
     setIsChanged: (isChanged: boolean) => void;
 }
 const SelectOrCreatePermit = (props: SelectOrCreatePermitProps) => {
     const { getAllPermits } = usePermit();
-    const { linkPermitToPdp } = usePdp();
+    const { linkObjectToPdp } = usePdp();
 
     const [openCreatePermit, setOpenCreatePermit] = useState(false);
+
+    const alreadySelected = (permit: Permit):boolean => props.currentPdp?.permits?.some((r:ObjectAnswered) => r?.permit?.id === permit.id) as boolean;
+
+
     return (
         <SelectOrCreate<Permit>
             {...props}
             where="permits"
             fetchItems={getAllPermits}
-            linkItem={linkPermitToPdp}
-            alreadySelected={(permit) => props.currentPdp?.permits?.some((r: Permit) => r?.id === permit?.id)}
-            getItemId={(permit) => permit?.id}
+            linkItem={(permitId: number, pdpId: number) => linkObjectToPdp(permitId, pdpId, ObjectAnsweredObjects.PERMIT)}
+            alreadySelected={alreadySelected}
+            getItemId={(permit) => permit?.id as number}
             getItemTitle={(permit) => permit?.title}
             getItemDescription={(permit) => permit?.description}
             getItemImage={(permit) => permit?.logo ? `data:${permit.logo.mimeType};base64,${permit.logo.imageData}` : defaultImage}

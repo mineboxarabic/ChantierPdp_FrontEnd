@@ -1,3 +1,4 @@
+/*
 import React, { useState, useEffect } from "react";
 import {
     Modal,
@@ -183,7 +184,7 @@ console.log("localDispositif",localDispositif);
                         </Button>
 
                         <input
-                            accept="image/*"
+                            accept="image/!*"
                     id="contained-button-file"
                     type="file"
                     style={{ display: "none" }}
@@ -303,3 +304,99 @@ console.log("localDispositif",localDispositif);
 };
 
 export default EditDispositif;
+*/
+import React, { useState } from "react";
+import EditItem, {FieldConfig} from "../EditItem.tsx";
+import Dispositif from "../../utils/dispositif/Dispositif";
+import useDispositif from "../../hooks/useDispositif.ts";
+
+interface DispositifEditorProps {
+    open: boolean;
+    setOpen: (open: boolean) => void;
+    isEdit: boolean;
+    dispositif?: Dispositif | null;
+    setDispositif: (dispositif: Dispositif) => void;
+}
+
+const DispositifEditor = ({
+                              open,
+                              setOpen,
+                              isEdit,
+                              dispositif,
+                              setDispositif,
+                          }: DispositifEditorProps) => {
+    const { createDispositif, updateDispositif, deleteDispositif, getDispositif } = useDispositif();
+
+    const [localDispositif, setLocalDispositif] = useState<Dispositif>(
+         {
+            title: "",
+            description: "",
+            logo: { mimeType: "", imageData: "" },
+        }
+    );
+
+    const fieldsConfig:FieldConfig<any>[] = [
+        {
+            label: "Logo",
+            type: "image",
+            getter: () => localDispositif.logo,
+            setter: (value: { mimeType: string; imageData: string }) =>
+                setLocalDispositif((prev) => ({ ...prev, logo: value })),
+        },
+        {
+            label: "Title",
+            type: "text",
+            getter: () => localDispositif.title,
+            setter: (value: string) => setLocalDispositif((prev) => ({ ...prev, title: value })),
+        },
+        {
+            label: "Description",
+            type: "text",
+            getter: () => localDispositif.description,
+            setter: (value: string) => setLocalDispositif((prev) => ({ ...prev, description: value })),
+        },
+
+    ];
+
+
+    const onSave = async() => {
+        if (isEdit) {
+            console.log("updating dispositif",localDispositif);
+            updateDispositif(localDispositif, localDispositif?.id as number).then((response:Dispositif) => {
+                setDispositif(response);
+                setOpen(false);
+            }
+            );
+        } else {
+            console.log("creating dispositif",localDispositif);
+            createDispositif(localDispositif).then((response:Dispositif) => {
+                setDispositif(response);
+                setOpen(false);
+            });
+        }
+    }
+
+    const onDelete = async () => {
+        console.log("deleting dispositif",localDispositif);
+
+        deleteDispositif(localDispositif?.id as number).then(() => {
+            setOpen(false);
+        });
+    }
+
+    return (
+        <EditItem <Dispositif>
+            open={open}
+            setOpen={setOpen}
+            isEdit={isEdit}
+            title="Dispositif"
+            fieldsConfig={fieldsConfig}
+            initialItem={localDispositif}
+            itemId={dispositif?.id}
+            onSave={onSave}
+            onDelete={onDelete}
+        />
+    );
+};
+
+export default DispositifEditor;

@@ -2,7 +2,7 @@ import {ImageModel} from "./image/ImageModel.ts";
 
 class InfoDeBase {
 
-    id: number;
+    id?: number;
     title: string;
     description: string;
     logo: ImageModel;

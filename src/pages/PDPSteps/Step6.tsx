@@ -1,21 +1,17 @@
-import Section from "../../components/Section.tsx";
-import Typography from "@mui/material/Typography";
 import TitleHeading from "../../components/TitleHeading.tsx";
-import {
-    Box, Button, Divider, MenuItem, Select,
-} from "@mui/material";
+import {Box, Button, Divider, MenuItem, Select,} from "@mui/material";
 import {HorizontalBox, VerticalBox} from "../../components/Layout/Layouts.tsx";
-import BottomToolBar from "../../components/Steps/BottomToolBar.tsx";
-import siteImage from "../../assets/site.png";
 import Grid from "@mui/material/Grid2";
-import Dispositive from "../../components/Steps/Dispositive.tsx";
 import PapierDemander from "../../components/Steps/PapierDemander.tsx";
 import useLocalisation from "../../hooks/useLocalisation.ts";
 import {useEffect, useState} from "react";
 import Localisation from "../../utils/Localisation/Localisation.ts";
 import {Pdp} from "../../utils/pdp/Pdp.ts";
-import Permit from "../../utils/permit/Permit.ts";
 import SelectOrCreatePermit from "../../components/Pdp/SelectOrCreatePermit.tsx";
+import usePdp from "../../hooks/usePdp.ts";
+import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
+import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+import Typography from "@mui/material/Typography";
 
 interface StepsProps {
     currentPdp: Pdp | null
@@ -28,6 +24,7 @@ const Step6 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
 
     const [localisations, setLocalisations] = useState<Localisation[]>([]);
     const [openSelectOrCreatePermit, setOpenSelectOrCreatePermit] = useState(false);
+
 
     useEffect(() => {
         getAllLocalisations().then((response) => {
@@ -84,23 +81,26 @@ const Step6 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
 
             <Grid justifyContent={'space-between'} container spacing={2}>
                 {
-                    currentPdp?.permits?.map((permit, index:number) => (
+                    currentPdp?.permits &&  currentPdp?.permits.length > 0 ? currentPdp?.permits?.map((permit, index:number) => (
                         <Grid key={index} size={{sm:12,md:6}}>
-                            <PapierDemander key={index} permit={permit} onChangeCheckBox={(value:boolean)=>{
-                                saveCurrentPdp({
-                                    ...currentPdp,
-                                    permits: currentPdp.permits?.map((p) => {
-                                        if(p.id === permit.id){
-                                            p.answer = value;
-                                        }
-                                        return p;
-                                    }
-                                    ),
-                                });
-                                setIsChanged(true);
-                            }}/>
+                            <PapierDemander key={index} permit={permit}
+                                            saveCurrentPdp={saveCurrentPdp} setIsChanged={setIsChanged}
+                                            currentPdp={currentPdp as Pdp}
+                            />
                         </Grid>
-                            ))
+                            )) : <Box sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: 100,
+                        width: '55rem',
+                        border: 1,
+                        borderColor: 'grey.500',
+                        borderRadius: 1,
+                    }
+                    }>
+                        <Typography>Aucun Papier ajouté</Typography>
+                    </Box>
 
                 }
 
@@ -111,7 +111,9 @@ const Step6 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
 
             <Button onClick={() => setOpenSelectOrCreatePermit(true)} variant="contained" color="primary">Ajouter un papier</Button>
 
-            <SelectOrCreatePermit open={openSelectOrCreatePermit} setOpen={setOpenSelectOrCreatePermit} currentPdp={currentPdp as Pdp} savePdp={saveCurrentPdp} setIsChanged={setIsChanged}/>
+            <SelectOrCreatePermit open={openSelectOrCreatePermit} setOpen={setOpenSelectOrCreatePermit} currentPdp={currentPdp as Pdp} savePdp={saveCurrentPdp} setIsChanged={setIsChanged}
+
+            />
 
 
 

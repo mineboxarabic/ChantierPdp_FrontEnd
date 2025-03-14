@@ -1,6 +1,8 @@
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import axios, {Method, AxiosRequestHeaders, AxiosHeaders, AxiosError} from "axios";
 import {useNotifications} from "@toolpad/core/useNotifications";
+import useToken from "./useToken.ts";
+import {useLoading} from "./useLoading.tsx";
 const apiUrl = import.meta.env.VITE_API_URL;
 
 
@@ -14,15 +16,78 @@ export const useAxios  =<T = any> () => {
     const [errorAxios, setErrorAxios] = useState<string | null>(null);
     const [loadingAxios, setLoadingAxios] = useState<boolean>(false);
     const [message, setMessage] = useState<string | null>(null);
-
     const notifications = useNotifications();
+    const { showLoading, hideLoading } = useLoading();
+
+
+    useEffect(() => {
+        if (loadingAxios) {
+            showLoading();
+        } else {
+            hideLoading();
+        }
+    }, [loadingAxios]);
+
+
+
+    const getHeaders = useCallback((): Record<string, string> => {
+        const token = localStorage.getItem("token");
+        return {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,PATCH,OPTIONS",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        };
+    }, []);
+
+
+    useEffect(() => {
+        // Add request interceptor
+        const requestInterceptor = axios.interceptors.request.use(
+            (config) => {
+                // You can add any global request logic here if needed
+                return config;
+            },
+            (error) => {
+                return Promise.reject(error);
+            }
+        );
+
+        // Add response interceptor
+        const responseInterceptor = axios.interceptors.response.use(
+            (response) => {
+
+                return response; // continue normally if response is valid
+
+            },
+            (error: AxiosError) => {
+                if (error.response?.status === 401) {
+                    // If 401, remove token from localStorage
+                    localStorage.removeItem("token");
+                    notifications.show("Session expired. Please log in again.", { severity: "error" });
+                }
+
+                if(error.response?.status === 403){
+                    notifications.show("You are not authorized to access this resource: Try relogging in.", { severity: "error" });
+                }
+
+                return Promise.reject(error); // Ensure the error is propagated to the .catch block
+            }
+        );
+
+        // Cleanup interceptors on component unmount
+        return () => {
+            axios.interceptors.request.eject(requestInterceptor);
+            axios.interceptors.response.eject(responseInterceptor);
+        };
+    }, [notifications]);
 
     const fetch = async (
         url: string,
         method: Method = "GET",
         data: any = null,
         errorMapper: ErrorMapper[] = [],
-        headers: AxiosHeaders = new AxiosHeaders({ "Content-Type": "application/json","Access-Control-Allow-Origin": "*","Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,PATCH,OPTIONS" }),
+        headers: AxiosHeaders = new AxiosHeaders(getHeaders())
 
     ): Promise<T | null> => {
         setLoadingAxios(true);
@@ -32,7 +97,7 @@ export const useAxios  =<T = any> () => {
             return response;
         })
             .catch((err: AxiosError) => {
-            setMessage(err?.message);
+            console.log(err);
                 if (!err.response) {
                     // Handle no internet connection
                     const noConnectionMessage = "No connection to the server. Please check your internet connection.";
@@ -41,13 +106,13 @@ export const useAxios  =<T = any> () => {
                     return null;
                 }
                 if (errorMapper.length > 0) {
+                    const statusExistsInMapper = errorMapper.some((error) => error.status === err.response?.status);
                     for (let i = 0; i < errorMapper.length; i++) {
-
                         if (errorMapper[i].status === err.response?.status) {
                             notifications.show(errorMapper[i].message, { severity: "error" });
-                       setErrorAxios(errorMapper[i].message)
+                            setErrorAxios(errorMapper[i].message)
                         }
-                        else if(errorMapper[i].status === -1){
+                        else if(errorMapper[i].status === -1 && !statusExistsInMapper){
                             notifications.show(errorMapper[i].message, { severity: "error" });
                            setErrorAxios(errorMapper[i].message)
                         }
@@ -72,5 +137,5 @@ export const useAxios  =<T = any> () => {
 
 
 
-    return {  responseAxios, errorAxios, loadingAxios, fetch };
+    return {  responseAxios, errorAxios, loadingAxios, fetch};
 };

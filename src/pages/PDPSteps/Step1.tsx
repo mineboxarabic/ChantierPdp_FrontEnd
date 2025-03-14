@@ -66,35 +66,6 @@ const Step1 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
                         padding={"0 20px 0 20px"}
                         >
                         <TitleHeading severity={"indecation"} title={"Entreprise utilisatrice :"}/>
-                        {/* <Select
-                            fullWidth
-                            displayEmpty
-                            label="Entreprise utilisatrice"
-                            variant="outlined"
-                            value={
-                                entreprises.some(
-                                    (entreprise) => entreprise.id === currentPdp?.entrepriseutilisatrice?.id
-                                )
-                                    ? currentPdp?.entrepriseutilisatrice?.id
-                                    : "" // Default to empty string if no match is found
-                            }
-
-                            onChange={(e) => {
-                                const selectedId = e.target.value === "" ? null : Number(e.target.value);
-
-                                    const entreprise:Entreprise = entreprises.find((entreprise: Entreprise) => entreprise.id === selectedId) as Entreprise;
-
-                                    saveCurrentPdp({...currentPdp, entrepriseutilisatrice: entreprise});
-                                    setIsChanged(true);
-                            }}
-                        >
-                            <MenuItem value="">Select an Entreprise</MenuItem>
-                            {entreprises && entreprises.map((entreprise: Entreprise) => (
-                                <MenuItem key={entreprise.id as number} value={entreprise.id as number}>
-                                    {`${entreprise.nom || "No Name"} (${entreprise.id})`}
-                                </MenuItem>
-                            ))}
-                        </Select>*/}
 
                         <SelectEntreprise entreprises={entreprises} label={""} selectedEntrepriseId={currentPdp?.entrepriseutilisatrice?.id as number} onSelectEntreprise={(entreprise: Entreprise | null) => {
                             if(entreprise) saveCurrentPdp({...currentPdp, entrepriseutilisatrice: entreprise});
@@ -104,11 +75,11 @@ const Step1 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
 
                     </VerticalBox>
                     </Grid>
-                    <SelectOrCreateEntreprise open={openCreateEntreprise} setOpen={setOpenCreateEntreprise} savePdp={saveCurrentPdp} setIsChanged={setIsChanged} currentPdp={currentPdp} where={'entrepriseexterieure'}/>
+                    <SelectOrCreateEntreprise open={openCreateEntreprise} setOpen={setOpenCreateEntreprise} savePdp={saveCurrentPdp} setIsChanged={setIsChanged} currentPdp={currentPdp as Pdp} where={'entrepriseexterieure'}/>
 
 
                     {
-                        currentPdp?.entrepriseexterieure && currentPdp.entrepriseexterieure.length > 0 && currentPdp.entrepriseexterieure.map((entreprise: Entreprise, index:number) => (
+                        currentPdp?.entrepriseexterieure && currentPdp.entrepriseexterieure.length > 0 ? currentPdp.entrepriseexterieure.map((entreprise: Entreprise, index:number) => (
                             <Grid size={{xs:12, sm:6, md:4, lg:4}} key={index}>
                             <VerticalBox
                                 gap={"16px"}
@@ -147,8 +118,19 @@ const Step1 = ({currentPdp, save,saveCurrentPdp, setIsChanged}:StepsProps) => {
 
                             </VerticalBox>
                             </Grid>
-                        ))
-
+                        )) :
+                            <Grid size={{xs:12, sm:6, md:4, lg:4}}>
+                                <VerticalBox
+                                    gap={"16px"}
+                                    width={"100%"}
+                                    padding={"0 20px 0 20px"}
+                                    display={"flex"}
+                                    justifyContent={"center"}
+                                    alignItems={"center"}
+                                >
+                            <Typography variant={'h6'}>Aucune entreprise exterieure</Typography>
+                                </VerticalBox>
+                            </Grid>
 
                     }
                     <Grid size={{xs:12, sm:6, md:4, lg:3}}>

@@ -1,19 +1,55 @@
-import {Box, Card, Select} from "@mui/material";
-import Grid from "@mui/material/Grid2";
+import {
+    Box,
+    Button,
+    Card,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    Select
+} from "@mui/material";
 import worning from "../../assets/wornings/worning.webp"
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import MenuItem from "@mui/material/MenuItem";
-import {ImageModel} from "../../utils/image/ImageModel.ts";
-import Risque from "../../utils/Risque/Risque.ts";
 import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
+import {useState} from "react";
+import {Pdp} from "../../utils/pdp/Pdp.ts";
+import usePdp from "../../hooks/usePdp.ts";
+import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
 
 interface RisqueProps {
    risque:ObjectAnswered
-    onSelectChange: (value:boolean) => void;
+
+   currentPdp: Pdp;
+    saveCurrentPdp: (pdp: Pdp) => void;
+    setIsChanged: (isChanged: boolean) => void;
 }
 
-const RisqueComponent = ({risque,onSelectChange}:RisqueProps) => {
+const RisqueComponent = ({risque,currentPdp, saveCurrentPdp, setIsChanged}:RisqueProps) => {
+
+   const [openDialog, setOpenDialog] = useState(false);
+
+   const {unlinkObjectFromPdp} = usePdp();
+
+    const handleDeleteClick = () => {
+         setOpenDialog(true);
+    }
+    const handleConfirmDelete = () => {
+        unlinkObjectFromPdp(risque?.id,currentPdp?.id as number, ObjectAnsweredObjects.RISQUE).then(() => {
+
+            saveCurrentPdp({
+                ...currentPdp,
+                risques: currentPdp["risques"]?.filter((p:ObjectAnswered) => p?.id !== risque?.id)
+            });
+            setIsChanged(true);
+        })
+
+        setOpenDialog(false);
+    }
+
     return (
         <Box display={"flex"} alignItems={'center'}
             width={'100%'}
@@ -53,7 +89,19 @@ const RisqueComponent = ({risque,onSelectChange}:RisqueProps) => {
 
                             onChange={e => {
 
-                                onSelectChange(e.target.value === 1);
+                                //onSelectChange(e.target.value === 1);
+
+                                currentPdp?.risques?.map((r: ObjectAnswered) => {
+                                    if (r.id === risque.id) {
+                                        r.answer = e.target.value === 1;
+                                    }
+                                });
+
+                                saveCurrentPdp({
+                                    ...currentPdp,
+                                    risques: currentPdp.risques,
+                                } as Pdp);
+                                setIsChanged(true);
 
                             }}
                     >
@@ -61,7 +109,39 @@ const RisqueComponent = ({risque,onSelectChange}:RisqueProps) => {
                         <MenuItem value={1}>Oui</MenuItem>
                     </Select>
                 </CardContent>
+
             </Card>
+
+
+            <Button
+                color={"error"}
+                onClick={() => handleDeleteClick()}
+                startIcon={<RemoveCircleIcon/>}
+                sx={{
+                    height: '5rem',
+                }}
+            ></Button>
+
+
+
+            {/* Confirmation Dialog */}
+            <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+                <DialogTitle>Confirm Deletion</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Are you sure you want to delete this item? This action cannot be undone.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenDialog(false)} color="primary">
+                        Cancel
+                    </Button>
+                    <Button onClick={handleConfirmDelete} color="error">
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
 
 
         </Box>

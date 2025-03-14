@@ -1,3 +1,4 @@
+/*
 import {Box, Card, Checkbox, Select} from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import worning from "../../assets/wornings/worning.webp"
@@ -55,4 +56,26 @@ const DispositifComponent = ({dispositif,onSelectChange}:DispositifProps) => {
     );
 }
 
-export default DispositifComponent;
+export default DispositifComponent;*/
+
+import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+import ObjectAnsweredComponent from "./ObjectAnsweredComponent.tsx";
+import {Pdp} from "../../utils/pdp/Pdp.ts";
+import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
+
+interface PapierDemanderProps {
+    dispositif: ObjectAnswered;
+    currentPdp:Pdp;
+    saveCurrentPdp: (pdp:Pdp) => void;
+    setIsChanged: (value:boolean) => void;
+}
+const PapierDemander = ({dispositif,setIsChanged, currentPdp, saveCurrentPdp}:PapierDemanderProps) => {
+
+
+
+    return (
+        <ObjectAnsweredComponent item={dispositif} type={ObjectAnsweredObjects.DISPOSITIF} saveCurrentPdp={saveCurrentPdp} currentPdp={currentPdp} setIsChanged={setIsChanged} />
+    )
+}
+
+export default PapierDemander;

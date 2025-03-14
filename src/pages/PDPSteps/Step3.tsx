@@ -12,7 +12,6 @@ import Cas from "../../components/static/Cas.tsx";
 import Button from "@mui/material/Button";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import RisqueComponent from "../../components/Steps/RisqueComponent.tsx";
-import Dispositive from "../../components/Steps/Dispositive.tsx";
 import useRisque from "../../hooks/useRisque.ts";
 import Risque from "../../utils/Risque/Risque.ts";
 import {useEffect, useState} from "react";
@@ -65,29 +64,36 @@ const [openSelectOrCreateRisque, setOpenSelectOrCreateRisque] = useState(false);
 
             <Grid p={2} justifyContent={'space-between'} container spacing={2} size={{xs:6,md:12}}>
                 <Grid container spacing={2}>
-                    {currentPdp?.risques && currentPdp?.risques?.map((risque: ObjectAnswered, index) => (
+                    {currentPdp?.risques && currentPdp?.risques.length > 0 ? currentPdp?.risques?.map((risque: ObjectAnswered, index) => (
                         <Grid key={index} size={{sm:6,md:6}}>
+
+
                             <RisqueComponent
                                 risque={risque}
-                                onSelectChange={(value: boolean) => {
-                                    console.log(value);
-                                    currentPdp?.risques?.map((r: ObjectAnswered) => {
-                                        if (r.id === risque.id) {
-                                            r.answer = value;
-                                        }
-                                    });
-
-                                    console.log(currentPdp);
-
-                                    saveCurrentPdp({
-                                        ...currentPdp,
-                                        risques: currentPdp.risques,
-                                    } as Pdp);
-                                    setIsChanged(true);
-                                }}
+                                currentPdp={currentPdp as Pdp}
+                                saveCurrentPdp={saveCurrentPdp}
+                                setIsChanged={setIsChanged}
                             />
                         </Grid>
-                    ))}
+                    )) :
+
+                        <Box sx={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            height: 100,
+                            width: '55rem',
+                            border: 1,
+                            borderColor: 'grey.500',
+                            borderRadius: 1,
+                        }
+                        }>
+                            <Typography>Aucun risque ajouté</Typography>
+                        </Box>
+
+
+
+                    }
                 </Grid>
 
             </Grid>
@@ -100,7 +106,7 @@ const [openSelectOrCreateRisque, setOpenSelectOrCreateRisque] = useState(false);
             <Divider/>
             <SelectOrCreateRisque open={openSelectOrCreateRisque} setOpen={setOpenSelectOrCreateRisque} currentPdp={currentPdp as Pdp}
                                   setIsChanged={setIsChanged}
-                                  savePdp={saveCurrentPdp}/>
+                                  savePdp={saveCurrentPdp} />
 
 
             <TitleHeading title={"DISPOSITIFS DE SÉCURITÉ A FOURNIR PAR L'EE"} severity={"indecation"} />
@@ -108,25 +114,28 @@ const [openSelectOrCreateRisque, setOpenSelectOrCreateRisque] = useState(false);
 
             <Grid p={2} justifyContent={'space-between'} container spacing={2} size={{xs:6,md:12}}>
                 {
-                    currentPdp?.dispositifs && currentPdp?.dispositifs?.map((dispo, index) => (
+                    currentPdp?.dispositifs && currentPdp?.dispositifs.length > 0 ? currentPdp?.dispositifs?.map((dispo, index) => (
                         <Grid key={index} size={{sm:6,md:6}}>
-                            <DispositifComponent dispositif={dispo} onSelectChange={
-                                (value: boolean) => {
-                                    currentPdp?.dispositifs?.map((d: ObjectAnswered) => {
-                                        if (d.id === dispo.id) {
-                                            d.answer = value;
-                                        }
-                                    });
-
-                                    saveCurrentPdp({
-                                        ...currentPdp,
-                                        dispositifs: currentPdp.dispositifs,
-                                    } as Pdp);
-                                    setIsChanged(true);
-                                }
-                            }/>
+                            <DispositifComponent dispositif={dispo}
+                                                saveCurrentPdp={saveCurrentPdp}
+                                                setIsChanged={setIsChanged}
+                                                currentPdp={currentPdp as Pdp}
+                            />
                         </Grid>
-                    ))
+                    )) :  <Box sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: 100,
+                        width: '55rem',
+                        border: 1,
+                        borderColor: 'grey.500',
+                        borderRadius: 1,
+                    }
+                    }>
+                        <Typography>Aucun dispositif ajouté</Typography>
+                    </Box>
+
 
 
                 }
@@ -139,7 +148,7 @@ const [openSelectOrCreateRisque, setOpenSelectOrCreateRisque] = useState(false);
                 <SelectOrCreateDispositif setIsChanged={setIsChanged} open={openSelectOrCreateDispositif} setOpen={setOpenSelectOrCreateDispositif} currentPdp={currentPdp as Pdp} savePdp={(pdp)=>{
                     saveCurrentPdp(pdp);
                     setIsChanged(true);
-                }} where={"risques"}/>
+                }}/>
 
             </Grid>
         </Box>

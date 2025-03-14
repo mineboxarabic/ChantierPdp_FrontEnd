@@ -1,3 +1,4 @@
+/*
 import {Box, Card, FormControlLabel, Select} from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import worning from "../../assets/wornings/worning.webp"
@@ -44,4 +45,4 @@ const Dispositive = ({dispositifAnswered,onSelectChange}:DispositifProps) => {
     );
 }
 
-export default Dispositive;
+export default Dispositive;*/
