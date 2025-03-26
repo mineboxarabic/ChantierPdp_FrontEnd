@@ -14,6 +14,8 @@ import {LoadingProvider} from "./hooks/useLoading.tsx";
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
+        <ThemeProvider theme={theme}>
+
             <NotificationsProvider>
                     <LoadingProvider>
 
@@ -30,6 +32,6 @@ createRoot(document.getElementById('root')!).render(
         </AuthProvider>
                     </LoadingProvider>
             </NotificationsProvider>
-
+        </ThemeProvider>
     </StrictMode>,
 )

@@ -11,6 +11,8 @@ import {PdpDTO} from "../utils/pdp/PdpDTO.ts";
 import ObjectAnswered from "../utils/pdp/ObjectAnswered.ts";
 import ObjectAnsweredEntreprises from "../utils/pdp/ObjectAnsweredEntreprises.ts";
 import ObjectAnsweredObjects from "../utils/ObjectAnsweredObjects.ts";
+import useEntreprise from "./useEntreprise.ts";
+import {Entreprise} from "../utils/entreprise/Entreprise.ts";
 
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -24,6 +26,9 @@ const usePdp = ()=>{
 
     const notifications = useNotifications();
     const {fetch,responseAxios,errorAxios,loadingAxios} = useAxios<AxiosResponseState<PdpResponse>>();
+
+    //Services
+    const entrepiseService = useEntreprise();
 
 
     useEffect(() => {
@@ -63,7 +68,7 @@ const usePdp = ()=>{
     }
 
     const getPlanDePrevention = async (id:number):Promise<Pdp> =>{
-        return fetch('api/pdp/' + id, 'GET', null,
+        const pdp:Pdp = await fetch('api/pdp/' + id, 'GET', null,
             [{
                 status: 404,
                 message: 'Error pdp not found',
@@ -74,7 +79,6 @@ const usePdp = ()=>{
                 }
             ]).then((response:AxiosResponseState<PdpResponse> | null): Pdp =>{
                 setReponse(response?.data?.data as Pdp);
-
                 return response?.data?.data as Pdp;
 
         }).catch(e=>{
@@ -85,10 +89,15 @@ const usePdp = ()=>{
 
                 notifications.show('Error while getting pdp', {severity: 'error'});
             }
-        }) as Promise<Pdp>;
+        }) as Pdp;
 
 
+        if(pdp.entrepriseExterieure && pdp.entrepriseExterieure.id){
+            const entreprise:Entreprise = await entrepiseService.getEntreprise(pdp.entrepriseExterieure.id);
+            pdp.entrepriseExterieureEnt = entreprise;
+        }
 
+        return pdp;
     }
 
     const getAllPDPs = async ():Promise<Pdp[]> => {
@@ -117,7 +126,7 @@ const usePdp = ()=>{
         }) as Promise<Pdp[]>;
     }
 
-    const createPdp = (pdpData:PdpDTO): Promise<Pdp>=>{
+    const createPdp = (pdpData:Pdp): Promise<Pdp>=>{
        return fetch('api/pdp/', 'POST', pdpData,
             [{
                 status: 409,

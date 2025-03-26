@@ -1,6 +1,7 @@
 
 import Risque from "../Risque/Risque.ts";
 import {AuditSecu} from "./AuditSecu.ts";
+import {EntityRef} from "../EntityRef.ts";
 
 class ComplementOuRappel {
     id?: number;
@@ -15,8 +16,8 @@ class ComplementOuRappel {
 export class BDT {
     id?: number;
     nom?: string;
-    risques?: Risque[];
-    auditSecu?: AuditSecu[];
+    risques?: EntityRef[];
+    auditSecu?: EntityRef[];
     complementOuRappels?: ComplementOuRappel[];
 
     constructor() {

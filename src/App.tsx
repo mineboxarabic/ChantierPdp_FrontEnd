@@ -15,62 +15,49 @@ import Step4 from "./pages/PDPSteps/Step4.tsx";
 import Step5 from "./pages/PDPSteps/Step5.tsx";
 import Step6 from "./pages/PDPSteps/Step6.tsx";
 import Steps from "./pages/PDPSteps/Steps.tsx";
-import ViewAllEntreprises from "./pages/Entreprise/ViewAllEntreprises.tsx";
-import ViewAllUser from "./pages/User/ViewAllUser.tsx";
-import ViewAllRisques from "./pages/Risque/ViewAllRsiques.tsx";
-import ViewAllLocalisations from "./pages/Localisation/ViewAllLocalisations.tsx";
-import ViewAllPermits from "./pages/Permit/ViewAllPermits.tsx";
-import LivePDFPreview from "./PDF/LivePDFPreview.tsx";
+import {Font} from "@react-pdf/renderer";
+import {getRouteLists} from "./Routes.tsx";
 
-import { Font } from "@react-pdf/renderer";
-import ViewAllPdps from "./pages/PDP/ViewAllPdps.tsx";
-import StepsBDT from "./pages/BDT/StepsBDT.tsx";
-import CreateChantier from "./pages/Chantier/createChantier.tsx";
 Font.register({
     family: "Inter",
     src: "/fonts/Inter-Regular.ttf", // Ensure this path is correct
 });
 
 
+const { protectedRoutes, publicRoutes } = getRouteLists();
+
+
 
 function App() {
-//  const [count, setCount] = useState(0)
-
     return (
-    <>
-     <Router>
-         <Routes>
+        <Router>
+            <Routes>
+                {/* Protected routes with mustLogin=true */}
+                <Route path="/" element={<Layout mustLogin />}>
+                    {protectedRoutes.map((route, index) => (
+                        <Route
+                            key={index}
+                            path={route.path === "/" ? "" : route.path}
+                            element={route.element}
+                            index={route.path === "/"}
+                        />
+                    ))}
+                </Route>
 
-             <Route path="/" element={<Layout mustLogin />}>
-                 <Route index element={<Home />} />
-                 <Route path="create/pdp" element={<Steps />} />
-                 <Route path="create/pdp/:pdpId/:pageNumber" element={<Steps />} />
+                {/* Public routes with mustLogin=false */}
+                <Route path="/" element={<Layout mustLogin={false} />}>
+                    {publicRoutes.map((route, index) => (
+                        <Route
+                            key={index}
+                            path={route.path}
+                            element={route.element}
+                        />
+                    ))}
+                </Route>
+            </Routes>
+        </Router>
+    );
 
-                 <Route path="create/bdt/:bdtId/:pageNumber" element={<StepsBDT />} />
-
-                 <Route path={"create/chantier"} element={<CreateChantier/>}/>
-
-                 <Route path={"profile"} element={<ProfilePage/>}/>
-                 <Route path={"view/entreprises"} element={<ViewAllEntreprises/>}/>
-                    <Route path={"view/users"} element={<ViewAllUser/>}/>
-                 <Route path={"view/risques"} element={<ViewAllRisques/>}/>
-                 <Route path={"view/localisations"} element={<ViewAllLocalisations/>}/>
-                 <Route path={"view/permits"} element={<ViewAllPermits/>}/>
-                 <Route path={"view/pdps"} element={<ViewAllPdps/>}/>
-                 <Route path="preview/pdf" element={<LivePDFPreview />} />
-
-
-             </Route>
-
-
-             <Route path="/" element={<Layout mustLogin={false} />}>
-                 <Route path="/login" element={<Login />} />
-                 <Route path="register" element={<Register />} />
-             </Route>
-         </Routes>
-     </Router>
-    </>
-  )
 }
 
-export default App
+export default App;

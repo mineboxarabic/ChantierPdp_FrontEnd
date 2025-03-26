@@ -41,46 +41,6 @@ export const useAxios  =<T = any> () => {
     }, []);
 
 
-    useEffect(() => {
-        // Add request interceptor
-        const requestInterceptor = axios.interceptors.request.use(
-            (config) => {
-                // You can add any global request logic here if needed
-                return config;
-            },
-            (error) => {
-                return Promise.reject(error);
-            }
-        );
-
-        // Add response interceptor
-        const responseInterceptor = axios.interceptors.response.use(
-            (response) => {
-
-                return response; // continue normally if response is valid
-
-            },
-            (error: AxiosError) => {
-                if (error.response?.status === 401) {
-                    // If 401, remove token from localStorage
-                    localStorage.removeItem("token");
-                    notifications.show("Session expired. Please log in again.", { severity: "error" });
-                }
-
-                if(error.response?.status === 403){
-                    notifications.show("You are not authorized to access this resource: Try relogging in.", { severity: "error" });
-                }
-
-                return Promise.reject(error); // Ensure the error is propagated to the .catch block
-            }
-        );
-
-        // Cleanup interceptors on component unmount
-        return () => {
-            axios.interceptors.request.eject(requestInterceptor);
-            axios.interceptors.response.eject(responseInterceptor);
-        };
-    }, [notifications]);
 
     const fetch = async (
         url: string,
@@ -97,7 +57,25 @@ export const useAxios  =<T = any> () => {
             return response;
         })
             .catch((err: AxiosError) => {
-            console.log(err);
+                console.log(err);
+                // Check for token expiration (status 401 Unauthorized)
+                if (err.response?.status === 401) {
+                    const tokenExpiredMessage = "Your session has expired. Please log in again.";
+                    setErrorAxios(tokenExpiredMessage);
+                    notifications.show(tokenExpiredMessage, { severity: "error" });
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
+                    // You could also trigger a logout action here if needed
+                    return null;
+                }
+
+                if(err.response?.status === 403){
+                    const forbiddenMessage = "You are not allowed to perform this action.";
+                    setErrorAxios(forbiddenMessage);
+                    notifications.show(forbiddenMessage, { severity: "error" });
+                    return null;
+                }
+
                 if (!err.response) {
                     // Handle no internet connection
                     const noConnectionMessage = "No connection to the server. Please check your internet connection.";
@@ -114,7 +92,7 @@ export const useAxios  =<T = any> () => {
                         }
                         else if(errorMapper[i].status === -1 && !statusExistsInMapper){
                             notifications.show(errorMapper[i].message, { severity: "error" });
-                           setErrorAxios(errorMapper[i].message)
+                            setErrorAxios(errorMapper[i].message)
                         }
                     }
                 }else{
@@ -125,7 +103,7 @@ export const useAxios  =<T = any> () => {
 
 
 
-        }).finally(()=>{setLoadingAxios(false)});
+            }).finally(()=>{setLoadingAxios(false)});
 
         if(result){
             setResponseAxios(result as T);

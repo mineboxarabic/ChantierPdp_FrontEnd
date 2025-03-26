@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
 import Chantier from "../utils/Chantier/Chantier.ts";
 import { AxiosResponseState } from "../utils/AxiosResponse.ts";
+import usePdp from "./usePdp.ts";
+import {Pdp} from "../utils/pdp/Pdp.ts";
 
 type ChantierResponse = Chantier | Chantier[] | number | boolean | null;
 
@@ -13,6 +15,9 @@ const useChantier = () => {
 
     const notifications = useNotifications();
     const { fetch, responseAxios, errorAxios, loadingAxios } = useAxios<AxiosResponseState<ChantierResponse>>();
+
+    //Services
+    const pdpService = usePdp();
 
     useEffect(() => {
         if (responseAxios) {
@@ -25,6 +30,7 @@ const useChantier = () => {
     }, [responseAxios, errorAxios, loadingAxios]);
 
     const saveChantier = async (chantier: Chantier, id: number): Promise<AxiosResponseState<ChantierResponse>> => {
+        console.log("Chantier saveChantier", chantier);
         return fetch(`api/chantier/${id}`, "PATCH", chantier, [
             {
                 status: 409,
@@ -47,7 +53,7 @@ const useChantier = () => {
     };
 
     const getChantier = async (id: number): Promise<Chantier> => {
-        return fetch(`api/chantier/${id}`, "GET", null, [
+        const chantier:Chantier =  await fetch(`api/chantier/${id}`, "GET", null, [
             {
                 status: 404,
                 message: "Error chantier not found",
@@ -59,12 +65,26 @@ const useChantier = () => {
         ])
             .then((response: AxiosResponseState<ChantierResponse> | null): Chantier => {
                 setResponse(response?.data?.data as Chantier);
+                console.log("Chantier getChantier", response?.data);
                 return response?.data?.data as Chantier;
             })
             .catch((e) => {
                 setError(e);
                 notifications.show("Error while getting chantier", { severity: "error" });
-            }) as Promise<Chantier>;
+            }) as Chantier;
+
+
+
+        if(chantier.pdp && chantier.pdp.length > 0){
+            const pdpEnts:Pdp[] = [];
+            for (const pdp of chantier.pdp) {
+                const pdpEnt = await pdpService.getPlanDePrevention(pdp.id);
+                pdpEnts.push(pdpEnt);
+            }
+            chantier.pdpEnts = pdpEnts;
+        }
+
+        return chantier;
     };
 
     const getAllChantiers = async (): Promise<Chantier[]> => {

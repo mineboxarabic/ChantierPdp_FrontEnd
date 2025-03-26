@@ -33,7 +33,7 @@ const useEntreprise = ()=>{
     }, [responseAxios, errorAxios, loadingAxios]);
 
 
-    const getEntreprise = async (id:number) : Promise<EntrepriseDTO> => {
+    const getEntreprise = async (id:number) : Promise<Entreprise> => {
 
         return fetch(`api/entreprise/${id}`, 'GET', null, [
             {
@@ -46,10 +46,10 @@ const useEntreprise = ()=>{
             }
         ]).then(r => {
             if(r != undefined){
-                setReponse(r.data?.data as EntrepriseDTO);
+                setReponse(r.data?.data as Entreprise);
                 return r;
             }
-        }) as Promise<EntrepriseDTO>;
+        }) as Promise<Entreprise>;
     }
 
 
