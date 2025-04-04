@@ -14,9 +14,8 @@ import { useNotifications } from "@toolpad/core/useNotifications";
 import useEntreprise from "../../hooks/useEntreprise";
 import useUser from "../../hooks/useUser";
 import defaultImage from "../../assets/default_entreprise_image.png";
-import { Entreprise } from "../../utils/entreprise/Entreprise.ts";
-import EntrepriseMapper from "../../utils/entreprise/EntrepriseMapper.ts";
-import User from "../../utils/user/User.ts";
+import { Entreprise } from "../../utils/entities/Entreprise.ts";
+import User from "../../utils/entities/User.ts";
 
 import Grid from "@mui/material/Grid2";
 interface EditEntrepriseProps {

@@ -3,7 +3,7 @@ import Grid from "@mui/material/Grid2";
 import { useEffect, useState } from "react";
 import { Typography, Box } from "@mui/material";
 import usePdp from "../../hooks/usePdp.ts";
-import {Pdp} from "../../utils/pdp/Pdp.ts";
+import {Pdp} from "../../utils/entities/Pdp.ts";
 import PdpDataGrid from "../../components/Pdp/PdpDataGrid.tsx";
 
 const ViewAllPdps = () => {

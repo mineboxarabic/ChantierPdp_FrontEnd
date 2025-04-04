@@ -22,7 +22,7 @@ interface SelectOrCreateEntrepriseProps {
     open: boolean;
     currentPdp: any;
     setOpen: (open: boolean) => void;
-    savePdp: (pdp: any) => void;
+    savePdp: (pdps: any) => void;
     where: string;
     setIsChanged: (isChanged: boolean) => void;
 }
@@ -177,10 +177,10 @@ import useEntreprise from "../../hooks/useEntreprise.ts";
 import usePdp from "../../hooks/usePdp.ts";
 import {useState} from "react";
 import SelectOrCreate from "./SelectOrCreate.tsx";
-import {Entreprise} from "../../utils/entreprise/Entreprise.ts";
+import {Entreprise} from "../../utils/entities/Entreprise.ts";
 import defaultImage from "../../assets/default_entreprise_image.png";
 import EditEntreprise from "../Entreprise/EditEntreprise.tsx";
-import {Pdp} from "../../utils/pdp/Pdp.ts";
+import {Pdp} from "../../utils/entities/Pdp.ts";
 interface SelectOrCreateEntrepriseProps {
     open: boolean;
     setOpen: (open: boolean) => void;

@@ -5,7 +5,7 @@ import Typography from "@mui/material/Typography";
 import CardActions from "@mui/material/CardActions";
 import Button from "@mui/material/Button";
 import CardMedia from "@mui/material/CardMedia";
-import  User  from "../../utils/user/User.ts";
+import  User  from "../../utils/entities/User.ts";
 import defaultUserImage from "../../assets/default-user.jpg";
 import Box from "@mui/material/Box";
 import EditUser from "./EditUser";

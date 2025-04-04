@@ -1,5 +1,5 @@
 import {ImageModel} from "../image/ImageModel.ts";
-import User from "../user/User.ts";
+import User from "./User.ts";
 import {EntityRef} from "../EntityRef.ts";
 
 class Signature {

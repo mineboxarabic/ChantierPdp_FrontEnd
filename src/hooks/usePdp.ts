@@ -5,14 +5,14 @@ import {useEffect, useState} from "react";
 
 import { useNotifications } from '@toolpad/core/useNotifications';
 import useLocalStorage from "./useLocalStorage.ts";
-import {Pdp} from "../utils/pdp/Pdp.ts";
+import {Pdp} from "../utils/entities/Pdp.ts";
 import {AxiosResponseState} from "../utils/AxiosResponse.ts";
-import {PdpDTO} from "../utils/pdp/PdpDTO.ts";
+import {PdpDTO} from "../utils/entitiesDTO/PdpDTO.ts";
 import ObjectAnswered from "../utils/pdp/ObjectAnswered.ts";
 import ObjectAnsweredEntreprises from "../utils/pdp/ObjectAnsweredEntreprises.ts";
 import ObjectAnsweredObjects from "../utils/ObjectAnsweredObjects.ts";
 import useEntreprise from "./useEntreprise.ts";
-import {Entreprise} from "../utils/entreprise/Entreprise.ts";
+import {Entreprise} from "../utils/entities/Entreprise.ts";
 
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -27,8 +27,7 @@ const usePdp = ()=>{
     const notifications = useNotifications();
     const {fetch,responseAxios,errorAxios,loadingAxios} = useAxios<AxiosResponseState<PdpResponse>>();
 
-    //Services
-    const entrepiseService = useEntreprise();
+    const [pdps, setPdps] = useState<Map<number, Pdp>>(new Map<number, Pdp>);
 
 
     useEffect(() => {
@@ -45,23 +44,25 @@ const usePdp = ()=>{
     const savePdp = async (pdp: Pdp, id:number) : Promise<AxiosResponseState<PdpResponse>> => {
 
 
-        //const pdpD:PdpData = pdp.createObject();
+        //const pdpD:PdpData = pdps.createObject();
         return fetch(`api/pdp/${id}`, 'PATCH', pdp, [
             {
                 status: 409,
-                message: 'SavePdp : Error pdp already exists',
+                message: 'SavePdp : Error pdps already exists',
             },
             {
                 status: 404,
-                message: 'SavePdp : Error pdp or api link not found',
+                message: 'SavePdp : Error pdps or api link not found',
             },
             {
                 status: -1,
-                message: 'SavePdp : Error while saving pdp',
+                message: 'SavePdp : Error while saving pdps',
             }
         ]).then(r => {
             if(r != undefined){
                 setReponse(r.data?.data as PdpDTO);
+
+
                 return r;
             }
         }) as Promise<AxiosResponseState<PdpResponse>>;
@@ -71,11 +72,11 @@ const usePdp = ()=>{
         const pdp:Pdp = await fetch('api/pdp/' + id, 'GET', null,
             [{
                 status: 404,
-                message: 'Error pdp not found',
+                message: 'Error pdps not found',
             },
                 {
                     status: -1,
-                    message: 'Error while getting pdp',
+                    message: 'Error while getting pdps',
                 }
             ]).then((response:AxiosResponseState<PdpResponse> | null): Pdp =>{
                 setReponse(response?.data?.data as Pdp);
@@ -84,18 +85,13 @@ const usePdp = ()=>{
         }).catch(e=>{
             setError(e);
             if(e.status === 404){
-                notifications.show('Error pdp not found', {severity:'error'});
+                notifications.show('Error pdps not found', {severity:'error'});
             }else{
 
-                notifications.show('Error while getting pdp', {severity: 'error'});
+                notifications.show('Error while getting pdps', {severity: 'error'});
             }
         }) as Pdp;
 
-
-        if(pdp.entrepriseExterieure && pdp.entrepriseExterieure.id){
-            const entreprise:Entreprise = await entrepiseService.getEntreprise(pdp.entrepriseExterieure.id);
-            pdp.entrepriseExterieureEnt = entreprise;
-        }
 
         return pdp;
     }
@@ -104,24 +100,31 @@ const usePdp = ()=>{
         return fetch('api/pdp/all', 'GET', null,
             [{
                 status: 404,
-                message: 'Error pdp not found',
+                message: 'Error pdps not found',
             },
                 {
                     status: -1,
-                    message: 'Error while getting pdp',
+                    message: 'Error while getting pdps',
                 }
             ]).then((response:AxiosResponseState<PdpResponse> | null): Pdp[] =>{
             setReponse(response?.data?.data as Pdp[]);
+            (response?.data?.data as Pdp[]).forEach(pdp => {
+
+                if(pdp.id){
+                    pdps.set(pdp.id, pdp);
+                }
+
+            });
 
             return response?.data?.data as Pdp[];
 
         }).catch(e=>{
             setError(e);
             if(e.status === 404){
-                notifications.show('Error pdp not found', {severity:'error'});
+                notifications.show('Error pdps not found', {severity:'error'});
             }else{
 
-                notifications.show('Error while getting pdp', {severity: 'error'});
+                notifications.show('Error while getting pdps', {severity: 'error'});
             }
         }) as Promise<Pdp[]>;
     }
@@ -130,11 +133,11 @@ const usePdp = ()=>{
        return fetch('api/pdp/', 'POST', pdpData,
             [{
                 status: 409,
-                message: 'Error pdp already exists',
+                message: 'Error pdps already exists',
             },
                 {
                     status: 404,
-                    message: 'Error pdp or api link not found',
+                    message: 'Error pdps or api link not found',
                 }
             ]).then(r => {
             if(r != undefined){
@@ -149,11 +152,11 @@ const usePdp = ()=>{
         return fetch('api/pdp/' + id, 'DELETE', null,
             [{
                 status: 409,
-                message: 'Error pdp already exists',
+                message: 'Error pdps already exists',
             },
                 {
                     status: 404,
-                    message: 'Error pdp or api link not found',
+                    message: 'Error pdps or api link not found',
                 }
             ]).then(r => {}) as Promise<void>;
     }
@@ -162,11 +165,11 @@ const usePdp = ()=>{
         return fetch('api/pdp/last', 'GET', null,
             [{
                 status: 404,
-                message: 'Error pdp or api link not found',
+                message: 'Error pdps or api link not found',
             },
                 {
                     status: -1,
-                    message: 'Error while getting last pdp',
+                    message: 'Error while getting last pdps',
                 }
             ]).then((response:AxiosResponseState<PdpResponse> | null)=>{
             if(response?.status === 200){
@@ -185,7 +188,7 @@ const usePdp = ()=>{
         return fetch('api/pdp/recent', 'GET', null,
             [{
                 status: 404,
-                message: 'Error pdp or api link not found',
+                message: 'Error pdps or api link not found',
             },
                 {
                     status: -1,
@@ -207,11 +210,11 @@ const usePdp = ()=>{
         return fetch('api/pdp/' + pdpId + '/risque/' + risqueId, 'POST', null,
             [{
                 status: 409,
-                message: 'Error pdp already exists',
+                message: 'Error pdps already exists',
             },
                 {
                     status: 404,
-                    message: 'Error pdp or api link not found',
+                    message: 'Error pdps or api link not found',
                 }
             ]).then(r => {
             if(r != undefined){
@@ -225,11 +228,11 @@ const usePdp = ()=>{
         return fetch('api/pdp/' + pdpId + '/dispositif/' + dispositifId, 'POST', null,
             [{
                 status: 409,
-                message: 'Error pdp already exists',
+                message: 'Error pdps already exists',
             },
                 {
                     status: 404,
-                    message: 'Error pdp or api link not found',
+                    message: 'Error pdps or api link not found',
                 }
             ]).then(r => {
             if(r != undefined){
@@ -243,11 +246,11 @@ const usePdp = ()=>{
         return fetch('api/pdp/' + pdpId + '/analyse/' + analyseId, 'POST', null,
             [{
                 status: 409,
-                message: 'Error pdp already exists',
+                message: 'Error pdps already exists',
             },
                 {
                     status: 404,
-                    message: 'Error pdp or api link not found',
+                    message: 'Error pdps or api link not found',
                 }
             ]).then(r => {
             if(r != undefined){
@@ -262,11 +265,11 @@ const usePdp = ()=>{
         return fetch('api/pdp/' + pdpId + '/permit/' + permitId, 'POST', null,
             [{
                 status: 409,
-                message: 'Error pdp already exists',
+                message: 'Error pdps already exists',
             },
                 {
                     status: 404,
-                    message: 'Error pdp or api link not found',
+                    message: 'Error pdps or api link not found',
                 }
             ]).then(r => {
             if(r != undefined){
@@ -280,11 +283,11 @@ const usePdp = ()=>{
         return fetch('api/pdp/' + pdpId + '/permit/' + permitId, 'DELETE', null,
             [{
                 status: 409,
-                message: 'Error pdp already exists',
+                message: 'Error pdps already exists',
             },
                 {
                     status: 404,
-                    message: 'Error pdp or api link not found',
+                    message: 'Error pdps or api link not found',
                 }
             ]).then(r => {
             if(r != undefined){
@@ -299,15 +302,15 @@ const usePdp = ()=>{
         return fetch('api/pdp/' + pdpId + '/object/' + objectId + '/type/' + type.toString(), 'DELETE', null,
             [{
                 status: 409,
-                message: 'Error pdp already exists',
+                message: 'Error pdps already exists',
             },
                 {
                     status: 404,
-                    message: 'Error pdp or api link not found',
+                    message: 'Error pdps or api link not found',
                 },
                 {
                     status: 400,
-                    message: 'Error pdp or api link not found',
+                    message: 'Error pdps or api link not found',
                 }
             ]).then(r => {
             if(r != undefined){
@@ -322,11 +325,11 @@ const usePdp = ()=>{
         return fetch('api/pdp/' + pdpId + '/object/' + objectId + '/type/' + type.toString(), 'POST', null,
             [{
                 status: 409,
-                message: 'Error pdp already exists',
+                message: 'Error pdps already exists',
             },
                 {
                     status: 404,
-                    message: 'Error pdp or api link not found',
+                    message: 'Error pdps or api link not found',
                 }
             ]).then(r => {
             if(r != undefined){
@@ -341,11 +344,11 @@ const usePdp = ()=>{
         return fetch('api/pdp/' +  '/exist' + id, 'GET', null,
             [{
                 status: 404,
-                message: 'Error pdp not found',
+                message: 'Error pdps not found',
             },
                 {
                     status: -1,
-                    message: 'Error while getting pdp',
+                    message: 'Error while getting pdps',
                 }
             ]).then((response:AxiosResponseState<PdpResponse> | null): boolean =>{
             setReponse(response?.data?.data as boolean);
@@ -353,10 +356,10 @@ const usePdp = ()=>{
         }).catch(e=>{
             setError(e);
             if(e.status === 404){
-                notifications.show('Error pdp not found', {severity:'error'});
+                notifications.show('Error pdps not found', {severity:'error'});
             }else{
 
-                notifications.show('Error while getting pdp', {severity: 'error'});
+                notifications.show('Error while getting pdps', {severity: 'error'});
             }
         }) as Promise<boolean>;
     }
@@ -366,11 +369,11 @@ const usePdp = ()=>{
         return fetch('api/pdp/' + pdpId + '/analyse/' + analyseId, 'DELETE', null,
             [{
                 status: 409,
-                message: 'Error pdp already exists',
+                message: 'Error pdps already exists',
             },
                 {
                     status: 404,
-                    message: 'Error pdp or api link not found',
+                    message: 'Error pdps or api link not found',
                 }
             ]).then(r => {
             if(r != undefined){
@@ -380,7 +383,7 @@ const usePdp = ()=>{
         }) as Promise<ObjectAnsweredEntreprises>;
     }
 
-    return {loading,error, response, existPdp,lastId,getAllPDPs,deletePdp,linkAnalyseToPdp,unlinkAnalyseToPdp,unlinkPermitFromPdp,unlinkObjectFromPdp, linkObjectToPdp, linkPermitToPdp, getPlanDePrevention, createPdp, getLastId, linkDispositifToPdp,getRecentPdps, savePdp,linkRisqueToPdp};
+    return {loading,error, response, existPdp,lastId,getAllPDPs,deletePdp,linkAnalyseToPdp,unlinkAnalyseToPdp,unlinkPermitFromPdp,unlinkObjectFromPdp, linkObjectToPdp, linkPermitToPdp, getPlanDePrevention, createPdp, getLastId, linkDispositifToPdp,getRecentPdps, savePdp,linkRisqueToPdp, pdps};
 
 }
 

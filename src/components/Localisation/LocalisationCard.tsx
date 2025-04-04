@@ -4,7 +4,7 @@ import Typography from "@mui/material/Typography";
 import CardActions from "@mui/material/CardActions";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
-import Localisation from "../../utils/Localisation/Localisation.ts";
+import Localisation from "../../utils/entities/Localisation.ts";
 
 interface LocalisationCardProps {
     localisation: Localisation;

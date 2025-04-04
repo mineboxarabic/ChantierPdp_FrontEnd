@@ -6,15 +6,15 @@ import Permit from "../../utils/permit/Permit";
 import usePermit from "../../hooks/usePermit.ts";
 import EditPermit from "../Permit/EditPermit.tsx";
 import defaultImage from "../../assets/default_entreprise_image.png";
-import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
-import { Pdp } from "../../utils/pdp/Pdp.ts";
+import ObjectAnswered from "../../utils/pdps/ObjectAnswered.ts";
+import { Pdp } from "../../utils/pdps/Pdp.ts";
 import usePdp from "../../hooks/usePdp.ts";
 
 interface SelectOrCreatePermitProps {
     open: boolean;
     setOpen: (open: boolean) => void;
     currentPdp: Pdp;
-    savePdp: (pdp: Pdp) => void;
+    savePdp: (pdps: Pdp) => void;
     where: string;
 }
 
@@ -147,10 +147,10 @@ import usePermit from "../../hooks/usePermit.ts";
 import usePdp from "../../hooks/usePdp.ts";
 import {useState} from "react";
 import SelectOrCreate from "./SelectOrCreate.tsx";
-import Permit from "../../utils/permit/Permit.ts";
+import Permit from "../../utils/entities/Permit.ts";
 import defaultImage from "../../assets/default_entreprise_image.png";
 import EditPermit from "../Permit/EditPermit.tsx";
-import {Pdp} from "../../utils/pdp/Pdp.ts";
+import {Pdp} from "../../utils/entities/Pdp.ts";
 import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
 

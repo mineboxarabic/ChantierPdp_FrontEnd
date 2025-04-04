@@ -7,7 +7,7 @@ import Typography from "@mui/material/Typography";
 import MenuItem from "@mui/material/MenuItem";
 import {ImageModel} from "../../utils/image/ImageModel.ts";
 import Dispositif from "../../utils/dispositif/Dispositif.ts";
-import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+import ObjectAnswered from "../../utils/pdps/ObjectAnswered.ts";
 
 interface DispositifProps {
    dispositif:ObjectAnswered
@@ -60,7 +60,7 @@ export default DispositifComponent;*/
 
 import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
 import ObjectAnsweredComponent from "./ObjectAnsweredComponent.tsx";
-import {Pdp} from "../../utils/pdp/Pdp.ts";
+import {Pdp} from "../../utils/entities/Pdp.ts";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
 
 interface PapierDemanderProps {

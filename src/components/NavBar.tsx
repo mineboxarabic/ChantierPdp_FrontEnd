@@ -27,7 +27,9 @@ const pages = [
             { name: 'View Enterprises', link: '/view/entreprises' },
             { name: 'View Localisations', link: '/view/localisations' },
             {name: 'View Permits', link: '/view/permits'},
-            {name: 'View Pdps', link:'/view/pdps'}
+            {name: 'View Pdps', link:'/view/pdps'},
+            {name: 'View  Workers', link:'/view/workers'},
+            {name: "view AuditSecu", link: '/view/auditsecus'},
         ]}
 ];
 const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];

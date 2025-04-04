@@ -31,9 +31,9 @@ import TitleHeading from "../../components/TitleHeading.tsx";
 import AddButtonComponent from "../../components/AddButtonComponent.tsx";
 import SelectEntreprise from "../../components/Entreprise/SelectEntreprise.tsx";
 import SelectOrCreateEntreprise from "../../components/Pdp/SelectOrCreateEntreprise.tsx";
-import { Entreprise } from "../../utils/entreprise/Entreprise.ts";
+import { Entreprise } from "../../utils/entities/Entreprise.ts";
 import useEntreprise from "../../hooks/useEntreprise.ts";
-import { Pdp } from "../../utils/pdp/Pdp.ts";
+import { Pdp } from "../../utils/entities/Pdp.ts";
 import MiseEnDisposition from "../../utils/pdp/MiseEnDisposition.ts";
 import defaultImage from "../../assets/default_entreprise_image.png";
 

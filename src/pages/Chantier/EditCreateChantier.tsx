@@ -7,16 +7,10 @@ import {
     Divider,
     IconButton,
     Paper,
-    Stepper,
-    Step,
-    StepLabel,
     TextField,
     Typography,
     FormControl,
-    InputLabel,
-    Select,
     Chip,
-    FormHelperText,
     Autocomplete,
     Dialog,
     DialogTitle,
@@ -24,7 +18,15 @@ import {
     DialogActions,
     Snackbar,
     Alert,
-    MenuItem, TableContainer, Table, TableHead, TableRow, TableCell, TableBody
+    MenuItem,
+    TableContainer,
+    Table,
+    TableHead,
+    TableRow,
+    TableCell,
+    TableBody,
+    Tabs,
+    Tab
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -38,7 +40,7 @@ import {
     LocationOn,
     Save,
     ArrowBack,
-    ArrowForward, Assignment
+    Assignment
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import useChantier from "../../hooks/useChantier";
@@ -46,18 +48,57 @@ import useEntreprise from "../../hooks/useEntreprise";
 import useUser from "../../hooks/useUser";
 import useBdt from "../../hooks/useBdt";
 import usePdp from "../../hooks/usePdp";
-import Chantier from "../../utils/Chantier/Chantier";
-import { Entreprise } from "../../utils/entreprise/Entreprise";
-import User from "../../utils/user/User";
-import Localisation from "../../utils/Localisation/Localisation";
+import Chantier from "../../utils/entities/Chantier.ts";
+import { Entreprise } from "../../utils/entities/Entreprise.ts";
+import User from "../../utils/entities/User.ts";
+import Localisation from "../../utils/entities/Localisation.ts";
 import dayjs from "dayjs";
 import { styled } from "@mui/material/styles";
 import useLocalisation from "../../hooks/useLocalisation.ts";
-import {BDT} from "../../utils/bdt/BDT.ts";
-import {Pdp} from "../../utils/pdp/Pdp.ts";
+import {BDT} from "../../utils/entities/BDT.ts";
+import {Pdp} from "../../utils/entities/Pdp.ts";
 import {getRoute} from "../../Routes.tsx";
+import SelectOrCreateWorker from "../../components/Pdp/SelectOrCreateWorker.tsx";
+import Worker from "../../utils/entities/Worker.ts";
+import useWoker from "../../hooks/useWoker.ts";
+import chantier from "../../utils/entities/Chantier.ts";
+import WorkerModal from "../Worker/WorkerModal.tsx";
 
-const StepContainer = styled(Paper)(({ theme }) => ({
+// Custom TabPanel component
+interface TabPanelProps {
+    children?: React.ReactNode;
+    index: number;
+    value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+    const { children, value, index, ...other } = props;
+
+    return (
+        <div
+            role="tabpanel"
+            hidden={value !== index}
+            id={`chantier-tabpanel-${index}`}
+            aria-labelledby={`chantier-tab-${index}`}
+            {...other}
+        >
+            {value === index && (
+                <Box sx={{ p: 3 }}>
+                    {children}
+                </Box>
+            )}
+        </div>
+    );
+}
+
+function a11yProps(index: number) {
+    return {
+        id: `chantier-tab-${index}`,
+        'aria-controls': `chantier-tabpanel-${index}`,
+    };
+}
+
+const TabContainer = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(3),
     borderRadius: "16px",
     marginBottom: theme.spacing(3),
@@ -88,17 +129,8 @@ const ListItem = styled(Card)(({ theme }) => ({
     justifyContent: "space-between",
 }));
 
-// Define the steps for the stepper
-const steps = ['Informations générales', 'Entreprises', 'Équipe', 'Localisation'];
-
-// Mock data for localisations
-const mockLocalisations: Localisation[] = [
-    { id: 1, nom: "Site Principal", code: "SITE01", description: "Site principal de production" },
-    { id: 2, nom: "Annexe Nord", code: "SITE02", description: "Annexe nord de stockage" },
-    { id: 3, nom: "Bâtiment C", code: "SITE03", description: "Bâtiment C administratif" },
-];
-
-//interface EditCreateChantierProps {}
+// Define the tabs
+const tabLabels = ['Informations générales', 'Entreprises', 'Équipe', 'Localisation', 'Documents'];
 
 const EditCreateChantier: FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -106,22 +138,21 @@ const EditCreateChantier: FC = () => {
     const isEditMode = !!id;
 
     // State for form
-    const [activeStep, setActiveStep] = useState(0);
+    const [activeTab, setActiveTab] = useState(0);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [showDocumentsTab, setShowDocumentsTab] = useState<boolean>(false);
 
     // Data states
-    const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
     const [users, setUsers] = useState<User[]>([]);
-    const [localisations, setLocalisations] = useState<Localisation[]>(mockLocalisations);
-    const [currentPdp, setCurrentPdp] = useState<Pdp>(new Pdp(0, 0, 0, new Date(), new Date(), "", 0, null, null, [], [], [], [], [], null, null));
     const [currentBdt, setCurrentBdt] = useState<BDT>(new BDT());
+    const [workersOfChantier, setWorkersOfChantier] = useState<Worker[]>([]);
 
     // Chantier data state
     const [formData, setFormData] = useState<Chantier>({
         id: undefined,
-        isAnnuelle:false,
+        isAnnuelle: false,
         nom: "",
         operation: "",
         dateDebut: new Date(),
@@ -134,13 +165,14 @@ const EditCreateChantier: FC = () => {
         localisation: undefined,
         donneurDOrdre: undefined,
         bdts: [],
-        pdp: [],
+        pdps: [],
         pdpEnts: [],
         workers: []
     });
 
     // Dialog state
     const [workerDialogOpen, setWorkerDialogOpen] = useState<boolean>(false);
+    const [workerSelectDialogOpen, setWorkerSelectDialogOpen] = useState<boolean>(false);
     const [currentWorker, setCurrentWorker] = useState<User>(new User());
     const [isNewWorker, setIsNewWorker] = useState<boolean>(true);
     const [pdpDialogOpen, setPdpDialogOpen] = useState<boolean>(false);
@@ -148,11 +180,12 @@ const EditCreateChantier: FC = () => {
 
     // Get hooks
     const { getChantier, createChantier, saveChantier, loading: loadingChantier } = useChantier();
-    const { getAllEntreprises, loading: loadingEntreprises } = useEntreprise();
+    const { getAllEntreprises, loading: loadingEntreprises, entreprises } = useEntreprise();
     const { getUsers, loading: loadingUsers } = useUser();
-    const { getAllLocalisations } = useLocalisation();
-    const { createPdp } = usePdp();
-    const {createBDT} = useBdt();
+    const { getAllLocalisations, localisations } = useLocalisation();
+    const { createPdp, getAllPDPs, pdps } = usePdp();
+    const { createBDT } = useBdt();
+    const { getAllWorkers, getSelectedWorkersForChantier, deselectWorkerFromChantier, workers, workersInChantier } = useWoker();
 
     // Load initial data
     useEffect(() => {
@@ -161,22 +194,19 @@ const EditCreateChantier: FC = () => {
 
             try {
                 // Fetch enterprises
-                const entreprisesData = await getAllEntreprises();
-                if (entreprisesData) {
-                    setEntreprises(entreprisesData);
-                }
+                getAllEntreprises();
+                // Fetch Pdps
+                getAllPDPs();
+                //Localisations
+                getAllLocalisations();
+                //Workers
+                getAllWorkers();
 
                 // Fetch users
                 const usersData = await getUsers();
                 if (usersData) {
                     setUsers(usersData);
                 }
-
-                const locations = await getAllLocalisations();
-                if(locations){
-                    setLocalisations(locations)
-                }
-
 
                 // Load chantier data if in edit mode
                 if (isEditMode && id) {
@@ -193,48 +223,36 @@ const EditCreateChantier: FC = () => {
         };
 
         fetchInitialData();
-
     }, [id, isEditMode]);
 
-    useEffect(()=>{
-        const checkDoc = ()=>{
-            if(formData.nbHeurs && formData?.nbHeurs >= 400 || formData.isAnnuelle){
-                if(steps.indexOf("Documents") === -1){
-                 steps.push("Documents");
-                }
-            }else{
-                if(steps.indexOf("Documents") !== -1) {
-                    steps.splice(steps.indexOf("Documents"), 1);
-                }
-            }
+    useEffect(() => {
+        // Check if Documents tab should be visible
+        if (formData.nbHeurs && formData.nbHeurs >= 400 || formData.isAnnuelle) {
+            setShowDocumentsTab(true);
+        } else {
+            setShowDocumentsTab(false);
         }
-        checkDoc();
-    },[formData]);
 
+        if (isEditMode && id) {
+            getSelectedWorkersForChantier(parseInt(id) as number).then(e => {
+                setWorkersOfChantier(e);
+            });
+        }
+    }, [formData, id, isEditMode]);
 
-
- /*   //Check if the chantier is annuelle
-    const checkIfAnnuelle => {
-
-    };*/
-
-    // Handle stepper navigation
-    const handleNext = () => {
-        if (validateStep(activeStep)) {
-            setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    // Handle tab change
+    const handleChangeTab = (event: React.SyntheticEvent, newValue: number) => {
+        if (validateTab(activeTab)) {
+            setActiveTab(newValue);
         }
     };
 
-    const handleBack = () => {
-        setActiveStep((prevActiveStep) => prevActiveStep - 1);
-    };
-
-    // Form validation for each step
-    const validateStep = (step: number): boolean => {
+    // Form validation for each tab
+    const validateTab = (tab: number): boolean => {
         const newErrors: Record<string, string> = {};
         let isValid = true;
 
-        if (step === 0) {
+        if (tab === 0) {
             // Validate general information
             if (!formData.nom || formData.nom.trim() === "") {
                 newErrors.nom = "Le nom est requis";
@@ -262,7 +280,7 @@ const EditCreateChantier: FC = () => {
             }
         }
 
-        else if (step === 1) {
+        else if (tab === 1) {
             // Validate enterprises
             if (!formData.entrepriseUtilisatrice) {
                 newErrors.entrepriseUtilisatrice = "L'entreprise utilisatrice est requise";
@@ -270,7 +288,7 @@ const EditCreateChantier: FC = () => {
             }
         }
 
-        else if (step === 2) {
+        else if (tab === 2) {
             // Validate team (optional validation based on requirements)
             if (!formData.donneurDOrdre) {
                 newErrors.donneurDOrdre = "Le donneur d'ordre est requis";
@@ -278,7 +296,7 @@ const EditCreateChantier: FC = () => {
             }
         }
 
-        else if (step === 3) {
+        else if (tab === 3) {
             // Validate location
             if (!formData.localisation) {
                 newErrors.localisation = "La localisation est requise";
@@ -307,17 +325,15 @@ const EditCreateChantier: FC = () => {
     };
 
     // Handle external enterprises
-    const handleAddExternalEnterprise = (enterprise: Entreprise) => {
-        if (!enterprise) return;
-
+    const handleAddExternalEnterprise = (entreprise: number) => {
         // Check if enterprise is already added
-        if (formData.entrepriseExterieurs?.find(e => e.id === enterprise.id)) {
+        if (formData.entrepriseExterieurs?.find(e => e.id === entreprise)) {
             return;
         }
 
         setFormData(prev => ({
             ...prev,
-            entrepriseExterieurs: [...(prev.entrepriseExterieurs || []), enterprise]
+            entrepriseExterieurs: [...(prev.entrepriseExterieurs || []), { id: entreprise }]
         }));
     };
 
@@ -343,37 +359,24 @@ const EditCreateChantier: FC = () => {
     };
 
     const handleSaveWorker = () => {
-        if (isNewWorker) {
-            // Add new worker
-            setFormData(prev => ({
-                ...prev,
-                workers: [...(prev.workers || []), currentWorker]
-            }));
-        } else {
-            // Update existing worker
-            setFormData(prev => ({
-                ...prev,
-                workers: prev.workers?.map(w => w.id === currentWorker.id ? currentWorker : w) || []
-            }));
-        }
         setWorkerDialogOpen(false);
     };
 
-    const handleRemoveWorker = (id: number | undefined) => {
-        if (!id) return;
+    const handleRemoveWorker = (id_worker: number | undefined) => {
+        if (!id_worker) return;
 
-        setFormData(prev => ({
-            ...prev,
-            workers: prev.workers?.filter(w => w.id !== id) || []
-        }));
+        setWorkersOfChantier(prev => prev.filter(w => w.id !== id_worker));
+        if (isEditMode && id) {
+            deselectWorkerFromChantier(id_worker as number, parseInt(id) as number);
+        }
     };
 
     // Save chantier
     const handleSaveChantier = async () => {
-        // Validate all steps
-        for (let i = 0; i < steps.length; i++) {
-            if (!validateStep(i)) {
-                setActiveStep(i);
+        // Validate all tabs
+        for (let i = 0; i < (showDocumentsTab ? 5 : 4); i++) {
+            if (!validateTab(i)) {
+                setActiveTab(i);
                 return;
             }
         }
@@ -391,38 +394,11 @@ const EditCreateChantier: FC = () => {
 
             if (result) {
                 setSaveSuccess(true);
-                // Redirect after short delay
-                /*setTimeout(() => {
-                    //`/view/chantier/${id}`
-                    navigate(isEditMode ?  getRoute('VIEW_CHANTIER', {id: id}) : `/`);
-                }, 1500);*/
             }
         } catch (error) {
             console.error("Error saving chantier:", error);
         }
         setIsLoading(false);
-    };
-// Handler functions for PDPs and BDTs
-    const handleSavePdp = async () => {
-        try {
-            // Set chantier ID if in edit mode
-            if (isEditMode && id) {
-                currentPdp.chantier = parseInt(id);
-            }
-
-            // Create new PDP
-            const createdPdp = await createPdp(currentPdp);
-
-            // Add to chantier's PDPs
-            setFormData(prev => ({
-                ...prev,
-                pdp: [...(prev.pdp || []), createdPdp]
-            }));
-
-            setPdpDialogOpen(false);
-        } catch (error) {
-            console.error("Error creating PDP:", error);
-        }
     };
 
     const handleRemovePdp = (id: number | undefined) => {
@@ -430,21 +406,13 @@ const EditCreateChantier: FC = () => {
 
         setFormData(prev => ({
             ...prev,
-            pdp: prev.pdp?.filter(p => p.id !== id) || []
+            pdps: prev.pdps?.filter(p => p.id !== id) || []
         }));
     };
 
     const handleSaveBdt = async () => {
         try {
-            // Create new BDT
-            const createdBdt = await createBDT(currentBdt);
-
-            // Add to chantier's BDTs
-            setFormData(prev => ({
-                ...prev,
-                bdts: [...(prev.bdts || []), createdBdt]
-            }));
-
+            navigate(getRoute('CREATE_BDT', { chantierId: id }));
             setBdtDialogOpen(false);
         } catch (error) {
             console.error("Error creating BDT:", error);
@@ -459,6 +427,7 @@ const EditCreateChantier: FC = () => {
             bdts: prev.bdts?.filter(b => b.id !== id) || []
         }));
     };
+
     // Main render function
     if (loadingChantier || isLoading || loadingEntreprises || loadingUsers) {
         return (
@@ -468,9 +437,32 @@ const EditCreateChantier: FC = () => {
         );
     }
 
+    const getEntreprise = (id: number): Entreprise => {
+        return entreprises.get(id) as Entreprise;
+    }
+
+    const getWorker = (id: number): Worker => {
+        return workers.get(id) as Worker;
+    }
+
+    const getCurrentAllWorkers = () => {
+        //Get all the workers in all the entreprises exterieurs and utilisatrice
+        const workers = new Set<Worker>();
+
+        if (formData.entrepriseUtilisatrice) {
+            getEntreprise(formData.entrepriseUtilisatrice?.id).workers?.forEach(w => workers.add(w));
+
+            formData.entrepriseExterieurs?.map(ee => {
+                getEntreprise(ee.id).workers?.forEach(w => workers.add(w));
+            })
+        }
+
+        return Array.from(workers) as Worker[];
+    }
+
     return (
-        <Box sx={{ p: { xs: 2, md: 3 },  mx: "auto" , width:'100%'}}>
-            <Paper sx={{ p: 3, borderRadius: "16px", mb: 3 , width:'100%'}}>
+        <Box sx={{ p: { xs: 2, md: 3 }, mx: "auto", width: '100%' }}>
+            <Paper sx={{ p: 3, borderRadius: "16px", mb: 3, width: '100%' }}>
                 <Typography variant="h4" gutterBottom>
                     {isEditMode ? "Modifier le chantier" : "Créer un nouveau chantier"}
                 </Typography>
@@ -481,24 +473,31 @@ const EditCreateChantier: FC = () => {
                     </Alert>
                 )}
 
-                <Stepper activeStep={activeStep} sx={{ mt: 3, mb: 4 }}>
-                    {steps.map((label) => (
-                        <Step key={label}>
-                            <StepLabel>{label}</StepLabel>
-                        </Step>
-                    ))}
-                </Stepper>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 3, mb: 2 }}>
+                    <Tabs
+                        value={activeTab}
+                        onChange={handleChangeTab}
+                        aria-label="chantier tabs"
+                        variant="scrollable"
+                        scrollButtons="auto"
+                    >
+                        <Tab label="Informations générales" {...a11yProps(0)} />
+                        <Tab label="Entreprises" {...a11yProps(1)} />
+                        <Tab label="Équipe" {...a11yProps(2)} />
+                        <Tab label="Localisation" {...a11yProps(3)} />
+                        {showDocumentsTab && <Tab label="Documents" {...a11yProps(4)} />}
+                    </Tabs>
+                </Box>
 
-                {/* Step content */}
-                <StepContainer elevation={1}>
-                    {/* Step 1: General Information */}
-                    {activeStep === 0 && (
+                <TabContainer elevation={1}>
+                    {/* Tab 1: General Information */}
+                    <TabPanel value={activeTab} index={0}>
                         <Grid container spacing={3}>
-                            <Grid size={{xs:12}}>
+                            <Grid size={{ xs: 12 }}>
                                 <SectionTitle variant="h5">Informations générales</SectionTitle>
                             </Grid>
 
-                            <Grid size={{xs:12, md:6}}>
+                            <Grid size={{ xs: 12, md: 6 }}>
                                 <TextField
                                     label="Nom du chantier"
                                     fullWidth
@@ -510,7 +509,7 @@ const EditCreateChantier: FC = () => {
                                 />
                             </Grid>
 
-                            <Grid  size={{xs:12, md:6}} >
+                            <Grid size={{ xs: 12, md: 6 }} >
                                 <TextField
                                     label="Opération"
                                     fullWidth
@@ -522,7 +521,7 @@ const EditCreateChantier: FC = () => {
                                 />
                             </Grid>
 
-                            <Grid  size={{xs:12, md:6}}>
+                            <Grid size={{ xs: 12, md: 6 }}>
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                                     <DatePicker
                                         label="Date de début"
@@ -540,7 +539,7 @@ const EditCreateChantier: FC = () => {
                                 </LocalizationProvider>
                             </Grid>
 
-                            <Grid  size={{xs:12, md:6}}>
+                            <Grid size={{ xs: 12, md: 6 }}>
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                                     <DatePicker
                                         label="Date de fin"
@@ -558,7 +557,7 @@ const EditCreateChantier: FC = () => {
                                 </LocalizationProvider>
                             </Grid>
 
-                            <Grid  size={{xs:12, md:4}}>
+                            <Grid size={{ xs: 12, md: 4 }}>
                                 <TextField
                                     label="Nombre d'heures"
                                     type="number"
@@ -569,7 +568,7 @@ const EditCreateChantier: FC = () => {
                                 />
                             </Grid>
 
-                            <Grid  size={{xs:12, md:4}}>
+                            <Grid size={{ xs: 12, md: 4 }}>
                                 <TextField
                                     label="Effectif maximal sur chantier"
                                     type="number"
@@ -580,7 +579,7 @@ const EditCreateChantier: FC = () => {
                                 />
                             </Grid>
 
-                            <Grid  size={{xs:12, md:4}}>
+                            <Grid size={{ xs: 12, md: 4 }}>
                                 <TextField
                                     label="Nombre d'intérimaires"
                                     type="number"
@@ -591,19 +590,19 @@ const EditCreateChantier: FC = () => {
                                 />
                             </Grid>
                         </Grid>
-                    )}
+                    </TabPanel>
 
-                    {/* Step 2: Enterprises */}
-                    {activeStep === 1 && (
+                    {/* Tab 2: Enterprises */}
+                    <TabPanel value={activeTab} index={1}>
                         <Grid container spacing={3}>
-                            <Grid size={{xs:12}}>
+                            <Grid size={{ xs: 12 }}>
                                 <SectionTitle variant="h5">Entreprises</SectionTitle>
                             </Grid>
 
-                            <Grid size={{xs:12}}>
+                            <Grid size={{ xs: 12 }}>
                                 <FormControl fullWidth error={!!errors.entrepriseUtilisatrice}>
                                     <Autocomplete
-                                        options={entreprises}
+                                        options={Array.from(entreprises.values())}
                                         getOptionLabel={(option) => option.nom || ""}
                                         value={formData.entrepriseUtilisatrice || null}
                                         onChange={(_, value) => handleInputChange('entrepriseUtilisatrice', value)}
@@ -620,15 +619,15 @@ const EditCreateChantier: FC = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid size={{xs:12}}>
+                            <Grid size={{ xs: 12 }}>
                                 <Divider sx={{ my: 2 }} />
                                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                                     <Typography variant="h6">Entreprises Extérieures</Typography>
                                     <FormControl sx={{ width: 300 }}>
                                         <Autocomplete
-                                            options={entreprises}
+                                            options={Array.from(entreprises.values())}
                                             getOptionLabel={(option) => option.nom || ""}
-                                            onChange={(_, value) => value && handleAddExternalEnterprise(value)}
+                                            onChange={(_, value) => value && handleAddExternalEnterprise(value?.id as number)}
                                             renderInput={(params) => (
                                                 <TextField {...params} label="Ajouter une entreprise" size="small" />
                                             )}
@@ -637,20 +636,20 @@ const EditCreateChantier: FC = () => {
                                 </Box>
 
                                 {formData.entrepriseExterieurs && formData.entrepriseExterieurs.length > 0 ? (
-                                    formData.entrepriseExterieurs.map((entreprise) => (
-                                        <ListItem key={entreprise.id} variant="outlined">
+                                    formData.entrepriseExterieurs.map((entrepriseRef) => (
+                                        <ListItem key={entreprises.get(entrepriseRef?.id)?.id} variant="outlined">
                                             <Box sx={{ display: "flex", alignItems: "center" }}>
                                                 <Business color="primary" sx={{ mr: 2 }} />
                                                 <Box>
-                                                    <Typography variant="subtitle1">{entreprise.nom}</Typography>
+                                                    <Typography variant="subtitle1">{entreprises.get(entrepriseRef?.id)?.nom}</Typography>
                                                     <Typography variant="caption" color="text.secondary">
-                                                        {entreprise.raisonSociale} • {entreprise.numTel}
+                                                        {entreprises.get(entrepriseRef?.id)?.raisonSociale} • {entreprises.get(entrepriseRef?.id)?.numTel}
                                                     </Typography>
                                                 </Box>
                                             </Box>
                                             <IconButton
                                                 color="error"
-                                                onClick={() => handleRemoveExternalEnterprise(entreprise.id)}
+                                                onClick={() => handleRemoveExternalEnterprise(entreprises.get(entrepriseRef?.id)?.id)}
                                             >
                                                 <Delete />
                                             </IconButton>
@@ -663,16 +662,16 @@ const EditCreateChantier: FC = () => {
                                 )}
                             </Grid>
                         </Grid>
-                    )}
+                    </TabPanel>
 
-                    {/* Step 3: Team */}
-                    {activeStep === 2 && (
+                    {/* Tab 3: Team */}
+                    <TabPanel value={activeTab} index={2}>
                         <Grid container spacing={3}>
-                            <Grid size={{xs:12}}>
+                            <Grid size={{ xs: 12 }}>
                                 <SectionTitle variant="h5">Équipe et responsables</SectionTitle>
                             </Grid>
 
-                            <Grid size={{xs:12}}>
+                            <Grid size={{ xs: 12 }}>
                                 <FormControl fullWidth error={!!errors.donneurDOrdre}>
                                     <Autocomplete
                                         options={users}
@@ -692,10 +691,17 @@ const EditCreateChantier: FC = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid size={{xs:12}}>
+                            <Grid size={{ xs: 12 }}>
                                 <Divider sx={{ my: 2 }} />
                                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                                     <Typography variant="h6">Intervenants</Typography>
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<Add />}
+                                        onClick={() => setWorkerSelectDialogOpen(true)}
+                                    >
+                                        Select un intervenant
+                                    </Button>
                                     <Button
                                         variant="contained"
                                         startIcon={<Add />}
@@ -704,9 +710,21 @@ const EditCreateChantier: FC = () => {
                                         Ajouter un intervenant
                                     </Button>
                                 </Box>
+                                <SelectOrCreateWorker
+                                    open={workerSelectDialogOpen}
+                                    onClose={() => setWorkerSelectDialogOpen(false)}
+                                    entreprisesGroupes={formData.entrepriseExterieurs?.map((x) => getEntreprise(x.id))}
+                                    onSelectWorkers={(workers) => {
+                                        setWorkersOfChantier(workers);
+                                    }}
+                                    chantierId={formData?.id}
+                                    title="Select or Add Workers"
+                                    multiple={true}
+                                    groupByEntreprise
+                                />
 
-                                {formData.workers && formData.workers.length > 0 ? (
-                                    formData.workers.map((worker) => (
+                                {workersOfChantier && workersOfChantier.length > 0 ? (
+                                    workersOfChantier.map((worker) => (
                                         <ListItem key={worker.id || Math.random()} variant="outlined">
                                             <Box sx={{ display: "flex", alignItems: "center" }}>
                                                 <Person color="primary" sx={{ mr: 2 }} />
@@ -741,19 +759,19 @@ const EditCreateChantier: FC = () => {
                                 )}
                             </Grid>
                         </Grid>
-                    )}
+                    </TabPanel>
 
-                    {/* Step 4: Location */}
-                    {activeStep === 3 && (
+                    {/* Tab 4: Location */}
+                    <TabPanel value={activeTab} index={3}>
                         <Grid container spacing={3}>
-                            <Grid size={{xs:12}}>
+                            <Grid size={{ xs: 12 }}>
                                 <SectionTitle variant="h5">Localisation</SectionTitle>
                             </Grid>
 
-                            <Grid size={{xs:12}}>
+                            <Grid size={{ xs: 12 }}>
                                 <FormControl fullWidth error={!!errors.localisation}>
                                     <Autocomplete
-                                        options={localisations}
+                                        options={Array.from(localisations.values())}
                                         getOptionLabel={(option) => option.nom || ""}
                                         value={formData.localisation || null}
                                         onChange={(_, value) => handleInputChange('localisation', value)}
@@ -771,20 +789,20 @@ const EditCreateChantier: FC = () => {
                             </Grid>
 
                             {formData.localisation && (
-                                <Grid size={{xs:12}}>
+                                <Grid size={{ xs: 12 }}>
                                     <Card variant="outlined" sx={{ p: 2, mt: 2 }}>
                                         <Box sx={{ display: "flex", alignItems: "flex-start" }}>
                                             <LocationOn color="primary" sx={{ mr: 2, mt: 0.5 }} />
                                             <Box>
-                                                <Typography variant="h6">{formData.localisation.nom}</Typography>
+                                                <Typography variant="h6">{localisations.get(formData?.localisation.id)?.nom}</Typography>
                                                 <Chip
-                                                    label={formData.localisation.code}
+                                                    label={localisations.get(formData?.localisation?.id)?.code}
                                                     color="primary"
                                                     size="small"
                                                     sx={{ mt: 1, mb: 2 }}
                                                 />
                                                 <Typography variant="body2">
-                                                    {formData.localisation.description}
+                                                    {localisations.get(formData?.localisation?.id)?.description}
                                                 </Typography>
                                             </Box>
                                         </Box>
@@ -792,166 +810,158 @@ const EditCreateChantier: FC = () => {
                                 </Grid>
                             )}
                         </Grid>
-                    )}
-                    {/* Step 5: PDPs and BDTs */}
-                    {activeStep === 4 && (
-                        <Grid container spacing={3}>
-                            <Grid size={{xs:12}}>
-                                <SectionTitle variant="h5">Plans de Prévention (PDP)</SectionTitle>
+                    </TabPanel>
 
-                                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                                    <Typography variant="h6">Plans de Prévention</Typography>
-                                    <Box>
+                    {/* Tab 5: Documents */}
+                    {showDocumentsTab && (
+                        <TabPanel value={activeTab} index={4}>
+                            <Grid container spacing={3}>
+                                <Grid size={{ xs: 12 }}>
+                                    <SectionTitle variant="h5">Plans de Prévention (PDP)</SectionTitle>
+
+                                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                                        <Typography variant="h6">Plans de Prévention</Typography>
+                                        <Box>
+                                            <Button
+                                                variant="contained"
+                                                startIcon={<Add />}
+                                                onClick={() => {
+                                                    setPdpDialogOpen(true);
+                                                }}
+                                                sx={{ mr: 1 }}
+                                            >
+                                                Ajouter un PDP
+                                            </Button>
+                                        </Box>
+                                    </Box>
+
+                                    <TableContainer component={Paper} sx={{ mb: 4 }}>
+                                        <Table>
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>ID</TableCell>
+                                                    <TableCell>Entreprise</TableCell>
+                                                    <TableCell>Date d'inspection</TableCell>
+                                                    <TableCell>Statut</TableCell>
+                                                    <TableCell align="right">Actions</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {formData.pdps && formData.pdps.length > 0 ? (
+                                                    formData.pdps.map((pdp, index) => {
+                                                        const entreprise = entreprises.get(pdps.get(pdp?.id)?.entrepriseExterieure?.id as number);
+                                                        return (
+                                                            <TableRow key={pdp?.id + index}>
+                                                                <TableCell>#{pdp.id}</TableCell>
+                                                                <TableCell>{entreprise?.nom || "N/A"}</TableCell>
+                                                                <TableCell>
+                                                                    {pdps.get(pdp?.id)?.dateInspection ? dayjs(pdps.get(pdp?.id)?.dateInspection).format("DD/MM/YYYY") : "Non planifiée"}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Chip
+                                                                        size="small"
+                                                                        label="En cours"
+                                                                        color="primary"
+                                                                        variant="outlined"
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell align="right">
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        color="primary"
+                                                                        onClick={() => navigate(getRoute('EDIT_PDP', { id: pdp.id }))}
+                                                                    >
+                                                                        <Assignment />
+                                                                    </IconButton>
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        color="error"
+                                                                        onClick={() => handleRemovePdp(pdp.id)}
+                                                                    >
+                                                                        <Delete />
+                                                                    </IconButton>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={5} align="center">
+                                                            Aucun plan de prévention
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+
+                                    <Divider sx={{ my: 4 }} />
+
+                                    <SectionTitle variant="h5">Bons de Travail (BDT)</SectionTitle>
+
+                                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                                        <Typography variant="h6">Bons de Travail</Typography>
                                         <Button
                                             variant="contained"
                                             startIcon={<Add />}
-                                            onClick={() => {
-                                                setPdpDialogOpen(true);
-
-                                            }}
-                                            sx={{ mr: 1 }}
+                                            onClick={() => setBdtDialogOpen(true)}
                                         >
-                                            Ajouter un PDP
+                                            Ajouter un BDT
                                         </Button>
                                     </Box>
-                                </Box>
 
-                            {/*    {formData?.nbHeurs && formData?.nbHeurs >= 400 && (
-                                    <Alert severity="info" sx={{ mb: 2 }}>
-                                        Les entreprises avec plus de 400 heures de travail nécessitent un Plan de Prévention.
-                                    </Alert>
-                                )}*/}
-
-                                <TableContainer component={Paper} sx={{ mb: 4 }}>
-                                    <Table>
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell>ID</TableCell>
-                                                <TableCell>Entreprise</TableCell>
-                                                <TableCell>Date d'inspection</TableCell>
-                                                <TableCell>Statut</TableCell>
-                                                <TableCell align="right">Actions</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {formData.pdpEnts && formData.pdpEnts.length > 0 ? (
-                                                formData.pdpEnts.map((pdp, index) => {
-                                                    const entreprise = entreprises.find(e => e.id === pdp.entrepriseExterieure);
-                                                    return (
-                                                        <TableRow key={pdp?.id+index}>
-                                                            <TableCell>#{pdp.id}</TableCell>
-                                                            <TableCell>{entreprise?.nom || "N/A"}</TableCell>
-                                                            <TableCell>
-                                                                {pdp.dateInspection ? dayjs(pdp.dateInspection).format("DD/MM/YYYY") : "Non planifiée"}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Chip
-                                                                    size="small"
-                                                                    label="En cours"
-                                                                    color="primary"
-                                                                    variant="outlined"
-                                                                />
-                                                            </TableCell>
+                                    <TableContainer component={Paper}>
+                                        <Table>
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>ID</TableCell>
+                                                    <TableCell>Nom</TableCell>
+                                                    <TableCell>Risques</TableCell>
+                                                    <TableCell>Audits</TableCell>
+                                                    <TableCell align="right">Actions</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {formData.bdts && formData.bdts.length > 0 ? (
+                                                    formData.bdts.map((bdt) => (
+                                                        <TableRow key={bdt.id}>
+                                                            <TableCell>#{bdt.id}</TableCell>
+                                                            <TableCell>{bdt.nom || "Sans nom"}</TableCell>
+                                                            <TableCell>{bdt.risques?.length || 0}</TableCell>
+                                                            <TableCell>{bdt.auditSecu?.length || 0}</TableCell>
                                                             <TableCell align="right">
                                                                 <IconButton
                                                                     size="small"
                                                                     color="primary"
-                                                                    onClick={() => navigate(`/create/pdp/${pdp.id}/1`)}
+                                                                    onClick={() => navigate(`/create/bdt/${bdt.id}/1`)}
                                                                 >
                                                                     <Assignment />
                                                                 </IconButton>
                                                                 <IconButton
                                                                     size="small"
                                                                     color="error"
-                                                                    onClick={() => handleRemovePdp(pdp.id)}
+                                                                    onClick={() => handleRemoveBdt(bdt.id)}
                                                                 >
                                                                     <Delete />
                                                                 </IconButton>
                                                             </TableCell>
                                                         </TableRow>
-                                                    );
-                                                })
-                                            ) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={5} align="center">
-                                                        Aucun plan de prévention
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
-
-                                <Divider sx={{ my: 4 }} />
-
-                                <SectionTitle variant="h5">Bons de Travail (BDT)</SectionTitle>
-
-                                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                                    <Typography variant="h6">Bons de Travail</Typography>
-                                    <Button
-                                        variant="contained"
-                                        startIcon={<Add />}
-                                        onClick={() => setBdtDialogOpen(true)}
-                                    >
-                                        Ajouter un BDT
-                                    </Button>
-                                </Box>
-
-                                <TableContainer component={Paper}>
-                                    <Table>
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell>ID</TableCell>
-                                                <TableCell>Nom</TableCell>
-                                                <TableCell>Risques</TableCell>
-                                                <TableCell>Audits</TableCell>
-                                                <TableCell align="right">Actions</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {formData.bdts && formData.bdts.length > 0 ? (
-                                                formData.bdts.map((bdt) => (
-                                                    <TableRow key={bdt.id}>
-                                                        <TableCell>#{bdt.id}</TableCell>
-                                                        <TableCell>{bdt.nom || "Sans nom"}</TableCell>
-                                                        <TableCell>{bdt.risques?.length || 0}</TableCell>
-                                                        <TableCell>{bdt.auditSecu?.length || 0}</TableCell>
-                                                        <TableCell align="right">
-                                                            <IconButton
-                                                                size="small"
-                                                                color="primary"
-                                                                onClick={() => navigate(`/create/bdt/${bdt.id}/1`)}
-                                                            >
-                                                                <Assignment />
-                                                            </IconButton>
-                                                            <IconButton
-                                                                size="small"
-                                                                color="error"
-                                                                onClick={() => handleRemoveBdt(bdt.id)}
-                                                            >
-                                                                <Delete />
-                                                            </IconButton>
+                                                    ))
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={5} align="center">
+                                                            Aucun bon de travail
                                                         </TableCell>
                                                     </TableRow>
-                                                ))
-                                            ) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={5} align="center">
-                                                        Aucun bon de travail
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </Grid>
                             </Grid>
-                        </Grid>
-                    )
-
-                    }
-
-
-                </StepContainer>
+                        </TabPanel>
+                    )}
+                </TabContainer>
 
                 {/* Navigation buttons */}
                 <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}>
@@ -963,113 +973,30 @@ const EditCreateChantier: FC = () => {
                         Annuler
                     </Button>
 
-                    <Box>
-                        {activeStep > 0 && (
-                            <Button
-                                color="inherit"
-                                onClick={handleBack}
-                                sx={{ mr: 1 }}
-                                startIcon={<ArrowBack />}
-                            >
-                                Précédent
-                            </Button>
-                        )}
-
-                        {activeStep < steps.length - 1 ? (
-                            <Button
-                                variant="contained"
-                                onClick={handleNext}
-                                endIcon={<ArrowForward />}
-                            >
-                                Suivant
-                            </Button>
-                        ) : (
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={handleSaveChantier}
-                                startIcon={<Save />}
-                            >
-                                Enregistrer
-                            </Button>
-                        )}
-                    </Box>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleSaveChantier}
+                        startIcon={<Save />}
+                    >
+                        Enregistrer
+                    </Button>
                 </Box>
             </Paper>
 
             {/* Worker Dialog */}
-            <Dialog open={workerDialogOpen} onClose={() => setWorkerDialogOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>
-                    {isNewWorker ? "Ajouter un intervenant" : "Modifier l'intervenant"}
-                </DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                        <Grid size={{xs:12}}>
-                            <TextField
-                                label="Nom"
-                                fullWidth
-                                required
-                                value={currentWorker.name || ''}
-                                onChange={(e) => setCurrentWorker({...currentWorker, name: e.target.value})}
-                            />
-                        </Grid>
-
-                        <Grid size={{xs:12, md:6}}>
-                            <TextField
-                                label="Fonction"
-                                fullWidth
-                                value={currentWorker.fonction || ''}
-                                onChange={(e) => setCurrentWorker({...currentWorker, fonction: e.target.value})}
-                            />
-                        </Grid>
-
-                        <Grid size={{xs:12, md:6}}>
-                            <TextField
-                                label="Rôle"
-                                fullWidth
-                                value={currentWorker.role || ''}
-                                onChange={(e) => setCurrentWorker({...currentWorker, role: e.target.value})}
-                            />
-                        </Grid>
-
-                        <Grid size={{xs:12, md:6}}>
-                            <TextField
-                                label="Email"
-                                fullWidth
-                                type="email"
-                                value={currentWorker.email || ''}
-                                onChange={(e) => setCurrentWorker({...currentWorker, email: e.target.value})}
-                            />
-                        </Grid>
-
-                        <Grid size={{xs:12, md:6}}>
-                            <TextField
-                                label="Téléphone"
-                                fullWidth
-                                value={currentWorker.notel || ''}
-                                onChange={(e) => setCurrentWorker({...currentWorker, notel: e.target.value})}
-                            />
-                        </Grid>
-                    </Grid>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setWorkerDialogOpen(false)}>Annuler</Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleSaveWorker}
-                        disabled={!currentWorker.name}
-                    >
-                        Enregistrer
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            <WorkerModal
+                workerId={currentWorker?.id as number}
+                open={workerDialogOpen}
+                onClose={() => setWorkerDialogOpen(false)}
+            />
 
             {/* PDP Dialog */}
             <Dialog open={pdpDialogOpen} onClose={() => setPdpDialogOpen(false)} maxWidth="md" fullWidth>
                 <DialogTitle>Plan de Prévention</DialogTitle>
                 <DialogContent>
                     <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                        <Grid size={{xs:12}}>
+                        <Grid size={{ xs: 12 }}>
                             <Typography variant="subtitle1" sx={{ mb: 1 }}> Voullez vous enrégistrer ce chantier ?</Typography>
                         </Grid>
                     </Grid>
@@ -1080,9 +1007,9 @@ const EditCreateChantier: FC = () => {
                     }}>Annuler</Button>
                     <Button
                         variant="contained"
-                        onClick={()=>{
+                        onClick={() => {
                             handleSaveChantier();
-                            navigate(getRoute('CREATE_PDP', {chantierId: id}))
+                            navigate(getRoute('CREATE_PDP', { chantierId: id }))
                         }}
                     >
                         Oui
@@ -1092,26 +1019,15 @@ const EditCreateChantier: FC = () => {
 
             {/* BDT Dialog */}
             <Dialog open={bdtDialogOpen} onClose={() => setBdtDialogOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Nouveau Bon de Travail</DialogTitle>
+                <DialogTitle>Nouveau Bon de Travail ? </DialogTitle>
                 <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                        <Grid size={{xs:12}}>
-                            <TextField
-                                label="Nom du BDT"
-                                fullWidth
-                                required
-                                value={currentBdt.nom || ''}
-                                onChange={(e) => setCurrentBdt({...currentBdt, nom: e.target.value})}
-                            />
-                        </Grid>
-                    </Grid>
+                    Est-ce que vous voullez enregistrer ce chantier avant de cree un nouveau bon de travaille ?
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setBdtDialogOpen(false)}>Annuler</Button>
                     <Button
                         variant="contained"
                         onClick={handleSaveBdt}
-                        disabled={!currentBdt.nom}
                     >
                         Créer
                     </Button>

@@ -5,8 +5,8 @@ import {useEffect, useState} from "react";
 
 import { useNotifications } from '@toolpad/core/useNotifications';
 import {AxiosResponseState} from "../utils/AxiosResponse.ts";
-import DispositifDTO from "../utils/dispositif/DispositifDTO.ts";
-import Dispositif from "../utils/dispositif/Dispositif.ts";
+import DispositifDTO from "../utils/entitiesDTO/DispositifDTO.ts";
+import Dispositif from "../utils/entities/Dispositif.ts";
 
 type EntrepriseResponse = DispositifDTO |DispositifDTO[] |Dispositif | Dispositif[] |boolean| number | null; // Could be one Pdp, a list of Pdps, or null.
 const useDispositif = ()=>{

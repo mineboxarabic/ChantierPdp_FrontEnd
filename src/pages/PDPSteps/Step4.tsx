@@ -23,7 +23,7 @@ import Button from "@mui/material/Button";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import RisqueComponent from "../../components/Steps/RisqueComponent.tsx";
 import useAnalyseRisque from "../../hooks/useAnalyseRisque.ts";
-import {Pdp} from "../../utils/pdp/Pdp.ts";
+import {Pdp} from "../../utils/entities/Pdp.ts";
 import {useEffect, useState} from "react";
 import ObjectAnsweredEntreprises from "../../utils/pdp/ObjectAnsweredEntreprises.ts";
 import SelectOrCreateAnalyseRisque from "../../components/Pdp/SelectOrCreateAnalyseRisque.tsx";

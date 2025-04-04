@@ -7,7 +7,7 @@ import {
     TextField,
     Paper,
 } from "@mui/material";
-import Localisation from "../../utils/Localisation/Localisation";
+import Localisation from "../../utils/entities/Localisation.ts";
 import useLocalisation from "../../hooks/useLocalisation";
 import { useNotifications } from "@toolpad/core/useNotifications";
 import Grid from "@mui/material/Grid2";

@@ -5,8 +5,8 @@ import {useEffect, useState} from "react";
 
 import { useNotifications } from '@toolpad/core/useNotifications';
 import {AxiosResponseState} from "../utils/AxiosResponse.ts";
-import RisqueDTO from "../utils/Risque/RisqueDTO.ts";
-import Risque from "../utils/Risque/Risque.ts";
+import RisqueDTO from "../utils/entitiesDTO/RisqueDTO.ts";
+import Risque from "../utils/entities/Risque.ts";
 
 type EntrepriseResponse = RisqueDTO |RisqueDTO[] |Risque | Risque[] |boolean| number | null; // Could be one Pdp, a list of Pdps, or null.
 const useRisque = ()=>{
@@ -19,6 +19,7 @@ const useRisque = ()=>{
     const notifications = useNotifications();
     const {fetch,responseAxios,errorAxios,loadingAxios} = useAxios<AxiosResponseState<EntrepriseResponse>>();
 
+    const [risques, setRisques] = useState<Map<number, Risque>>(new Map<number, Risque>());
 
     useEffect(() => {
         if (responseAxios) {
@@ -64,8 +65,16 @@ const useRisque = ()=>{
             }
         ]).then(r => {
             if(r != undefined){
+
                 setReponse(r.data?.data as Risque[]);
-                return r.data?.data;
+
+                (r.data?.data as Risque[]).forEach(e=>{
+                    risques.set(e?.id as number, e);
+                });
+
+
+
+                return r.data?.data as Risque[];
             }
         }) as Promise<Risque[]>;
     }
@@ -147,7 +156,7 @@ const useRisque = ()=>{
         }) as Promise<Risque>;
     }
 
-    return {loading,error, response, lastId, getRisque, getAllRisques, updateRisque, deleteRisque, createRisque};
+    return {loading,error, response, lastId, getRisque, getAllRisques, updateRisque, deleteRisque, createRisque, risques};
 
 
 }

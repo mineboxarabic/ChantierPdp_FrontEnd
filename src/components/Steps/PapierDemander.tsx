@@ -6,7 +6,7 @@ import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import MenuItem from "@mui/material/MenuItem";
 import {Checkbox} from "@mui/material";
-import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+import ObjectAnswered from "../../utils/pdps/ObjectAnswered.ts";
 
 
 interface PapierDemanderProps {
@@ -50,7 +50,7 @@ export default PapierDemander;*/
 
 import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
 import ObjectAnsweredComponent from "./ObjectAnsweredComponent.tsx";
-import {Pdp} from "../../utils/pdp/Pdp.ts";
+import {Pdp} from "../../utils/entities/Pdp.ts";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
 
 interface PapierDemanderProps {

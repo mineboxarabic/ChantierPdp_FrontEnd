@@ -1,7 +1,7 @@
 import { useAxios } from "./useAxios.ts";
 import { AxiosResponseState } from "../utils/AxiosResponse.ts";
-import PermitDTO from "../utils/permit/PermitDTO.ts";
-import Permit from "../utils/permit/Permit.ts";
+import PermitDTO from "../utils/entitiesDTO/PermitDTO.ts";
+import Permit from "../utils/entities/Permit.ts";
 import { useEffect, useState } from "react";
 import { useNotifications } from '@toolpad/core/useNotifications';
 
@@ -84,6 +84,7 @@ const usePermit = () => {
     }
 
     const deletePermit = async (id: number): Promise<boolean> => {
+        console.log('dejadfj')
         return fetch(`api/permit/${id}`, 'DELETE', null, [
             {
                 status: 409,

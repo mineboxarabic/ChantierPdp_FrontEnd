@@ -4,7 +4,7 @@ import { Button, Typography, Box } from "@mui/material";
 import LocalisationCard from "../../components/Localisation/LocalisationCard";
 import EditLocalisation from "../../components/Localisation/EditLocalisation";
 import useLocalisation from "../../hooks/useLocalisation";
-import Localisation from "../../utils/Localisation/Localisation";
+import Localisation from "../../utils/entities/Localisation.ts";
 
 const ViewAllLocalisations = () => {
     const { getAllLocalisations } = useLocalisation();

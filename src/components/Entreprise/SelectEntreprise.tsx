@@ -1,7 +1,7 @@
 import { Select, MenuItem, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import useEntreprise from "../../hooks/useEntreprise.ts";
-import { Entreprise } from "../../utils/entreprise/Entreprise.ts";
+import { Entreprise } from "../../utils/entities/Entreprise.ts";
 
 interface SelectEntrepriseProps {
     selectedEntrepriseId: number | null;

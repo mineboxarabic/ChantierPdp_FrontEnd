@@ -13,14 +13,14 @@ import Button from "@mui/material/Button";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import RisqueComponent from "../../components/Steps/RisqueComponent.tsx";
 import useRisque from "../../hooks/useRisque.ts";
-import Risque from "../../utils/Risque/Risque.ts";
+import Risque from "../../utils/entities/Risque.ts";
 import {useEffect, useState} from "react";
-import {Pdp} from "../../utils/pdp/Pdp.ts";
+import {Pdp} from "../../utils/entities/Pdp.ts";
 import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
 import SelectOrCreateRisque from "../../components/Pdp/SelectOrCreateRisque.tsx";
 import useDispositif from "../../hooks/useDispositif.ts";
 import DispositifComponent from "../../components/Steps/DispositifComponent.tsx";
-import Dispositif from "../../utils/dispositif/Dispositif.ts";
+import Dispositif from "../../utils/entities/Dispositif.ts";
 import SelectOrCreateDispositif from "../../components/Pdp/SelectOrCreateDispositif.tsx";
 
 interface StepsProps {

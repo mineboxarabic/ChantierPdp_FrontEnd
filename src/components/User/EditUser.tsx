@@ -199,8 +199,8 @@ export default EditUser;
 */
 
 
-import Dispositif from "../../utils/dispositif/Dispositif.ts";
-import User from "../../utils/user/User.ts";
+import Dispositif from "../../utils/entities/Dispositif.ts";
+import User from "../../utils/entities/User.ts";
 import EditItem, {FieldConfig} from "../EditItem.tsx";
 import {useEffect, useState} from "react";
 import useUser from "../../hooks/useUser.ts";

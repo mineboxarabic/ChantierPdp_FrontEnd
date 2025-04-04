@@ -4,7 +4,7 @@ import { Button, Typography, Box } from "@mui/material";
 import PermitCard from "../../components/Permit/PermitCard";
 import EditPermit from "../../components/Permit/EditPermit";
 import usePermit from "../../hooks/usePermit";
-import Permit from "../../utils/permit/Permit";
+import Permit from "../../utils/entities/Permit.ts";
 
 const ViewAllPermits = () => {
     const { getAllPermits } = usePermit();

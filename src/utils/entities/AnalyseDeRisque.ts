@@ -1,6 +1,7 @@
-import Risque from "../Risque/Risque.ts";
+import Risque from "./Risque.ts";
 
-class AnalyseDeRisqueDTO {
+class AnalyseDeRisque {
+    id: number;
     deroulementDesTaches: string;
     moyensUtilises: string;
     risque: Risque; // Assuming you have a Risque class
@@ -8,6 +9,7 @@ class AnalyseDeRisqueDTO {
 
 
     constructor(
+        id: number,
         deroulementDesTaches: string,
         moyensUtilises: string,
         risque: Risque,
@@ -15,6 +17,7 @@ class AnalyseDeRisqueDTO {
         entrepriseExterieure: boolean,
         entrepriseUtilisatrice: boolean
     ) {
+        this.id = id;
         this.deroulementDesTaches = deroulementDesTaches;
         this.moyensUtilises = moyensUtilises;
         this.risque = risque;
@@ -22,4 +25,4 @@ class AnalyseDeRisqueDTO {
     }
 }
 
-export default AnalyseDeRisqueDTO;
+export default AnalyseDeRisque;

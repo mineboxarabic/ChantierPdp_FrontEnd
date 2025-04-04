@@ -6,17 +6,17 @@ import AnalyseDeRisque from "../../utils/AnalyseDeRisque/AnalyseDeRisque.ts";
 import useAnalyseRisque from "../../hooks/useAnalyseRisque";
 
 import defaultImage from "../../assets/default_entreprise_image.png";
-import ObjectAnswered from "../../utils/pdp/ObjectAnswered";
-import { Pdp } from "../../utils/pdp/Pdp";
+import ObjectAnswered from "../../utils/pdps/ObjectAnswered";
+import { Pdp } from "../../utils/pdps/Pdp";
 import usePdp from "../../hooks/usePdp";
-import ObjectAnsweredEntreprises from "../../utils/pdp/ObjectAnsweredEntreprises.ts";
+import ObjectAnsweredEntreprises from "../../utils/pdps/ObjectAnsweredEntreprises.ts";
 import EditAnalyseRisque from "../AnalyseDeRisque/EditAnalyseRisque.tsx";
 
 interface SelectOrCreateAnalyseRisqueProps {
     open: boolean;
     setOpen: (open: boolean) => void;
     currentPdp: Pdp;
-    savePdp: (pdp: Pdp) => void;
+    savePdp: (pdps: Pdp) => void;
     where: string;
 }
 
@@ -173,7 +173,7 @@ interface SelectOrCreateRisqueProps {
     open: boolean;
     setOpen: (open: boolean) => void;
     currentPdp: any;
-    savePdp: (pdp: any) => void;
+    savePdp: (pdps: any) => void;
     where: string;
     analyseDeRisque?: any;
     saveAnalyseDeRisque?: (analyseDeRisque: any) => void;
@@ -331,10 +331,10 @@ import useAnalyseRisque from "../../hooks/useAnalyseRisque.ts";
 import usePdp from "../../hooks/usePdp.ts";
 import {useState} from "react";
 import SelectOrCreate from "./SelectOrCreate.tsx";
-import AnalyseDeRisque from "../../utils/AnalyseDeRisque/AnalyseDeRisque.ts";
+import AnalyseDeRisque from "../../utils/entities/AnalyseDeRisque.ts";
 import defaultImage from "../../assets/default_entreprise_image.png";
 import EditAnalyseRisque from "../AnalyseDeRisque/EditAnalyseRisque.tsx";
-import {Pdp} from "../../utils/pdp/Pdp.ts";
+import {Pdp} from "../../utils/entities/Pdp.ts";
 import ObjectAnsweredEntreprises from "../../utils/pdp/ObjectAnsweredEntreprises.ts";
 
 interface SelectOrCreateAnalyseRisqueProps {

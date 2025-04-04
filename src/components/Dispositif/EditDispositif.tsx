@@ -307,7 +307,7 @@ export default EditDispositif;
 */
 import React, { useState } from "react";
 import EditItem, {FieldConfig} from "../EditItem.tsx";
-import Dispositif from "../../utils/dispositif/Dispositif";
+import Dispositif from "../../utils/entities/Dispositif.ts";
 import useDispositif from "../../hooks/useDispositif.ts";
 
 interface DispositifEditorProps {

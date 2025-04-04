@@ -4,7 +4,7 @@ import UserCard from "../../components/User/UserCard";
 import useUser from "../../hooks/useUser.ts";
 import { useEffect, useState } from "react";
 import { Button, Typography, Box } from "@mui/material";
-import User from "../../utils/user/User.ts";
+import User from "../../utils/entities/User.ts";
 import EditUser from "../../components/User/EditUser";
 
 const ViewAllUser = () => {

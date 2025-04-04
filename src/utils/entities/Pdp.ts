@@ -1,15 +1,15 @@
-import {Entreprise} from "../entreprise/Entreprise.ts";
-import { PdpDTO } from "./PdpDTO.ts";
-import HoraireDeTravaille from "./HoraireDeTravaille.ts";
-import MiseEnDisposition from "./MiseEnDisposition.ts";
-import {MedecinDuTravailleEE} from "./MedecinDuTravailleEE.ts";
-import ObjectAnswered from "./ObjectAnswered.ts";
-import Dispositif from "../dispositif/Dispositif.ts";
-import ObjectAnsweredEntreprises from "./ObjectAnsweredEntreprises.ts";
-import Localisation from "../Localisation/Localisation.ts";
-import Permit from "../permit/Permit.ts";
-import Signature from "../signature/Signature.ts";
-import Worker from "../Worker.ts";
+import {Entreprise} from "./Entreprise.ts";
+import { PdpDTO } from "../entitiesDTO/PdpDTO.ts";
+import HoraireDeTravaille from "../pdp/HoraireDeTravaille.ts";
+import MiseEnDisposition from "../pdp/MiseEnDisposition.ts";
+import {MedecinDuTravailleEE} from "../pdp/MedecinDuTravailleEE.ts";
+import ObjectAnswered from "../pdp/ObjectAnswered.ts";
+import Dispositif from "./Dispositif.ts";
+import ObjectAnsweredEntreprises from "../pdp/ObjectAnsweredEntreprises.ts";
+import Localisation from "./Localisation.ts";
+import Permit from "./Permit.ts";
+import Signature from "./Signature.ts";
+import Worker from "./Worker.ts";
 import {EntityRef} from "../EntityRef.ts";
 /*package com.danone.pdpbackend.entities;
 
@@ -24,7 +24,7 @@ import lombok.Setter;
 import java.util.Date;
 import java.util.List;
 
-@Entity(name = "pdp")
+@Entity(name = "pdps")
 @Getter
 @Setter
 public class Pdp {
@@ -70,7 +70,7 @@ public class Pdp {
     private List<ObjectAnsweredEntreprises> analyseDeRisques;
 
 
-    @OneToMany(mappedBy = "pdp", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "pdps", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Worker> signatures; // ✅ List of workers who signed the PDP
 
 

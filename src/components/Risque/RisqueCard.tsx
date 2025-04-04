@@ -5,7 +5,7 @@ import CardActions from "@mui/material/CardActions";
 import Button from "@mui/material/Button";
 import CardMedia from "@mui/material/CardMedia";
 import Box from "@mui/material/Box";
-import Risque from "../../utils/Risque/Risque.ts";
+import Risque from "../../utils/entities/Risque.ts";
 import defaultImage from "../../assets/default_entreprise_image.png";
 
 interface RisqueCardProps {

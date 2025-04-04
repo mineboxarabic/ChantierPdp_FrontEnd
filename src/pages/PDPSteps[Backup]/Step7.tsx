@@ -12,7 +12,7 @@ import {
     TextField,
     Typography
 } from "@mui/material";
-import { Pdp } from "../../utils/pdp/Pdp.ts";
+import { Pdp } from "../../utils/entities/Pdp.ts";
 import Section from "../../components/Section.tsx";
 import { useRef, useState } from "react";
 import SignatureCanvas from "react-signature-canvas";

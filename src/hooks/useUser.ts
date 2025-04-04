@@ -4,8 +4,8 @@ import axios, {AxiosResponse} from "axios";
 import {useEffect, useState} from "react";
 
 import { useNotifications } from '@toolpad/core/useNotifications';
-import {UserDTO} from "../utils/user/UserDTO.ts";
-import User from "../utils/user/User.ts";
+import {UserDTO} from "../utils/entitiesDTO/UserDTO.ts";
+import User from "../utils/entities/User.ts";
 
 
 const apiUrl = import.meta.env.VITE_API_URL;

@@ -7,7 +7,7 @@ import {
     DialogContent,
     DialogContentText,
     DialogTitle,
-    Select
+    Select, useTheme
 } from "@mui/material";
 import worning from "../../assets/wornings/worning.webp"
 import CardContent from "@mui/material/CardContent";
@@ -16,36 +16,58 @@ import MenuItem from "@mui/material/MenuItem";
 import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
 import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import {useState} from "react";
-import {Pdp} from "../../utils/pdp/Pdp.ts";
+import {Pdp} from "../../utils/entities/Pdp.ts";
 import usePdp from "../../hooks/usePdp.ts";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
+import useBdt from "../../hooks/useBdt.ts";
+
+
+//Types are bdt and pdp
+
 
 interface RisqueProps {
    risque:ObjectAnswered
 
-   currentPdp: Pdp;
-    saveCurrentPdp: (pdp: Pdp) => void;
+   currentPdp: any;
+    saveCurrentPdp: (pdp: any) => void;
     setIsChanged: (isChanged: boolean) => void;
+    typeOfObject: "pdp" | "bdt";
 }
 
-const RisqueComponent = ({risque,currentPdp, saveCurrentPdp, setIsChanged}:RisqueProps) => {
+const RisqueComponent = ({risque,currentPdp, saveCurrentPdp, setIsChanged, typeOfObject}:RisqueProps) => {
 
    const [openDialog, setOpenDialog] = useState(false);
 
    const {unlinkObjectFromPdp} = usePdp();
+   const {unlinkRisqueToBDT} = useBdt();
+
+   const theme = useTheme();
 
     const handleDeleteClick = () => {
          setOpenDialog(true);
     }
     const handleConfirmDelete = () => {
-        unlinkObjectFromPdp(risque?.id,currentPdp?.id as number, ObjectAnsweredObjects.RISQUE).then(() => {
+       if(typeOfObject === "pdp"){
+           unlinkObjectFromPdp(risque?.id,currentPdp?.id as number, ObjectAnsweredObjects.RISQUE).then(() => {
 
-            saveCurrentPdp({
-                ...currentPdp,
-                risques: currentPdp["risques"]?.filter((p:ObjectAnswered) => p?.id !== risque?.id)
-            });
-            setIsChanged(true);
-        })
+               saveCurrentPdp({
+                   ...currentPdp,
+                   risques: currentPdp["risques"]?.filter((p:ObjectAnswered) => p?.id !== risque?.id)
+               });
+               setIsChanged(true);
+           })
+       }
+        else{
+           unlinkRisqueToBDT( currentPdp?.id as number, risque?.id as number).then(() => {
+                   saveCurrentPdp({
+                       ...currentPdp,
+                       risques: currentPdp["risques"]?.filter((p:ObjectAnswered) => p?.id !== risque?.id)
+                   });
+                   setIsChanged(true);
+               }
+           );
+       }
+
 
         setOpenDialog(false);
     }
@@ -67,7 +89,7 @@ const RisqueComponent = ({risque,currentPdp, saveCurrentPdp, setIsChanged}:Risqu
                     gap: '16px',
                     alignItems: 'center',
                     padding: '16px',
-                    backgroundColor: `${risque.risque?.travailleDangereux ? '#e9b9b9' : 'paper'}`,
+                    backgroundColor: `${risque.risque?.travailleDangereux ? theme.palette.customColor?.td : 'paper'}`,
 
                 }}>
                     <img src={
@@ -84,7 +106,7 @@ const RisqueComponent = ({risque,currentPdp, saveCurrentPdp, setIsChanged}:Risqu
                     }</Typography>
                     <Select defaultValue={ risque.answer ? 1 : 0}
                     sx={{
-                        backgroundColor: `${risque?.risque?.travailleDangereux ? '#b9b4ff' : 'paper'}`,
+                        backgroundColor: `${risque?.risque?.travaillePermit ? theme.palette.customColor?.tp : 'paper'}`,
                     }}
 
                             onChange={e => {

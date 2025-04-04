@@ -1,10 +1,12 @@
 import { useAxios } from "./useAxios.ts";
 import { useEffect, useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import Chantier from "../utils/Chantier/Chantier.ts";
+import Chantier from "../utils/entities/Chantier.ts";
 import { AxiosResponseState } from "../utils/AxiosResponse.ts";
 import usePdp from "./usePdp.ts";
-import {Pdp} from "../utils/pdp/Pdp.ts";
+import {Pdp} from "../utils/entities/Pdp.ts";
+import {Entreprise} from "../utils/entities/Entreprise.ts";
+import useEntreprise from "./useEntreprise.ts";
 
 type ChantierResponse = Chantier | Chantier[] | number | boolean | null;
 
@@ -15,9 +17,6 @@ const useChantier = () => {
 
     const notifications = useNotifications();
     const { fetch, responseAxios, errorAxios, loadingAxios } = useAxios<AxiosResponseState<ChantierResponse>>();
-
-    //Services
-    const pdpService = usePdp();
 
     useEffect(() => {
         if (responseAxios) {
@@ -73,16 +72,6 @@ const useChantier = () => {
                 notifications.show("Error while getting chantier", { severity: "error" });
             }) as Chantier;
 
-
-
-        if(chantier.pdp && chantier.pdp.length > 0){
-            const pdpEnts:Pdp[] = [];
-            for (const pdp of chantier.pdp) {
-                const pdpEnt = await pdpService.getPlanDePrevention(pdp.id);
-                pdpEnts.push(pdpEnt);
-            }
-            chantier.pdpEnts = pdpEnts;
-        }
 
         return chantier;
     };

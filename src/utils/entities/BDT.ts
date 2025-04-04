@@ -1,25 +1,25 @@
 
-import Risque from "../Risque/Risque.ts";
+import Risque from "./Risque.ts";
 import {AuditSecu} from "./AuditSecu.ts";
 import {EntityRef} from "../EntityRef.ts";
+import ObjectAnswered from "../pdp/ObjectAnswered.ts";
 
 class ComplementOuRappel {
-    id?: number;
     complement?: string;
     respect?: boolean;
-
-    constructor() {
-
-    }
 }
 
 export class BDT {
     id?: number;
     nom?: string;
-    risques?: EntityRef[];
-    auditSecu?: EntityRef[];
+    risques?: ObjectAnswered[];
+    auditSecu?: ObjectAnswered[];
     complementOuRappels?: ComplementOuRappel[];
 
+    signatureChargeDeTravail?: EntityRef;
+    signatureDonneurDOrdre?: EntityRef;
+    entrepriseExterieure?: EntityRef;
+    chantier?: number;
     constructor() {
 
     }

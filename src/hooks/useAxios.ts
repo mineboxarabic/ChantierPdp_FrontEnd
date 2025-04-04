@@ -54,10 +54,11 @@ export const useAxios  =<T = any> () => {
         const urlApi = apiUrl + url;
         const result = await axios({ url: urlApi, method, headers, data }).then((response) => {
             setMessage(response.data.message);
+            console.log('response', response);
             return response;
         })
             .catch((err: AxiosError) => {
-                console.log(err);
+                console.error(err);
                 // Check for token expiration (status 401 Unauthorized)
                 if (err.response?.status === 401) {
                     const tokenExpiredMessage = "Your session has expired. Please log in again.";

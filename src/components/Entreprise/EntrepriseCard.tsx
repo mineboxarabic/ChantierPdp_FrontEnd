@@ -4,7 +4,7 @@ import Typography from "@mui/material/Typography";
 import CardActions from "@mui/material/CardActions";
 import Button from "@mui/material/Button";
 import CardMedia from "@mui/material/CardMedia";
-import { Entreprise } from "../../utils/entreprise/Entreprise.ts";
+import { Entreprise } from "../../utils/entities/Entreprise.ts";
 import defaultImage from '../../assets/default_entreprise_image.png';
 import Box from "@mui/material/Box";
 

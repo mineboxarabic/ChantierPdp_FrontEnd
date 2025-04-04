@@ -2,7 +2,7 @@ import { Paper, IconButton } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { Pdp } from "../../utils/pdp/Pdp.ts";
+import { Pdp } from "../../utils/entities/Pdp.ts";
 import ConfirmDeleteDialog from "../ConfirmDeleteDialog.tsx";
 import {useState} from "react";
 import usePdp from "../../hooks/usePdp.ts";

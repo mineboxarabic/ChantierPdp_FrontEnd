@@ -17,15 +17,16 @@ import Section from "../components/Section.tsx";
 import {HorizontalSplit} from "@mui/icons-material";
 import Typography from "@mui/material/Typography";
 import usePdp from "../hooks/usePdp.ts";
-import {Pdp} from "../utils/pdp/Pdp.ts";
+import {Pdp} from "../utils/entities/Pdp.ts";
 import {useNavigate} from 'react-router-dom'
-import {PdpDTO} from "../utils/pdp/PdpDTO.ts";
+import {PdpDTO} from "../utils/entitiesDTO/PdpDTO.ts";
 import CircularProgress from '@mui/material/CircularProgress';
 import useBdt from "../hooks/useBdt.ts";
-import {BDT} from "../utils/bdt/BDT.ts";
+import {BDT} from "../utils/entities/BDT.ts";
 import {useAuth} from "../hooks/useAuth.tsx";
 import useChantier from "../hooks/useChantier.ts";
-import Chantier from "../utils/Chantier/Chantier.ts";
+import Chantier from "../utils/entities/Chantier.ts";
+import {getRoute} from "../Routes.tsx";
 
 interface DataToDisplay {
     id?: number;
@@ -59,7 +60,7 @@ const Home: FC = () => {
 
     const createPdpAndRedirect =async () => {
         //  const createdPdp:Pdp = await createPdp(Pdp.createEmpty() as PdpDTO);
-        //navigate(`/create/pdp/${(createdPdp?.id as number )}/1`);
+        //navigate(`/create/pdps/${(createdPdp?.id as number )}/1`);
     }
 
     async function createBdtAndRedirect() {
@@ -253,7 +254,7 @@ const Home: FC = () => {
                                     <TableCell align="right">{row.datedebuttravaux}</TableCell>
                                     <TableCell align="right">{row.datefintravaux}</TableCell>
                                     <TableCell align="right">
-                                        <Link href={`/create/pdp/${row.id}/1`}>Voir</Link>
+                                        <Link href={getRoute('VIEW_PDP', {id: row.id})}>Voir</Link>
                                     </TableCell>
                                 </TableRow>
                             ))}

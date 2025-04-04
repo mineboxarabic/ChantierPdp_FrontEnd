@@ -23,7 +23,7 @@ interface SelectOrCreateDispositifProps {
     open: boolean;
     setOpen: (open: boolean) => void;
     currentPdp: any;
-    savePdp: (pdp: any) => void;
+    savePdp: (pdps: any) => void;
     where: string;
     setIsChanged: (isChanged: boolean) => void;
 }
@@ -171,9 +171,10 @@ import useDispositif from "../../hooks/useDispositif.ts";
 import usePdp from "../../hooks/usePdp.ts";
 import {useState} from "react";
 import SelectOrCreate from "./SelectOrCreate.tsx";
-import Dispositif from "../../utils/dispositif/Dispositif.ts";
+import Dispositif from "../../utils/entities/Dispositif.ts";
 import defaultImage from "../../assets/default_entreprise_image.png";
 import EditDispositif from "../Dispositif/EditDispositif.tsx";
+import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
 interface SelectOrCreateDispositifProps {
     open: boolean;
     setOpen: (open: boolean) => void;
@@ -192,7 +193,7 @@ const SelectOrCreateDispositif = (props: SelectOrCreateDispositifProps) => {
             where="dispositifs"
             fetchItems={getAllDispositifs}
             linkItem={linkDispositifToPdp}
-            alreadySelected={(dispositif) => props.currentPdp?.dispositifs?.some((r: any) => r.dispositif.id === dispositif.id)}
+            alreadySelected={(dispositif) => props.currentPdp?.dispositifs?.some((r: ObjectAnswered) => r.dispositif?.id === dispositif.id)}
             getItemId={(dispositif) => dispositif?.id as number}
             getItemTitle={(dispositif) => dispositif.title}
             getItemDescription={(dispositif) => dispositif.description}

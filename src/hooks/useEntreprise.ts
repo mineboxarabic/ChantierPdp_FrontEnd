@@ -5,21 +5,27 @@ import {useEffect, useState} from "react";
 
 import { useNotifications } from '@toolpad/core/useNotifications';
 import {AxiosResponseState} from "../utils/AxiosResponse.ts";
-import {Entreprise} from "../utils/entreprise/Entreprise.ts";
-import {EntrepriseDTO} from "../utils/entreprise/EntrepriseDTO.ts";
+import {Entreprise} from "../utils/entities/Entreprise.ts";
+import {EntrepriseDTO} from "../utils/entitiesDTO/EntrepriseDTO.ts";
+import MapEntity from "./MapEntity.ts";
 
 
 const apiUrl = import.meta.env.VITE_API_URL;
+
+
 type EntrepriseResponse = EntrepriseDTO |EntrepriseDTO[] |Entreprise | Entreprise[] |boolean| number | null; // Could be one Pdp, a list of Pdps, or null.
+
+
+
 const useEntreprise = ()=>{
     const [response, setReponse] = useState<EntrepriseResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
-
     const [lastId, setLastId] = useState<number | null>(null);
 
     const notifications = useNotifications();
     const {fetch,responseAxios,errorAxios,loadingAxios} = useAxios<AxiosResponseState<EntrepriseResponse>>();
+    const [entreprises, setEntreprises] = useState<Map<number, Entreprise>>(new Map<number, Entreprise>);
 
 
     useEffect(() => {
@@ -67,6 +73,18 @@ const useEntreprise = ()=>{
             ]).then(r => {
                 if(r != undefined){
                     setReponse(r.data?.data as Entreprise[]);
+
+                    (r.data?.data as Entreprise[])?.map((entreprise) => {
+                        if(entreprises != undefined){
+                            entreprises.set(entreprise?.id as number, entreprise);
+                        }
+                        else{
+                            setEntreprises(new Map<number, Entreprise>().set(entreprise?.id as number, entreprise));
+                        }
+                    }
+                    );
+
+
                     return r.data?.data;
                 }
             }) as Promise<Entreprise[]>;
@@ -149,7 +167,7 @@ const useEntreprise = ()=>{
                 }) as Promise<Entreprise>;
     }
 
-    return {loading,error, response, lastId, getEntreprise, getAllEntreprises, updateEntreprise, deleteEntreprise, createEntreprise};
+    return {loading,error, response, lastId, getEntreprise, getAllEntreprises, updateEntreprise, deleteEntreprise, createEntreprise, entreprises};
 
 
 }

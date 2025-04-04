@@ -7,7 +7,7 @@ import Typography from "@mui/material/Typography";
 import MenuItem from "@mui/material/MenuItem";
 import {Checkbox} from "@mui/material";
 import Dispositif from "../../utils/dispositif/Dispositif.ts";
-import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+import ObjectAnswered from "../../utils/pdps/ObjectAnswered.ts";
 
 interface DispositifProps {
     dispositifAnswered:ObjectAnswered

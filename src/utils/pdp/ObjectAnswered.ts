@@ -1,7 +1,8 @@
 
-import Risque from "../Risque/Risque.ts";
-import Dispositif from "../dispositif/Dispositif.ts";
-import Permit from "../permit/Permit.ts";
+import Risque from "../entities/Risque.ts";
+import Dispositif from "../entities/Dispositif.ts";
+import Permit from "../entities/Permit.ts";
+import { AuditSecu } from "../entities/AuditSecu.ts";
 
 class ObjectAnswered {
 
@@ -9,10 +10,11 @@ class ObjectAnswered {
     risque?: Risque;
     dispositif?: Dispositif;
     permit?: Permit;
+    auditSecu?: AuditSecu;
     answer: boolean;
 
     constructor(id:number, risque:Risque, answer:boolean) {
-        this.id = risque.id;
+        this.id = id;
         this.risque = risque;
         this.answer = answer;
     }

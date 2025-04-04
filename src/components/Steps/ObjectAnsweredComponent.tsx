@@ -6,11 +6,11 @@ import Typography from "@mui/material/Typography";
 import MenuItem from "@mui/material/MenuItem";
 import { useState } from "react";
 import { ImageModel } from "../../utils/image/ImageModel.ts";
-import Dispositif from "../../utils/dispositif/Dispositif.ts";
+import Dispositif from "../../utils/entities/Dispositif.ts";
 import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
 import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
-import {Pdp} from "../../utils/pdp/Pdp.ts";
+import {Pdp} from "../../utils/entities/Pdp.ts";
 import usePdp from "../../hooks/usePdp.ts";
 
 interface ObjectAnsweredComponentProps {

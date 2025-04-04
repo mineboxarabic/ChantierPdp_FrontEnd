@@ -2,9 +2,9 @@ import { useAxios } from "./useAxios.ts";
 import { useEffect, useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
 import { AxiosResponseState } from "../utils/AxiosResponse.ts";
-import { BDT } from "../utils/bdt/BDT.ts";
-import Risque from "../utils/Risque/Risque.ts";
-import { AuditSecu } from "../utils/bdt/AuditSecu.ts";
+import { BDT } from "../utils/entities/BDT.ts";
+import Risque from "../utils/entities/Risque.ts";
+import { AuditSecu } from "../utils/entities/AuditSecu.ts";
 import ObjectAnswered from "../utils/pdp/ObjectAnswered.ts";
 
 const useBdt = () => {
@@ -67,7 +67,7 @@ const useBdt = () => {
         }) as Promise<boolean>;
     };
 
-    const linkRisqueToBDT = async (bdtId: number, risqueId: number): Promise<ObjectAnswered> => {
+    const linkRisqueToBDT = async ( risqueId: number, bdtId: number): Promise<ObjectAnswered> => {
         return fetch(`api/bdt/${bdtId}/risque/${risqueId}`, "POST", null, [
             { status: 404, message: "Error BDT or risque not found" }
         ]).then((r) => r?.data?.data as ObjectAnswered);

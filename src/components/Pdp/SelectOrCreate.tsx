@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { useEffect, useState, ReactNode } from "react";
-import {Pdp} from "../../utils/pdp/Pdp.ts";
+import {Pdp} from "../../utils/entities/Pdp.ts";
 import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
 import ObjectAnsweredEntreprises from "../../utils/pdp/ObjectAnsweredEntreprises.ts";
 
@@ -149,11 +149,14 @@ const SelectOrCreate = <T,>({
 
                             if(onValidate) {
                                 onValidate(selectedItem as T);
+                                console.log('cureenntt',currentPdp)
+
                             }else{
-                                if (currentPdp && selectedItem) {
+
+
+                                if (currentPdp && currentPdp.id && selectedItem) {
                                     if(linkItem) {
                                         linkItem(getItemId(selectedItem), currentPdp?.id as number).then((reponse) => {
-                                           console.log('in');
                                             if(currentPdp && currentPdp[where]){
                                                 if(Array.isArray(currentPdp[where])) {
                                                     currentPdp[where].push(reponse);
@@ -171,6 +174,12 @@ const SelectOrCreate = <T,>({
                                         }
                                     }
 
+                                }else {
+                                    if(currentPdp && currentPdp[where]){
+                                        if(Array.isArray(currentPdp[where])) {
+                                            currentPdp[where].push(selectedItem);
+                                        }
+                                    }
                                 }
                             }
 

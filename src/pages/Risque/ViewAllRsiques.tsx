@@ -5,7 +5,7 @@ import { Button, Typography, Box } from "@mui/material";
 import RisqueCard from "../../components/Risque/RisqueCard";
 import EditRisque from "../../components/Risque/EditRisque";
 import useRisque from "../../hooks/useRisque";
-import  Risque  from "../../utils/Risque/Risque";
+import  Risque  from "../../utils/entities/Risque.ts";
 
 const ViewAllRisques = () => {
     const { getAllRisques } = useRisque();

@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Modal, Box, TextField, Button, Typography } from "@mui/material";
-import AnalyseDeRisqueDTO from "../../utils/AnalyseDeRisque/AnalyseDeRisqueDTO.ts";
+import AnalyseDeRisqueDTO from "../../utils/entitiesDTO/AnalyseDeRisqueDTO.ts";
 import SelectOrCreateRisque from "../Pdp/SelectOrCreateRisque.tsx";
-import Risque from "../../utils/Risque/Risque";
+import Risque from "../../utils/entities/Risque.ts";
 import useAnalyseRisque from "../../hooks/useAnalyseRisque";
 import useRisque from "../../hooks/useRisque";
-import AnalyseDeRisque from "../../utils/AnalyseDeRisque/AnalyseDeRisque.ts";
-import {Pdp} from "../../utils/pdp/Pdp.ts";
+import AnalyseDeRisque from "../../utils/entities/AnalyseDeRisque.ts";
+import {Pdp} from "../../utils/entities/Pdp.ts";
+import analyseDeRisque from "../../utils/entities/AnalyseDeRisque.ts";
 
 interface EditAnalyseRisqueProps {
     analyse: AnalyseDeRisque | null;
@@ -49,14 +50,31 @@ const EditAnalyseRisque = ({ analyse, setIsChanged,savePdp,setAnalyse, open, set
         }
 
         try {
-            let savedAnalyse;
+            let savedAnalyse:AnalyseDeRisque;
             if (isEdit && localAnalyse.id) {
                 savedAnalyse = await updateAnalyse(localAnalyse.id, localAnalyse);
             } else {
                 savedAnalyse = await createAnalyse(localAnalyse);
-                linkRisqueToAnalyse(savedAnalyse.id,localAnalyse.risque.id);
+
+                if(localAnalyse.risque) linkRisqueToAnalyse(savedAnalyse.id,localAnalyse?.risque?.id as number);
             }
             setAnalyse(savedAnalyse);
+
+            savePdp({
+                ...currentPdp,
+                analyseDeRisques: currentPdp.analyseDeRisques?.map((a) => {
+
+
+                    if (a.analyseDeRisque && a?.analyseDeRisque.id === savedAnalyse.id) {
+                        a.analyseDeRisque =  savedAnalyse;
+                    }
+                    return a;
+
+                }
+                ),
+            });
+
+
             setOpen(false);
         } catch (error) {
             console.error("Error saving Analyse de Risque:", error);

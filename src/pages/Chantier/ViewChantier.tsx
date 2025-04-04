@@ -36,10 +36,11 @@ import {
     Assignment
 } from "@mui/icons-material";
 import useChantier from "../../hooks/useChantier.ts";
-import Chantier from "../../utils/Chantier/Chantier.ts";
+import Chantier from "../../utils/entities/Chantier.ts";
 import { useParams, useNavigate } from "react-router-dom";
 import { styled } from "@mui/material/styles";
 import dayjs from "dayjs";
+import {getRoute} from "../../Routes.tsx";
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -464,15 +465,15 @@ const ViewChantier: FC = () => {
                         <Grid size={{xs:12, md:6}}>
                             <SectionTitle variant="h5">Plans de Prévention</SectionTitle>
                             <List sx={{ bgcolor: "background.paper", borderRadius: 2, boxShadow: 1 }}>
-                                {chantierData.pdp && chantierData.pdp.length > 0 ? (
-                                    chantierData.pdp.map((pdp, index) => (
+                                {chantierData.pdps && chantierData.pdps.length > 0 ? (
+                                    chantierData.pdps.map((pdp, index) => (
                                         <React.Fragment key={pdp.id || index}>
                                             <ListItem
                                                 secondaryAction={
                                                     <Button
                                                         variant="outlined"
                                                         size="small"
-                                                        onClick={() => navigate(`/create/pdp/${pdp.id}/1`)}
+                                                        onClick={() => navigate(getRoute('VIEW_PDP',{id: pdp.id}))}
                                                     >
                                                         Voir
                                                     </Button>
@@ -496,7 +497,7 @@ const ViewChantier: FC = () => {
                                                     }
                                                 />
                                             </ListItem>
-                                            {index < (chantierData.pdp?.length || 0) - 1 && <Divider variant="inset" component="li" />}
+                                            {index < (chantierData.pdps?.length || 0) - 1 && <Divider variant="inset" component="li" />}
                                         </React.Fragment>
                                     ))
                                 ) : (

@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from "react";
 import EditItem, {FieldConfig} from "../EditItem.tsx";
-import Risque from "../../utils/Risque/Risque.ts";
+import Risque from "../../utils/entities/Risque.ts";
 import useRisque from "../../hooks/useRisque.ts";
 
 interface EditRisqueProps {

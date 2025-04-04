@@ -1,8 +1,8 @@
-import User from "../user/User.ts";
+import User from "./User.ts";
 import {ImageModel} from "../image/ImageModel.ts";
-import Chantier from "../Chantier/Chantier.ts";
+import Chantier from "./Chantier.ts";
 import {MedecinDuTravailleEE} from "../pdp/MedecinDuTravailleEE.ts";
-import {Pdp} from "../pdp/Pdp.ts";
+import {Pdp} from "./Pdp.ts";
 import {EntityRef} from "../EntityRef.ts";
 
 enum EntrepriseType {

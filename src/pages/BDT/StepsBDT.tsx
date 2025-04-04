@@ -6,13 +6,13 @@ import Step3 from "./Step3.tsx";
 import Typography from "@mui/material/Typography";
 import { useNotifications } from "@toolpad/core/useNotifications";
 import {Box, Button, Modal} from "@mui/material";
-import {PdpDTO} from "../../utils/pdp/PdpDTO.ts";
+import {PdpDTO} from "../../utils/entitiesDTO/PdpDTO.ts";
 
 import {useParams} from "react-router-dom";
 import useLocalisation from "../../hooks/useLocalisation.ts";
 import CircularProgress from "@mui/material/CircularProgress";
 import useBdt from "../../hooks/useBdt.ts";
-import {BDT} from "../../utils/bdt/BDT.ts";
+import {BDT} from "../../utils/entities/BDT.ts";
 
 const StepsBDT = () => {
     const {loading, getBDT, saveBDT} = useBdt();

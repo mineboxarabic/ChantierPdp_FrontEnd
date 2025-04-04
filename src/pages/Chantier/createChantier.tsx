@@ -7,18 +7,18 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Grid from "@mui/material/Grid2";
 import useChantier from "../../hooks/useChantier";
-import Chantier from "../../utils/Chantier/Chantier.ts";
+import Chantier from "../../utils/entities/Chantier.ts";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import { Entreprise } from "../../utils/entreprise/Entreprise";
-import User from "../../utils/user/User";
-import Localisation from "../../utils/Localisation/Localisation.ts";
+import { Entreprise } from "../../utils/entities/Entreprise.ts";
+import User from "../../utils/entities/User.ts";
+import Localisation from "../../utils/entities/Localisation.ts";
 import useUser from "../../hooks/useUser.ts";
 import useEntreprise from "../../hooks/useEntreprise.ts";
 import useLocalisation from "../../hooks/useLocalisation.ts";
 import usePdp from "../../hooks/usePdp.ts";
 import useBdt from "../../hooks/useBdt.ts";
-import { Pdp } from "../../utils/pdp/Pdp.ts";
-import { BDT } from "../../utils/bdt/BDT.ts";
+import { Pdp } from "../../utils/entities/Pdp.ts";
+import { BDT } from "../../utils/entities/BDT.ts";
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -63,7 +63,7 @@ const CreateChantier: React.FC = () => {
         localisation: {} as Localisation,
         donneurDOrdre: {} as User,
         bdts: [],
-        pdp: [],
+        pdps: [],
         workers: []
     });
 

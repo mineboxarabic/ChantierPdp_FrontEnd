@@ -17,6 +17,7 @@ import Step6 from "./pages/PDPSteps/Step6.tsx";
 import Steps from "./pages/PDPSteps/Steps.tsx";
 import {Font} from "@react-pdf/renderer";
 import {getRouteLists} from "./Routes.tsx";
+import NotFoundPage from "./pages/common/NotFoundPage.tsx";
 
 Font.register({
     family: "Inter",
@@ -54,6 +55,10 @@ function App() {
                         />
                     ))}
                 </Route>
+
+
+                {/* Fallback route for 404 */}
+                <Route path="*" element={<NotFoundPage />} />
             </Routes>
         </Router>
     );

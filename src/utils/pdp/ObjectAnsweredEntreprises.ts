@@ -1,7 +1,7 @@
 
-import Risque from "../Risque/Risque.ts";
-import Dispositif from "../dispositif/Dispositif.ts";
-import AnalyseDeRisque from "../AnalyseDeRisque/AnalyseDeRisque.ts";
+import Risque from "../entities/Risque.ts";
+import Dispositif from "../entities/Dispositif.ts";
+import AnalyseDeRisque from "../entities/AnalyseDeRisque.ts";
 
 class ObjectAnsweredEntreprises {
 

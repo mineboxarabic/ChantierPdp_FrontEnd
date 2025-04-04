@@ -22,10 +22,7 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
-    Stepper,
-    Step,
-    StepLabel,
-    TextFieldProps
+    Stepper, Chip, Avatar
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -47,23 +44,34 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { Pdp } from '../../utils/pdp/Pdp';
+import { Pdp } from '../../utils/entities/Pdp.ts';
 import HoraireDeTravaille from '../../utils/pdp/HoraireDeTravaille';
 import MiseEnDisposition from '../../utils/pdp/MiseEnDisposition';
 import ObjectAnswered from '../../utils/pdp/ObjectAnswered';
 import ObjectAnsweredEntreprises from '../../utils/pdp/ObjectAnsweredEntreprises';
-import { Entreprise } from '../../utils/entreprise/Entreprise';
-import Risque from '../../utils/Risque/Risque';
-import Permit from '../../utils/permit/Permit';
-import AnalyseDeRisque from '../../utils/AnalyseDeRisque/AnalyseDeRisque';
-import Worker from '../../utils/Worker';
+import { Entreprise } from '../../utils/entities/Entreprise.ts';
+import Risque from '../../utils/entities/Risque.ts';
+import Permit from '../../utils/entities/Permit.ts';
+import AnalyseDeRisque from '../../utils/entities/AnalyseDeRisque.ts';
+import Worker from '../../utils/entities/Worker.ts';
 import ObjectAnsweredObjects from '../../utils/ObjectAnsweredObjects';
 import {frFR} from "@mui/material/locale";
 import useChantier from "../../hooks/useChantier.ts";
-import Chantier from "../../utils/Chantier/Chantier.ts";
+import Chantier from "../../utils/entities/Chantier.ts";
 import {parse} from "ts-jest";
 import {EntityRef} from "../../utils/EntityRef.ts";
 import {getRoute} from "../../Routes.tsx";
+import RisqueComponent from "../../components/Steps/RisqueComponent.tsx";
+import SelectOrCreateRisque from "../../components/Pdp/SelectOrCreateRisque.tsx";
+import DispositifComponent from "../../components/Steps/DispositifComponent.tsx";
+import SelectOrCreateDispositif from "../../components/Pdp/SelectOrCreateDispositif.tsx";
+import SelectOrCreateAnalyseRisque from "../../components/Pdp/SelectOrCreateAnalyseRisque.tsx";
+import EditIcon from "@mui/icons-material/Edit";
+import Tooltip from "@mui/material/Tooltip";
+import {Visibility} from "@mui/icons-material";
+import EditAnalyseRisque from "../../components/AnalyseDeRisque/EditAnalyseRisque.tsx";
+import analyseDeRisque from "../../utils/entities/AnalyseDeRisque.ts";
+import {useNotifications} from "@toolpad/core/useNotifications";
 
 // Define the interface for URL params
 interface ParamTypes {
@@ -85,8 +93,8 @@ function TabPanel(props: TabPanelProps) {
         <div
             role="tabpanel"
             hidden={value !== index}
-            id={`pdp-tabpanel-${index}`}
-            aria-labelledby={`pdp-tab-${index}`}
+            id={`pdps-tabpanel-${index}`}
+            aria-labelledby={`pdps-tab-${index}`}
             {...other}
         >
             {value === index && (
@@ -100,13 +108,13 @@ function TabPanel(props: TabPanelProps) {
 
 function a11yProps(index: number) {
     return {
-        id: `pdp-tab-${index}`,
-        'aria-controls': `pdp-tabpanel-${index}`,
+        id: `pdps-tab-${index}`,
+        'aria-controls': `pdps-tabpanel-${index}`,
     };
 }
 
 // Define dialog data types
-type DialogTypes = 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques';
+type DialogTypes = 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'editAnalyseDeRisque'
 
 const EditCreatePdp: React.FC = () => {
     const { id, chantierId } = useParams<{id:string, chantierId?:string}>();
@@ -172,18 +180,20 @@ const EditCreatePdp: React.FC = () => {
         linkAnalyseToPdp,
         unlinkAnalyseToPdp
     } = usePdp();
+    const notifications = useNotifications();
 
-    const { getAllEntreprises } = useEntreprise();
+    const { getAllEntreprises, entreprises} = useEntreprise();
     const { getAllRisques } = useRisque();
     const { getAllPermits } = usePermit();
     const { saveChantier } = useChantier();
     // Data states
-    const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
+    //const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
     const [risques, setRisques] = useState<Risque[]>([]);
     const [permits, setPermits] = useState<Permit[]>([]);
+    const [selectedAnalyseDeRisque, setSelectedAnalyseDeRisque] = useState<AnalyseDeRisque | null>(null);
 
     //Error states
-    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [errors, setErrors] = useState<Record<string, string | number>>({});
 
     // Load data on component mount
     useEffect(() => {
@@ -195,7 +205,7 @@ const EditCreatePdp: React.FC = () => {
                 const risquesList = await getAllRisques();
                 const permitsList = await getAllPermits();
 
-                setEntreprises(entreprisesList || []);
+              //  setEntreprises(entreprisesList || []);
                 setRisques(risquesList || []);
                 setPermits(permitsList || []);
 
@@ -239,6 +249,7 @@ const EditCreatePdp: React.FC = () => {
 
         fetchData();
     }, [id, isEditMode]);
+
 
 
     useEffect(() => {
@@ -288,6 +299,7 @@ const EditCreatePdp: React.FC = () => {
 
     // Handle tab changes
     const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+        setActiveStep(newValue);
         setTabValue(newValue);
     };
 
@@ -394,7 +406,11 @@ const EditCreatePdp: React.FC = () => {
 
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
+
         e.preventDefault();
+
+
+
         setIsLoading(true);
         setSaveSuccess(false);
         setSaveError(null);
@@ -407,7 +423,7 @@ const EditCreatePdp: React.FC = () => {
                 savedPdp = await savePdp(formData, formData.id);
 
                 if(chantierId){
-                    saveChantier({pdp: savedPdp} as Chantier, parseInt(chantierId));
+                    saveChantier({pdps: savedPdp} as Chantier, parseInt(chantierId));
                 }
 
             } else {
@@ -441,15 +457,17 @@ const EditCreatePdp: React.FC = () => {
 
             if (savedPdp) {
                 setSaveSuccess(true);
+                notifications.show("Le Plan de Prévention a été enregistré avec succès", { severity: "success" , autoHideDuration: 2000});
                 if (!isEditMode) {
                     // Redirect to edit mode with the new ID
-                   // navigate(`/pdp/edit/${savedPdp.id}`, { replace: true });
+                   // navigate(`/pdps/edit/${savedPdp.id}`, { replace: true });
                     navigate(getRoute('EDIT_PDP', {id: savedPdp.id}), {replace: true});
                 }
             }
         } catch (error) {
             console.error("Error saving PDP:", error);
             setSaveError("Erreur lors de l'enregistrement du PDP");
+            notifications.show("Erreur lors de l'enregistrement du PDP", {severity:'error', autoHideDuration: 2000});
         } finally {
             setIsLoading(false);
         }
@@ -474,43 +492,41 @@ const EditCreatePdp: React.FC = () => {
 
     }
 
-    // Get Entreprise name by ID
-    const getEntrepriseName = (id: number | null): string => {
-        if (!id) return 'Entreprise inconnue';
-        const entreprise = entreprises.find(e => e.id === id);
-        return entreprise ? entreprise.nom || entreprise.nom || 'Entreprise inconnue' : 'Entreprise inconnue';
-    };
+
 
     //Handle Errors
     const validateForm = (): boolean=> {
-        const errors: Record<string, string> = {};
-
+        const errors: Record<string, string | number> = {};
 
         // Validate required fields
-        if(activeStep === 0) {
             if (!formData.entrepriseExterieure?.id) {
                 errors.entrepriseExterieure = "L'entreprise extérieure est requise";
             }
 
             if (!formData.entrepriseDInspection?.id) {
                 errors.entrepriseDInspection = "L'entreprise d'inspection est requise";
+
             }
 
             // Date validations
             if (!formData.dateInspection) {
                 errors.dateInspection = "La date d'inspection est requise";
+
             }
 
             if (!formData.icpdate) {
                 errors.icpdate = "La date ICP est requise";
+
             }
 
             if (!formData.datePrevenirCSSCT) {
                 errors.datePrevenirCSSCT = "La date de prévenir CSSCT est requise";
+
             }
 
             if (!formData.datePrev) {
                 errors.datePrev = "La date prévisionnelle est requise";
+
             }
 
             // Validate date logic
@@ -520,38 +536,55 @@ const EditCreatePdp: React.FC = () => {
 
                 if (prevDate < inspectionDate) {
                     errors.datePrev = "La date prévisionnelle ne peut pas être antérieure à la date d'inspection";
+
                 }
             }
-        }
-        else if(activeStep === 1) {
+
             // Validate horaires details if any schedule options are selected
-            if (formData.horaireDeTravail &&
+          /*  if (formData.horaireDeTravail &&
                 (formData.horaireDeTravail.enJournee ||
                     formData.horaireDeTravail.enNuit ||
                     formData.horaireDeTravail.samedi) &&
                 !formData.horairesDetails) {
                 errors.horairesDetails = "Veuillez fournir des détails sur les horaires";
             }
-        }
-        else if (activeStep === 2){
+*/
 
             // Validate if at least one risk is selected
             if (!formData.risques || formData.risques.length === 0) {
                 errors.risques = "Au moins un risque doit être ajouté";
             }
 
-            // Check if at least one risk is marked as applicable
-            if (formData.risques && formData.risques.length > 0) {
-                const hasApplicableRisk = formData.risques.some(risque => risque.answer === true);
-                if (!hasApplicableRisk) {
-                    errors.risquesApplicable = "Au moins un risque doit être marqué comme applicable";
-                }
+
+
+
+            if(!formData.dispositifs || formData.dispositifs?.length === 0 ){
+                errors.dispositifs =  "Au moins un dispositif doit être ajouté";
             }
 
+
+
+
+
+
+
+        if(Object.keys(errors).length !== 0){
+            if('entrepriseExterieure' in errors || 'entrepriseDInspection' in errors || 'dateInspection' in errors || 'icpdate' in errors || 'datePrevenirCSSCT' in errors || 'datePrev' in errors){
+                setActiveStep(0);
+                setTabValue(0)
+            }
+            else if('horairesDetails' in errors){
+                setActiveStep(1);
+                setTabValue(1)
+            }
+            else if('risques' in errors || 'dispositifs' in errors){
+                setActiveStep(2);
+                setTabValue(2);
+            }
         }
 
-
         setErrors(errors);
+        console.log(errors)
 
         return Object.keys(errors).length === 0;
     };
@@ -602,12 +635,12 @@ const EditCreatePdp: React.FC = () => {
                             <CircularProgress />
                         </Box>
                     ) : (
-                        <form onSubmit={handleSubmit}>
+                        <div >
                             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
                                 <Tabs
                                     value={tabValue}
                                     onChange={handleTabChange}
-                                    aria-label="pdp tabs"
+                                    aria-label="pdps tabs"
                                     variant="scrollable"
                                     scrollButtons="auto"
                                 >
@@ -624,9 +657,9 @@ const EditCreatePdp: React.FC = () => {
                                 <Grid container spacing={3}>
                                     <Grid item xs={12} md={6}>
                                         <Autocomplete
-                                            options={entreprises}
+                                            options={Array.from(entreprises.values())}
                                             getOptionLabel={(option) => option.nom || option.nom || ''}
-                                            value={entreprises.find(e => e.id === formData.entrepriseExterieure?.id) || null}
+                                            value={formData.entrepriseExterieure?.id && entreprises.get(formData.entrepriseExterieure?.id) || null}
                                             onChange={(_, newValue) => handleAutocompleteChange('entrepriseExterieure', new EntityRef(newValue?.id as number))}
                                             renderInput={(params) => (
                                                 <TextField
@@ -644,9 +677,9 @@ const EditCreatePdp: React.FC = () => {
                                     </Grid>
                                     <Grid item xs={12} md={6}>
                                         <Autocomplete
-                                            options={entreprises}
+                                            options={Array.from(entreprises.values())}
                                             getOptionLabel={(option) => option.nom || option.nom || ''}
-                                            value={entreprises.find(e => e.id === formData.entrepriseDInspection?.id) || null}
+                                            value={formData.entrepriseDInspection?.id && entreprises.get(formData.entrepriseDInspection?.id) || null}
                                             onChange={(_, newValue) => handleAutocompleteChange('entrepriseDInspection', new EntityRef(newValue?.id as number))}
                                             renderInput={(params) => (
                                                 <TextField
@@ -890,8 +923,14 @@ const EditCreatePdp: React.FC = () => {
                             {/* Tab 3: Risques et dispositifs */}
                             <TabPanel value={tabValue} index={2}>
                                 <Grid container spacing={3}>
-                                    <Grid item xs={12} md={6}>
+                                    <Grid item xs={12} >
                                         <Paper elevation={2} sx={{ p: 2 }}>
+                                            {(
+                                                errors.risques &&
+                                                <Alert severity="error" sx={{ mb: 2 }}>
+                                                    {errors.risques}
+                                                </Alert>
+                                            )}
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                                                 <Typography variant="h6">Risques</Typography>
                                                 <Button
@@ -906,49 +945,40 @@ const EditCreatePdp: React.FC = () => {
                                             </Box>
 
                                             {formData.risques && formData.risques.length > 0 ? (
-                                                <Stack spacing={1}>
-                                                    {formData.risques.map((risque) => (
-                                                        <Box
-                                                            key={risque.id}
-                                                            sx={{
-                                                                display: 'flex',
-                                                                justifyContent: 'space-between',
-                                                                alignItems: 'center',
-                                                                p: 1,
-                                                                border: '1px solid',
-                                                                borderColor: 'divider',
-                                                                borderRadius: 1
-                                                            }}
-                                                        >
-                                                            <Typography>{risque.risque?.title || `Risque #${risque.id}`}</Typography>
-                                                            <Box>
-                                                                <FormControlLabel
-                                                                    control={
-                                                                        <Checkbox
-                                                                            checked={risque.answer}
-                                                                            onChange={(e) => {
-                                                                                // Update answer value
-                                                                                const updatedRisques = formData.risques?.map(r =>
-                                                                                    r.id === risque.id ? { ...r, answer: e.target.checked } : r
-                                                                                ) || [];
-                                                                                setFormData(prev => ({ ...prev, risques: updatedRisques }));
-                                                                            }}
-                                                                            color="primary"
-                                                                        />
-                                                                    }
-                                                                    label="Applicable"
+                                                <Box sx={{ display: 'flex', gap: 2 }}>
+
+
+
+                                                    {/* First Stack - Left side */}
+                                                    <Stack spacing={1} sx={{ flex: 1 }}>
+                                                        {formData.risques
+                                                            .filter((_, index) => index % 2 === 0) // Get even indexed items (0, 2, 4...)
+                                                            .map((risque) => (
+                                                                <RisqueComponent
+                                                                    key={risque.id}
+                                                                    risque={risque}
+                                                                    currentPdp={formData}
+                                                                    saveCurrentPdp={setFormData}
+                                                                    setIsChanged={() => {}}
                                                                 />
-                                                                <IconButton
-                                                                    size="small"
-                                                                    onClick={() => handleRemoveItem('risques', risque.id as number)}
-                                                                    color="error"
-                                                                >
-                                                                    <DeleteIcon />
-                                                                </IconButton>
-                                                            </Box>
-                                                        </Box>
-                                                    ))}
-                                                </Stack>
+                                                            ))}
+                                                    </Stack>
+
+                                                    {/* Second Stack - Right side */}
+                                                    <Stack spacing={1} sx={{ flex: 1 }}>
+                                                        {formData.risques
+                                                            .filter((_, index) => index % 2 !== 0) // Get odd indexed items (1, 3, 5...)
+                                                            .map((risque) => (
+                                                                <RisqueComponent
+                                                                    key={risque.id}
+                                                                    risque={risque}
+                                                                    currentPdp={formData}
+                                                                    saveCurrentPdp={setFormData}
+                                                                    setIsChanged={() => {}}
+                                                                />
+                                                            ))}
+                                                    </Stack>
+                                                </Box>
                                             ) : (
                                                 <Typography variant="body2" color="textSecondary">
                                                     Aucun risque ajouté
@@ -957,8 +987,14 @@ const EditCreatePdp: React.FC = () => {
                                         </Paper>
                                     </Grid>
 
-                                    <Grid item xs={12} md={6}>
+                                    <Grid item xs={12}>
                                         <Paper elevation={2} sx={{ p: 2 }}>
+                                            {(
+                                                errors.dispositifs &&
+                                                <Alert severity="error" sx={{ mb: 2 }}>
+                                                    {errors.dispositifs}
+                                                </Alert>
+                                            )}
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                                                 <Typography variant="h6">Dispositifs</Typography>
                                                 <Button
@@ -973,49 +1009,45 @@ const EditCreatePdp: React.FC = () => {
                                             </Box>
 
                                             {formData.dispositifs && formData.dispositifs.length > 0 ? (
-                                                <Stack spacing={1}>
+                                            /*    <Stack spacing={1}>
                                                     {formData.dispositifs.map((dispositif) => (
-                                                        <Box
-                                                            key={dispositif.id}
-                                                            sx={{
-                                                                display: 'flex',
-                                                                justifyContent: 'space-between',
-                                                                alignItems: 'center',
-                                                                p: 1,
-                                                                border: '1px solid',
-                                                                borderColor: 'divider',
-                                                                borderRadius: 1
-                                                            }}
-                                                        >
-                                                            <Typography>{dispositif.dispositif?.title || `Dispositif #${dispositif.id}`}</Typography>
-                                                            <Box>
-                                                                <FormControlLabel
-                                                                    control={
-                                                                        <Checkbox
-                                                                            checked={dispositif.answer}
-                                                                            onChange={(e) => {
-                                                                                // Update answer value
-                                                                                const updatedDispositifs = formData.dispositifs?.map(d =>
-                                                                                    d.id === dispositif.id ? { ...d, answer: e.target.checked } : d
-                                                                                ) || [];
-                                                                                setFormData(prev => ({ ...prev, dispositifs: updatedDispositifs }));
-                                                                            }}
-                                                                            color="primary"
-                                                                        />
-                                                                    }
-                                                                    label="Applicable"
-                                                                />
-                                                                <IconButton
-                                                                    size="small"
-                                                                    onClick={() => handleRemoveItem('dispositifs', dispositif.id as number)}
-                                                                    color="error"
-                                                                >
-                                                                    <DeleteIcon />
-                                                                </IconButton>
-                                                            </Box>
-                                                        </Box>
+                                                        <DispositifComponent dispositif={dispositif} currentPdp={formData} saveCurrentPdp={setFormData} setIsChanged={()=>{}}/>
                                                     ))}
-                                                </Stack>
+                                                </Stack>*/
+
+                                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                                    {/* First Stack - Left side */}
+                                                    <Stack spacing={1} sx={{ flex: 1 }}>
+                                                        {formData.dispositifs
+                                                            .filter((_, index) => index % 2 === 0) // Get even indexed items (0, 2, 4...)
+                                                            .map((dispositif) => (
+                                                                <DispositifComponent
+                                                                    key={dispositif.id}
+                                                                    dispositif={dispositif}
+                                                                    currentPdp={formData}
+                                                                    saveCurrentPdp={setFormData}
+                                                                    setIsChanged={() => {}}
+                                                                />
+                                                            ))}
+                                                    </Stack>
+
+                                                    {/* Second Stack - Right side */}
+                                                    <Stack spacing={1} sx={{ flex: 1 }}>
+                                                        {formData.dispositifs
+                                                            .filter((_, index) => index % 2 !== 0) // Get odd indexed items (1, 3, 5...)
+                                                            .map((dispositif) => (
+                                                                <DispositifComponent
+                                                                    key={dispositif.id}
+                                                                    dispositif={dispositif}
+                                                                    currentPdp={formData}
+                                                                    saveCurrentPdp={setFormData}
+                                                                    setIsChanged={() => {}}
+                                                                />
+                                                            ))}
+                                                    </Stack>
+                                                </Box>
+
+
                                             ) : (
                                                 <Typography variant="body2" color="textSecondary">
                                                     Aucun dispositif ajouté
@@ -1145,69 +1177,164 @@ const EditCreatePdp: React.FC = () => {
                                     </Box>
 
                                     {formData.analyseDeRisques && formData.analyseDeRisques.length > 0 ? (
-                                        <Stack spacing={1}>
+                                        <Stack spacing={2}>
                                             {formData.analyseDeRisques.map((analyse) => (
-                                                <Box
+                                                <Paper
                                                     key={analyse.id}
+                                                    variant="outlined"
                                                     sx={{
-                                                        display: 'flex',
-                                                        justifyContent: 'space-between',
-                                                        alignItems: 'center',
-                                                        p: 1,
-                                                        border: '1px solid',
-                                                        borderColor: 'divider',
-                                                        borderRadius: 1
+                                                        p: 2,
+                                                        borderRadius: 1,
+                                                        borderLeft: 4,
+                                                        borderLeftColor: 'primary.main'
                                                     }}
                                                 >
-                                                    <Typography>
-                                                        {analyse.analyseDeRisque?.risque?.title || `Analyse #${analyse.id}`}
-                                                    </Typography>
-                                                    <Box>
-                                                        <FormControlLabel
-                                                            control={
-                                                                <Checkbox
-                                                                    checked={analyse.ee}
-                                                                    onChange={(e) => {
-                                                                        // Update EE value
-                                                                        const updatedAnalyses = formData.analyseDeRisques?.map(a =>
-                                                                            a.id === analyse.id ? { ...a, ee: e.target.checked } : a
-                                                                        ) || [];
-                                                                        setFormData(prev => ({ ...prev, analyseDeRisques: updatedAnalyses }));
-                                                                    }}
-                                                                    color="primary"
+
+
+
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                            {analyse.analyseDeRisque?.risque?.logo && (
+                                                                <Avatar
+                                                                    src={`data:${analyse.analyseDeRisque.risque.logo.mimeType};base64,${analyse.analyseDeRisque.risque.logo.imageData}`}
+                                                                    alt={analyse.analyseDeRisque.risque.title}
+                                                                    sx={{ width: 32, height: 32 }}
                                                                 />
-                                                            }
-                                                            label="EE"
-                                                        />
-                                                        <FormControlLabel
-                                                            control={
-                                                                <Checkbox
-                                                                    checked={analyse.eu}
-                                                                    onChange={(e) => {
-                                                                        // Update EU value
-                                                                        const updatedAnalyses = formData.analyseDeRisques?.map(a =>
-                                                                            a.id === analyse.id ? { ...a, eu: e.target.checked } : a
-                                                                        ) || [];
-                                                                        setFormData(prev => ({ ...prev, analyseDeRisques: updatedAnalyses }));
-                                                                    }}
-                                                                    color="primary"
+                                                            )}
+                                                            <Typography variant="subtitle1" fontWeight="bold">
+                                                                {analyse.analyseDeRisque?.risque?.title || `Analyse #${analyse.id}`}
+                                                            </Typography>
+                                                        </Box>
+                                                        <Box>
+                                                            <Tooltip title="Entreprise Extérieure">
+                                                                <FormControlLabel
+                                                                    control={
+                                                                        <Checkbox
+                                                                            checked={analyse.ee}
+                                                                            onChange={(e) => {
+                                                                                const updatedAnalyses = formData.analyseDeRisques?.map(a =>
+                                                                                    a.id === analyse.id ? { ...a, ee: e.target.checked } : a
+                                                                                ) || [];
+                                                                                setFormData(prev => ({ ...prev, analyseDeRisques: updatedAnalyses }));
+                                                                            }}
+                                                                            color="primary"
+                                                                            size="small"
+                                                                        />
+                                                                    }
+                                                                    label="EE"
                                                                 />
-                                                            }
-                                                            label="EU"
-                                                        />
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => handleRemoveItem('analyseDeRisques', analyse.id as number)}
-                                                            color="error"
-                                                        >
-                                                            <DeleteIcon />
-                                                        </IconButton>
+                                                            </Tooltip>
+                                                            <Tooltip title="Entreprise Utilisatrice">
+                                                                <FormControlLabel
+                                                                    control={
+                                                                        <Checkbox
+                                                                            checked={analyse.eu}
+                                                                            onChange={(e) => {
+                                                                                const updatedAnalyses = formData.analyseDeRisques?.map(a =>
+                                                                                    a.id === analyse.id ? { ...a, eu: e.target.checked } : a
+                                                                                ) || [];
+                                                                                setFormData(prev => ({ ...prev, analyseDeRisques: updatedAnalyses }));
+                                                                            }}
+                                                                            color="primary"
+                                                                            size="small"
+                                                                        />
+                                                                    }
+                                                                    label="EU"
+                                                                />
+                                                            </Tooltip>
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => handleRemoveItem('analyseDeRisques', analyse.id)}
+                                                                color="error"
+                                                            >
+                                                                <DeleteIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </Box>
                                                     </Box>
-                                                </Box>
+
+                                                    {analyse.analyseDeRisque?.risque?.description && (
+                                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                                            {analyse.analyseDeRisque.risque.description}
+                                                        </Typography>
+                                                    )}
+
+                                                    <Divider sx={{ my: 1 }} />
+
+                                                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                                                        <Grid item xs={12} md={6}>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                Déroulement des tâches
+                                                            </Typography>
+                                                            <Typography variant="body2">
+                                                                {analyse.analyseDeRisque?.deroulementDesTaches || "Non spécifié"}
+                                                            </Typography>
+                                                        </Grid>
+                                                        <Grid item xs={12} md={6}>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                Moyens utilisés
+                                                            </Typography>
+                                                            <Typography variant="body2">
+                                                                {analyse.analyseDeRisque?.moyensUtilises || "Non spécifié"}
+                                                            </Typography>
+                                                        </Grid>
+                                                        <Grid item xs={12}>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                Mesures de prévention
+                                                            </Typography>
+                                                            <Typography variant="body2">
+                                                                {analyse.analyseDeRisque?.mesuresDePrevention || "Non spécifié"}
+                                                            </Typography>
+                                                        </Grid>
+                                                    </Grid>
+
+                                                    {analyse.analyseDeRisque?.risque && (
+                                                        <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+                                                            {analyse.analyseDeRisque.risque.travailleDangereux && (
+                                                                <Chip
+                                                                    size="small"
+                                                                    color="error"
+                                                                    label="Travail dangereux"
+                                                                    icon={<WarningIcon />}
+                                                                />
+                                                            )}
+                                                            {analyse.analyseDeRisque.risque.travaillePermit && (
+                                                                <Chip
+                                                                    size="small"
+                                                                    color="warning"
+                                                                    label="Travail avec permis"
+
+                                                                />
+                                                            )}
+                                                        </Box>
+                                                    )}
+
+                                                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                                                        <Button
+                                                            size="small"
+                                                            startIcon={<EditIcon />}
+                                                            onClick={() => {
+                                                                setSelectedAnalyseDeRisque(analyse?.analyseDeRisque || null);
+                                                                handleOpenDialog('editAnalyseDeRisque');
+                                                                setOpenDialog(true);
+
+                                                            }}
+                                                        >
+                                                            Modifier
+                                                        </Button>
+                                                        <Button
+                                                            size="small"
+                                                            startIcon={<Visibility />}
+                                                            //onClick={() => handleViewDetails(analyse.id)}
+                                                            sx={{ ml: 1 }}
+                                                        >
+                                                            Détails
+                                                        </Button>
+                                                    </Box>
+                                                </Paper>
                                             ))}
                                         </Stack>
                                     ) : (
-                                        <Typography variant="body2" color="textSecondary">
+                                        <Typography variant="body2" color="textSecondary" sx={{ py: 2, textAlign: 'center' }}>
                                             Aucune analyse de risque ajoutée
                                         </Typography>
                                     )}
@@ -1224,6 +1351,7 @@ const EditCreatePdp: React.FC = () => {
                                         variant="contained"
                                         color="primary"
                                         type="submit"
+                                        onClick={handleSubmit}
                                     >
                                         Enregistrer
                                     </Button>
@@ -1241,7 +1369,7 @@ const EditCreatePdp: React.FC = () => {
                 </DialogTitle>
                 <DialogContent>
                     {dialogType === 'risques' && (
-                        <Autocomplete
+                       /* <Autocomplete
                             options={risques.filter(r =>
                                 !formData.risques?.some(fr => fr.risque?.id === r.id || fr.id === r.id) || []
                             )}
@@ -1256,8 +1384,31 @@ const EditCreatePdp: React.FC = () => {
                                     margin="normal"
                                 />
                             )}
-                        />
+                        />*/
+
+                        <SelectOrCreateRisque open={
+                            openDialog
+                        } setOpen={setOpenDialog} currentObject={formData} saveObject={setFormData} targetType={'pdp'} setIsChanged={()=>{}}/>
                     )}
+
+                    {
+                        dialogType ==='dispositifs' && (
+                            <SelectOrCreateDispositif open={openDialog} setOpen={setOpenDialog} currentPdp={formData} savePdp={setFormData} setIsChanged={()=>{}}/>
+                        )
+                    }
+                    {
+                        dialogType ==='analyseDeRisques' && (
+                            <SelectOrCreateAnalyseRisque open={openDialog} setOpen={setOpenDialog} currentPdp={formData} savePdp={setFormData} setIsChanged={()=>{}}/>
+                        )
+                    }
+                    {
+                        dialogType === 'editAnalyseDeRisque' && (
+                            <EditAnalyseRisque analyse={
+                                selectedAnalyseDeRisque
+                            }
+                                               setAnalyse={setSelectedAnalyseDeRisque} open={openDialog} setOpen={setOpenDialog} savePdp={setFormData} currentPdp={formData} isEdit={true} setIsChanged={()=>{}}/>
+                        )
+                    }
 
                     {dialogType === 'permits' && (
                         <Autocomplete
@@ -1276,6 +1427,7 @@ const EditCreatePdp: React.FC = () => {
                                 />
                             )}
                         />
+
                     )}
 
                     {/* Add more autocomplete fields for other dialog types */}
@@ -1305,11 +1457,18 @@ const EditCreatePdp: React.FC = () => {
                     type="submit"
                     startIcon={<SaveIcon />}
                     disabled={isLoading}
+                    onClick={(e)=>{
+                        console.log(formData)
+                        if(!validateForm()){
+                            return;
+                        }
+                        handleSubmit(e)
+                    }}
                 >
                     {isEditMode ? "Mettre à jour" : "Créer"}
                 </Button>
             </Box>
-        </form>
+        </div>
     )}
 </Paper>
 </Box>

@@ -18,12 +18,25 @@ import Steps from "./pages/PDPSteps/Steps.tsx";
 import ProfilePage from "./pages/ProfilePage.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
+import ViewPdp from "./pages/PDP/ViewPdp.tsx";
+import CRUDRisque from "./pages/Risque/CRUDRisque.tsx";
+import RisqueManager from "./pages/Risque/RisqueManager.tsx";
+import UserManager from "./pages/User/UserManager.tsx";
+import PermitManager from "./pages/Permit/PermiManager.tsx";
+import EntrepriseManager from "./pages/Entreprise/EntrepriseManager.tsx";
+import LocalisationManager from "./pages/Localisation/LocalisationManager.tsx";
+import PdpManager from "./components/Pdp/PdpManager.tsx";
+import WorkerManager from "./pages/Worker/WorkerManager.tsx";
+import EditCreateBdt from "./pages/BDT/EditCreateBDT.tsx";
+import ErrorBoundary from "./pages/ErrorBoundary.tsx";
+import AuditSecuManager from "./pages/AudiSecu/AudiSecuManager.tsx";
+import ViewBdt from "./pages/BDT/ViewBdt.tsx";
 
 
 //Standard naming
 /*
  /user/login
- /create/pdp
+ /create/pdps
 
 * */
 
@@ -37,24 +50,40 @@ export const ROUTES = {
 
     // PDP routes
     EDIT_PDP_STEPS: {
-        path: "/create/pdp/:pdpId/:pageNumber",
+        path: "/create/pdps/:pdpId/:pageNumber",
         element: <Steps />
     },
     EDIT_PDP: {
-        path: "/edit/pdp/:id",
+        path: "/edit/pdps/:id",
         element: <EditCreatePdp />
     },
     CREATE_PDP: {
-        path: "/create/pdp/:chantierId",
+        path: "/create/pdps/:chantierId",
         element: <EditCreatePdp />
     },
-
+    VIEW_PDP:{
+        path:"/view/pdps/:id",
+        element:<ViewPdp />
+    }
+,
     // BDT routes
     BDT_STEPS: {
         path: "/create/bdt/:bdtId/:pageNumber",
         element: <StepsBDT />
     },
-
+    CREATE_BDT:{
+        path:"/create/bdt/:chantierId",
+        element:<ErrorBoundary><EditCreateBdt /> </ErrorBoundary>
+    },
+    VIEW_BDT:{
+        path:"/view/bdt/:id",
+        element:<ErrorBoundary><ViewBdt/> </ErrorBoundary>
+    },
+    EDIT_BDT:{
+        path:"/edit/bdt/:id",
+        element:<ErrorBoundary><EditCreateBdt /> </ErrorBoundary>
+    }
+,
     // Chantier routes
     CREATE_CHANTIER: {
         path: "/create/chantier",
@@ -78,33 +107,48 @@ export const ROUTES = {
     // View routes
     VIEW_ENTREPRISES: {
         path: "/view/entreprises",
-        element: <ViewAllEntreprises />
+        element: <EntrepriseManager />
     },
     VIEW_USERS: {
         path: "/view/users",
-        element: <ViewAllUser />
+        element: <UserManager />
     },
+    //Risques
     VIEW_RISQUES: {
         path: "/view/risques",
-        element: <ViewAllRisques />
+        element: <RisqueManager />
+    },
+    CRUD_RISQUES:{
+      path: "/crud/risques",
+        element: <CRUDRisque />
     },
     VIEW_LOCALISATIONS: {
         path: "/view/localisations",
-        element: <ViewAllLocalisations />
+        element: <LocalisationManager />
     },
     VIEW_PERMITS: {
         path: "/view/permits",
-        element: <ViewAllPermits />
+        element: <PermitManager />
     },
     VIEW_PDPS: {
         path: "/view/pdps",
-        element: <ViewAllPdps />
+        element: <PdpManager />
     },
-
+    VIEW_WORKERS:
+        {
+        path: "/view/workers",
+        element: <WorkerManager />
+    },
     // PDF Preview route
     PREVIEW_PDF: {
         path: "/preview/pdf",
         element: <LivePDFPreview />
+    },
+
+    //Audit
+    CRUD_AUDISECU:{
+        path:"/view/auditsecus",
+        element:<ErrorBoundary><AuditSecuManager /></ErrorBoundary>
     },
 
     // Auth routes
@@ -127,7 +171,9 @@ export const getRoute = (routeName:NameOfRoute, params = {}) => {
 
     // Replace params in the path
     Object.entries(params).forEach(([key, value]) => {
-        path = path.replace(`:${key}`, value);
+
+            path = path.replace(`:${key}`, value as string);
+
     });
 
     return path;
@@ -142,6 +188,7 @@ export const getRouteLists = () => {
         ROUTES.EDIT_PDP,
         ROUTES.CREATE_PDP,
         ROUTES.BDT_STEPS,
+        ROUTES.VIEW_PDP,
         ROUTES.CREATE_CHANTIER,
         ROUTES.VIEW_CHANTIER,
         ROUTES.EDIT_CHANTIER,
@@ -149,10 +196,16 @@ export const getRouteLists = () => {
         ROUTES.VIEW_ENTREPRISES,
         ROUTES.VIEW_USERS,
         ROUTES.VIEW_RISQUES,
+        ROUTES.CRUD_RISQUES,
         ROUTES.VIEW_LOCALISATIONS,
         ROUTES.VIEW_PERMITS,
         ROUTES.VIEW_PDPS,
-        ROUTES.PREVIEW_PDF
+        ROUTES.PREVIEW_PDF,
+        ROUTES.VIEW_WORKERS,
+        ROUTES.CREATE_BDT,
+        ROUTES.CRUD_AUDISECU,
+        ROUTES.VIEW_BDT,
+        ROUTES.EDIT_BDT
     ];
 
     // Public routes (no login required)

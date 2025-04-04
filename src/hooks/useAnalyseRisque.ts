@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAxios } from "./useAxios";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import AnalyseDeRisque from "../utils/AnalyseDeRisque/AnalyseDeRisque.ts";
-import AnalyseDeRisqueDTO from "../utils/AnalyseDeRisque/AnalyseDeRisqueDTO.ts";
-import Risque from "../utils/Risque/Risque.ts";
+import AnalyseDeRisque from "../utils/entities/AnalyseDeRisque.ts";
+import AnalyseDeRisqueDTO from "../utils/entitiesDTO/AnalyseDeRisqueDTO.ts";
+import Risque from "../utils/entities/Risque.ts";
 import ObjectAnsweredEntreprises from "../utils/pdp/ObjectAnsweredEntreprises.ts";
 
 type AnalyseResponse = AnalyseDeRisque | AnalyseDeRisque[] | boolean | number | null;

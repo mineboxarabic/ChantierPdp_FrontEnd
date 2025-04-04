@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import User from "../utils/user/User";
+import User from "../utils/entities/User.ts";
 import { useAxios } from "./useAxios";
 import { AxiosResponseState } from "../utils/AxiosResponse";
 import { useNotifications } from "@toolpad/core/useNotifications";

@@ -2,8 +2,8 @@ import { useAxios } from "./useAxios.ts";
 import { useEffect, useState } from "react";
 import { useNotifications } from '@toolpad/core/useNotifications';
 import { AxiosResponseState } from "../utils/AxiosResponse.ts";
-import Localisation from "../utils/Localisation/Localisation.ts";
-import LocalisationDTO from "../utils/Localisation/LocalisationDTO.ts";
+import Localisation from "../utils/entities/Localisation.ts";
+import LocalisationDTO from "../utils/entitiesDTO/LocalisationDTO.ts";
 
 type LocalisationResponse = LocalisationDTO | LocalisationDTO[] | Localisation | Localisation[] | boolean | number | null;
 
@@ -13,6 +13,8 @@ const useLocalisation = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const notifications = useNotifications();
     const { fetch, responseAxios, errorAxios, loadingAxios } = useAxios<AxiosResponseState<LocalisationResponse>>();
+
+    const [localisations, setLocalisations] = useState<Map<number, Localisation>>(new Map<number, Localisation>());
 
     useEffect(() => {
         if (responseAxios) {
@@ -55,6 +57,15 @@ const useLocalisation = () => {
         ]).then(r => {
             if (r !== undefined  && r) {
                 setResponse(r.data?.data as Localisation[]);
+
+                (r.data?.data as Localisation[]).forEach((localisation: Localisation) => {
+                    if (!localisations.has(localisation.id as number)) {
+                        localisations.set(localisation.id as number, localisation);
+                    }
+
+                }
+                );
+
                 return r.data?.data;
             }
         }) as Promise<Localisation[]>;
@@ -126,7 +137,7 @@ const useLocalisation = () => {
         }) as Promise<Localisation>;
     };
 
-    return { loading, error, response, getLocalisation, getAllLocalisations, updateLocalisation, deleteLocalisation, createLocalisation };
+    return { loading, error, response, getLocalisation, getAllLocalisations, updateLocalisation, deleteLocalisation, createLocalisation , localisations};
 };
 
 export default useLocalisation;

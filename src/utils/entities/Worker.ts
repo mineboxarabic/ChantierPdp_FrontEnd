@@ -28,7 +28,7 @@ public class Worker {
 
 
     @ManyToOne
-    private Pdp pdp;
+    private Pdp pdps;
 
 
     @ManyToMany
@@ -39,20 +39,21 @@ public class Worker {
 }
 */
 
-import {Entreprise} from "./entreprise/Entreprise.ts";
-import {Pdp} from "./pdp/Pdp.ts";
-import Signature from "./signature/Signature.ts";
-import Chantier from "./Chantier/Chantier.ts";
+import {Entreprise} from "./Entreprise.ts";
+import {Pdp} from "./Pdp.ts";
+import Signature from "./Signature.ts";
+import Chantier from "./Chantier.ts";
+import {EntityRef} from "../EntityRef.ts";
 
 class Worker{
     id?: number;
     nom?: string;
     prenom?: string;
-    entreprise?: Entreprise;
-    pdp?: Pdp;
+    entreprise?: EntityRef;
+    pdp?: EntityRef[];
     signatures?: Signature[];
-    chantier?: Chantier;
-    constructor(id:number, nom:string, prenom:string, entreprise:Entreprise, pdp:Pdp, signatures:Signature[], chantier:Chantier) {
+    chantier?: EntityRef[];
+    constructor(id:number, nom:string, prenom:string, entreprise:EntityRef, pdp:EntityRef[], signatures:Signature[], chantier:EntityRef[]) {
         this.id = id;
         this.nom = nom;
         this.prenom = prenom;

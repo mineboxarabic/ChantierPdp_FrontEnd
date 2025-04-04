@@ -1,4 +1,4 @@
-import {Entreprise} from "../entreprise/Entreprise.ts";
+import {Entreprise} from "../entities/Entreprise.ts";
 
 export type PdpDTO = {
     id?: number;

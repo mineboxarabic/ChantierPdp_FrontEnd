@@ -1,7 +1,7 @@
 // ViewAllEntreprises.tsx
 import Grid from "@mui/material/Grid2";
 import EntrepriseCard from "../../components/Entreprise/EntrepriseCard";
-import { Entreprise } from "../../utils/entreprise/Entreprise.ts";
+import { Entreprise } from "../../utils/entities/Entreprise.ts";
 import useEntreprise from "../../hooks/useEntreprise.ts";
 import { useEffect, useState } from "react";
 import EditEntreprise from "../../components/Entreprise/EditEntreprise.tsx";

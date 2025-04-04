@@ -275,7 +275,7 @@ export default EditPermit;
 
 import React, {useEffect, useState} from "react";
 import EditItem, {FieldConfig} from "../EditItem.tsx";
-import Permit from "../../utils/permit/Permit.ts";
+import Permit from "../../utils/entities/Permit.ts";
 import usePermit from "../../hooks/usePermit.ts";
 import PermiTypes from "../../utils/PermiTypes.ts";
 
