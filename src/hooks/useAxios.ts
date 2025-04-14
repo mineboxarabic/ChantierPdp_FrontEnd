@@ -54,7 +54,6 @@ export const useAxios  =<T = any> () => {
         const urlApi = apiUrl + url;
         const result = await axios({ url: urlApi, method, headers, data }).then((response) => {
             setMessage(response.data.message);
-            console.log('response', response);
             return response;
         })
             .catch((err: AxiosError) => {

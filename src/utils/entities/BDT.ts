@@ -19,7 +19,7 @@ export class BDT {
     signatureChargeDeTravail?: EntityRef;
     signatureDonneurDOrdre?: EntityRef;
     entrepriseExterieure?: EntityRef;
-    chantier?: number;
+    chantier?: EntityRef;
     constructor() {
 
     }

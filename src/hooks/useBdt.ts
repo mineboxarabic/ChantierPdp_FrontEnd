@@ -14,6 +14,8 @@ const useBdt = () => {
     const notifications = useNotifications();
     const { fetch, responseAxios, errorAxios, loadingAxios } = useAxios<AxiosResponseState<BDT | BDT[] | boolean>>();
 
+    const [bdts, setBdts] = useState<Map<number, BDT>>(new Map<number, BDT>);
+
     useEffect(() => {
         if (responseAxios) {
             setResponse(responseAxios.data?.data as BDT | BDT[]);
@@ -28,7 +30,15 @@ const useBdt = () => {
         return fetch("api/bdt/all", "GET", null, [
             { status: 404, message: "Error BDTs not found" },
             { status: -1, message: "Error while getting BDTs" }
-        ]).then((response) => response?.data?.data as BDT[]);
+        ]).then((response) => {
+
+            (response?.data?.data as BDT[]).forEach((bdt: BDT) => {
+                bdts.set(bdt.id as number, bdt);
+            }
+            )
+
+            return response?.data?.data as BDT[]
+        });
     };
 
     const saveBDT = async (bdt: BDT, id:number): Promise<BDT> => {
@@ -89,7 +99,7 @@ const useBdt = () => {
             { status: 404, message: "Error BDT or audit not found" }
         ]).then((r) => r?.data?.data as ObjectAnswered);
     };
-    return { loading, error, response, saveBDT,getAllBDTs,unlinkRisqueToBDT, unlinkAuditToBDT, getBDT, createBDT, deleteBDT, linkRisqueToBDT, linkAuditToBDT };
+    return { loading, error,bdts, response, saveBDT,getAllBDTs,unlinkRisqueToBDT, unlinkAuditToBDT, getBDT, createBDT, deleteBDT, linkRisqueToBDT, linkAuditToBDT };
 };
 
 export default useBdt;

@@ -148,7 +148,7 @@ const EditCreateBdt: React.FC = () => {
         chantier: undefined,
         entrepriseExterieure: undefined,
         signatureChargeDeTravail: undefined,
-        signatureDonneurDOrdre: undefined
+        signatureDonneurDOrdre: undefined,
     });
 
     // Loading state
@@ -214,12 +214,15 @@ const EditCreateBdt: React.FC = () => {
                 // If creating from a chantier, set the chantier
                 if (!isEditMode && chantierId) {
                     const chantier = await getChantier(Number(chantierId));
+                    console.log('here', chantier);
                     if (chantier) {
                         setFormData(prev => ({
                             ...prev,
-                            chantier: chantier.id
+                            chantier: { id: chantier.id as number } as EntityRef
                         }));
                     }
+                }else{
+
                 }
             } catch (error) {
                 console.error("Error loading data:", error);
@@ -758,6 +761,7 @@ const EditCreateBdt: React.FC = () => {
                                                                 control={
                                                                     <Switch
                                                                         onChange={() => handleToggleAnswer('complementOuRappels', index)}
+                                                                        checked={complement.respect || false}
                                                                         color="primary"
                                                                     />
                                                                 }
@@ -949,39 +953,26 @@ const EditCreateBdt: React.FC = () => {
                     </DialogTitle>
                     <DialogContent>
                         {dialogType === 'risques' && (
-                        /*    <Autocomplete
-                                options={risques}
-                                getOptionLabel={(option) => option.title || ''}
-                                onChange={(_, newValue) => setDialogData(newValue)}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Sélectionner un risque"
-                                        variant="outlined"
-                                        fullWidth
-                                    />
-                                )}
-                            />*/
-
-                            <SelectOrCreateRisque open={openDialog} setOpen={setOpenDialog} currentObject={formData} targetType={'bdt'} saveObject={setFormData} setIsChanged={()=>{}}/>
+                            <SelectOrCreateRisque<BDT> open={openDialog}
+                                                       setOpen={setOpenDialog}
+                                                       currentObject={formData}
+                                                       saveObject={setFormData}
+                                                       linkRisqueToObject={linkRisqueToBDT}
+                                                       setIsChanged={()=>{}}
+                                                       getRisques={(p)=>{return p.risques}}
+                            />
 
                         )}
                         {dialogType === 'audits' && (
-                          /*  <Autocomplete
-                                options={audits}
-                                getOptionLabel={(option:AuditSecu) => option.title || ''}
-                                onChange={(_, newValue) => setDialogData(newValue)}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Sélectionner un audit"
-                                        variant="outlined"
-                                        fullWidth
-                                    />
-                                )}
-                            />*/
-
-                            <SelectOrCreateAudit open={openDialog} setOpen={setOpenDialog} currentObject={formData} saveObject={setFormData} setIsChanged={()=>{}} targetType={'bdt'} />
+                            <SelectOrCreateAudit<BDT>
+                                open={openDialog}
+                                setOpen={setOpenDialog}
+                                currentObject={formData}
+                                saveObject={setFormData}
+                                setIsChanged={()=>{}}
+                                linkAuditToObject={linkAuditToBDT}
+                                getAudits={(p)=>{return p.auditSecu}}
+                                 />
                         )}
                         {dialogType === 'complement' && (
                             <TextField

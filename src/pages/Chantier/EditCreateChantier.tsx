@@ -184,7 +184,7 @@ const EditCreateChantier: FC = () => {
     const { getUsers, loading: loadingUsers } = useUser();
     const { getAllLocalisations, localisations } = useLocalisation();
     const { createPdp, getAllPDPs, pdps } = usePdp();
-    const { createBDT } = useBdt();
+    const { getAllBDTs, bdts , deleteBDT} = useBdt();
     const { getAllWorkers, getSelectedWorkersForChantier, deselectWorkerFromChantier, workers, workersInChantier } = useWoker();
 
     // Load initial data
@@ -201,6 +201,8 @@ const EditCreateChantier: FC = () => {
                 getAllLocalisations();
                 //Workers
                 getAllWorkers();
+                //Bdts
+                getAllBDTs();
 
                 // Fetch users
                 const usersData = await getUsers();
@@ -226,6 +228,7 @@ const EditCreateChantier: FC = () => {
     }, [id, isEditMode]);
 
     useEffect(() => {
+        console.log(formData);
         // Check if Documents tab should be visible
         if (formData.nbHeurs && formData.nbHeurs >= 400 || formData.isAnnuelle) {
             setShowDocumentsTab(true);
@@ -307,6 +310,13 @@ const EditCreateChantier: FC = () => {
         setErrors(newErrors);
         return isValid;
     };
+
+
+    //Getters
+
+    const getBDT = (id: number): BDT => {
+       return bdts.get(id) as BDT;
+    }
 
     // Handle form field changes
     const handleInputChange = (field: string, value: any) => {
@@ -419,13 +429,19 @@ const EditCreateChantier: FC = () => {
         }
     };
 
-    const handleRemoveBdt = (id: number | undefined) => {
+    const handleRemoveBdt =async (id: number | undefined) => {
         if (!id) return;
+
+
+        // Delete BDT
+        await deleteBDT(id);
 
         setFormData(prev => ({
             ...prev,
             bdts: prev.bdts?.filter(b => b.id !== id) || []
         }));
+
+
     };
 
     // Main render function
@@ -605,7 +621,7 @@ const EditCreateChantier: FC = () => {
                                         options={Array.from(entreprises.values())}
                                         getOptionLabel={(option) => option.nom || ""}
                                         value={formData.entrepriseUtilisatrice || null}
-                                        onChange={(_, value) => handleInputChange('entrepriseUtilisatrice', value)}
+                                        onChange={(_, value) => handleInputChange('entrepriseUtilisatrice', value ? { id: value.id } : undefined)}
                                         renderInput={(params) => (
                                             <TextField
                                                 {...params}
@@ -926,14 +942,14 @@ const EditCreateChantier: FC = () => {
                                                     formData.bdts.map((bdt) => (
                                                         <TableRow key={bdt.id}>
                                                             <TableCell>#{bdt.id}</TableCell>
-                                                            <TableCell>{bdt.nom || "Sans nom"}</TableCell>
-                                                            <TableCell>{bdt.risques?.length || 0}</TableCell>
-                                                            <TableCell>{bdt.auditSecu?.length || 0}</TableCell>
+                                                            <TableCell>{getBDT(bdt?.id)?.nom || "Sans nom"}</TableCell>
+                                                            <TableCell>{getBDT(bdt?.id)?.risques?.length || 0}</TableCell>
+                                                            <TableCell>{getBDT(bdt?.id)?.auditSecu?.length || 0}</TableCell>
                                                             <TableCell align="right">
                                                                 <IconButton
                                                                     size="small"
                                                                     color="primary"
-                                                                    onClick={() => navigate(`/create/bdt/${bdt.id}/1`)}
+                                                                    onClick={() => navigate(getRoute('EDIT_BDT', {id: bdt?.id}))}
                                                                 >
                                                                     <Assignment />
                                                                 </IconButton>
