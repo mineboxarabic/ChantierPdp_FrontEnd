@@ -1,33 +1,19 @@
-import { useAxios } from "./useAxios.ts";
-import { useEffect, useState } from "react";
+// useLocalisation.ts
+import { useState } from "react";
 import { useNotifications } from '@toolpad/core/useNotifications';
-import { AxiosResponseState } from "../utils/AxiosResponse.ts";
 import Localisation from "../utils/entities/Localisation.ts";
 import LocalisationDTO from "../utils/entitiesDTO/LocalisationDTO.ts";
+import fetchApi, { ApiResponse} from "../api/fetchApi.ts";
 
 type LocalisationResponse = LocalisationDTO | LocalisationDTO[] | Localisation | Localisation[] | boolean | number | null;
 
-const useLocalisation = () => {
-    const [response, setResponse] = useState<LocalisationResponse | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const notifications = useNotifications();
-    const { fetch, responseAxios, errorAxios, loadingAxios } = useAxios<AxiosResponseState<LocalisationResponse>>();
-
-    const [localisations, setLocalisations] = useState<Map<number, Localisation>>(new Map<number, Localisation>());
-
-    useEffect(() => {
-        if (responseAxios) {
-            setResponse(responseAxios.data?.data as LocalisationResponse);
-        }
-        if (errorAxios) {
-            setError(errorAxios);
-        }
-        setLoading(loadingAxios);
-    }, [responseAxios, errorAxios, loadingAxios]);
-
-    const getLocalisation = async (id: number): Promise<Localisation> => {
-        return fetch(`api/localisation/${id}`, 'GET', null, [
+// Function to get a localisation by ID
+export const getLocalisationById = async (id: number): Promise<ApiResponse<Localisation>> => {
+    return fetchApi<Localisation>(
+        `api/localisation/${id}`,
+        'GET',
+        null,
+        [
             {
                 status: 404,
                 message: 'GetLocalisation: Localisation not found',
@@ -36,16 +22,17 @@ const useLocalisation = () => {
                 status: -1,
                 message: 'GetLocalisation: Error fetching localisation',
             }
-        ]).then(r => {
-            if (r !== undefined && r) {
-                setResponse(r.data?.data as Localisation);
-                return r.data?.data;
-            }
-        }) as Promise<Localisation>;
-    };
+        ]
+    );
+};
 
-    const getAllLocalisations = async (): Promise<Localisation[]> => {
-        return fetch(`api/localisation`, 'GET', null, [
+// Function to get all localisations
+export const getAllLocalisations = async (): Promise<ApiResponse<Localisation[]>> => {
+    return fetchApi<Localisation[]>(
+        `api/localisation`,
+        'GET',
+        null,
+        [
             {
                 status: 404,
                 message: 'GetAllLocalisations: Localisations not found',
@@ -54,25 +41,17 @@ const useLocalisation = () => {
                 status: -1,
                 message: 'GetAllLocalisations: Error fetching localisations',
             }
-        ]).then(r => {
-            if (r !== undefined  && r) {
-                setResponse(r.data?.data as Localisation[]);
+        ]
+    );
+};
 
-                (r.data?.data as Localisation[]).forEach((localisation: Localisation) => {
-                    if (!localisations.has(localisation.id as number)) {
-                        localisations.set(localisation.id as number, localisation);
-                    }
-
-                }
-                );
-
-                return r.data?.data;
-            }
-        }) as Promise<Localisation[]>;
-    };
-
-    const updateLocalisation = async (localisation: Localisation, id: number): Promise<Localisation> => {
-        return fetch(`api/localisation/${id}`, 'PATCH', localisation, [
+// Function to update a localisation
+export const updateLocalisation = async (localisation: Localisation, id: number): Promise<ApiResponse<Localisation>> => {
+    return fetchApi<Localisation>(
+        `api/localisation/${id}`,
+        'PATCH',
+        localisation,
+        [
             {
                 status: 409,
                 message: 'UpdateLocalisation: Conflict, localisation already exists',
@@ -85,16 +64,17 @@ const useLocalisation = () => {
                 status: -1,
                 message: 'UpdateLocalisation: Error updating localisation',
             }
-        ]).then(r => {
-            if (r !== undefined && r) {
-                setResponse(r.data?.data as Localisation);
-                return r.data?.data;
-            }
-        }) as Promise<Localisation>;
-    };
+        ]
+    );
+};
 
-    const deleteLocalisation = async (id: number): Promise<boolean> => {
-        return fetch(`api/localisation/${id}`, 'DELETE', null, [
+// Function to delete a localisation
+export const deleteLocalisation = async (id: number): Promise<ApiResponse<boolean>> => {
+    return fetchApi<boolean>(
+        `api/localisation/${id}`,
+        'DELETE',
+        null,
+        [
             {
                 status: 404,
                 message: 'DeleteLocalisation: Localisation not found',
@@ -107,16 +87,17 @@ const useLocalisation = () => {
                 status: -1,
                 message: 'DeleteLocalisation: Error deleting localisation',
             }
-        ]).then(r => {
-            if (r !== undefined && r) {
-                setResponse(r.data?.data as boolean);
-                return r.data?.data;
-            }
-        }) as Promise<boolean>;
-    };
+        ]
+    );
+};
 
-    const createLocalisation = async (localisation: Localisation): Promise<Localisation> => {
-        return fetch(`api/localisation`, 'POST', localisation, [
+// Function to create a localisation
+export const createLocalisation = async (localisation: Localisation): Promise<ApiResponse<Localisation>> => {
+    return fetchApi<Localisation>(
+        `api/localisation`,
+        'POST',
+        localisation,
+        [
             {
                 status: 409,
                 message: 'CreateLocalisation: Conflict, localisation already exists',
@@ -129,15 +110,130 @@ const useLocalisation = () => {
                 status: -1,
                 message: 'CreateLocalisation: Error creating localisation',
             }
-        ]).then(r => {
-            if (r !== undefined && r) {
-                setResponse(r.data?.data as Localisation);
-                return r.data?.data;
+        ]
+    );
+};
+
+// React hook that uses the API functions
+const useLocalisation = () => {
+    const [response, setResponse] = useState<LocalisationResponse | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [localisations, setLocalisations] = useState<Map<number, Localisation>>(new Map<number, Localisation>());
+
+    const notifications = useNotifications();
+
+    const getLocalisationHook = async (id: number): Promise<Localisation> => {
+        setLoading(true);
+        try {
+            const result = await getLocalisationById(id);
+            if (result.data) {
+                setResponse(result.data);
+                return result.data;
             }
-        }) as Promise<Localisation>;
+            throw new Error(result.message || "Failed to get localisation");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
     };
 
-    return { loading, error, response, getLocalisation, getAllLocalisations, updateLocalisation, deleteLocalisation, createLocalisation , localisations};
+    const getAllLocalisationsHook = async (): Promise<Localisation[]> => {
+        setLoading(true);
+        try {
+            const result = await getAllLocalisations();
+            if (result.data) {
+                setResponse(result.data);
+
+                // Update the localisations map
+                const updatedMap = new Map(localisations);
+                result.data.forEach(localisation => {
+                    if (localisation.id !== undefined) {
+                        updatedMap.set(localisation.id, localisation);
+                    }
+                });
+                setLocalisations(updatedMap);
+
+                return result.data;
+            }
+            throw new Error(result.message || "Failed to get all localisations");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const updateLocalisationHook = async (localisation: Localisation, id: number): Promise<Localisation> => {
+        setLoading(true);
+        try {
+            const result = await updateLocalisation(localisation, id);
+            if (result.data) {
+                setResponse(result.data);
+                return result.data;
+            }
+            throw new Error(result.message || "Failed to update localisation");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const deleteLocalisationHook = async (id: number): Promise<boolean> => {
+        setLoading(true);
+        try {
+            const result = await deleteLocalisation(id);
+            if (result.data !== undefined) {
+                setResponse(result.data);
+                return result.data;
+            }
+            throw new Error(result.message || "Failed to delete localisation");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const createLocalisationHook = async (localisation: Localisation): Promise<Localisation> => {
+        setLoading(true);
+        try {
+            const result = await createLocalisation(localisation);
+            if (result.data) {
+                setResponse(result.data);
+                return result.data;
+            }
+            throw new Error(result.message || "Failed to create localisation");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return {
+        loading,
+        error,
+        response,
+        getLocalisation: getLocalisationHook,
+        getAllLocalisations: getAllLocalisationsHook,
+        updateLocalisation: updateLocalisationHook,
+        deleteLocalisation: deleteLocalisationHook,
+        createLocalisation: createLocalisationHook,
+        localisations
+    };
 };
 
 export default useLocalisation;

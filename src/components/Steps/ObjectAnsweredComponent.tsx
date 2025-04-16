@@ -4,7 +4,7 @@ import worning from "../../assets/wornings/worning.webp";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import MenuItem from "@mui/material/MenuItem";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ImageModel } from "../../utils/image/ImageModel.ts";
 import Dispositif from "../../utils/entities/Dispositif.ts";
 import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
@@ -12,19 +12,24 @@ import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
 import {Pdp} from "../../utils/entities/Pdp.ts";
 import usePdp from "../../hooks/usePdp.ts";
+import { PdpDTO } from "../../utils/entitiesDTO/PdpDTO.ts";
 
 interface ObjectAnsweredComponentProps {
     item: ObjectAnswered;
     type: ObjectAnsweredObjects;
-    saveCurrentPdp: (pdp: Pdp) => void;
-    currentPdp: Pdp;
+    saveCurrentPdp: (pdp: PdpDTO) => void;
+    currentPdp: PdpDTO;
     setIsChanged: (value: boolean) => void;
+    itemData?: any;
 }
 
-const ObjectAnsweredComponent = ({ item, saveCurrentPdp,currentPdp,setIsChanged,type }: ObjectAnsweredComponentProps) => {
+const ObjectAnsweredComponent = ({ item, saveCurrentPdp,currentPdp,setIsChanged,type,itemData }: ObjectAnsweredComponentProps) => {
     const [openDialog, setOpenDialog] = useState(false);
     const {linkObjectToPdp, unlinkObjectFromPdp} = usePdp();
 
+    
+
+  
 
 
 
@@ -65,7 +70,7 @@ const ObjectAnsweredComponent = ({ item, saveCurrentPdp,currentPdp,setIsChanged,
     }
 
     const onDelete = () => {
-       unlinkObjectFromPdp(item?.id,currentPdp?.id as number, type).then(() => {
+       unlinkObjectFromPdp(item?.id as number,currentPdp?.id as number, type).then(() => {
             console.log('deleted', pluralizeType());
             saveCurrentPdp({
                 ...currentPdp,
@@ -73,13 +78,6 @@ const ObjectAnsweredComponent = ({ item, saveCurrentPdp,currentPdp,setIsChanged,
             });
             setIsChanged(true);
         })
-
-       /* currentPdp[pluralizeType()] = currentPdp[pluralizeType()]?.filter((p:ObjectAnswered) => p?.id !== item?.id);
-        saveCurrentPdp({
-            ...currentPdp,
-            [pluralizeType()]: currentPdp[pluralizeType()]?.filter((p:ObjectAnswered) => p?.id !== item?.id)
-        });
-        setIsChanged(true);*/
     }
 
     return (
@@ -98,14 +96,14 @@ const ObjectAnsweredComponent = ({ item, saveCurrentPdp,currentPdp,setIsChanged,
                     padding: '16px',
                 }}>
                     <img src={
-                        item[lowerCaseType()]?.logo?.imageData ? `data:${item[lowerCaseType()]?.logo.mimeType};base64,${item[lowerCaseType()]?.logo.imageData}` :
+                        itemData?.logo?.imageData ? `data:${itemData?.logo.mimeType};base64,${itemData?.logo.imageData}` :
                             worning
                     } width={10} alt="Dispositif" style={{
                         width: '5%',
                         objectPosition: 'center',
                     }} />
 
-                    <Typography>{item[lowerCaseType()]?.title}</Typography>
+                    <Typography>{itemData?.title}</Typography>
 
                     <Checkbox checked={item.answer ? true : false} onChange={e => onCheckChange(e.target.checked)} />
 

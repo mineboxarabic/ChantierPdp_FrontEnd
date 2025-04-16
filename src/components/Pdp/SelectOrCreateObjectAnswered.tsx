@@ -65,13 +65,13 @@ function SelectOrCreateObjectAnswered<T extends Linkable, P extends { id?: numbe
 
         switch (props.objectType) {
             case ObjectAnsweredObjects.RISQUE:
-                return existingItems.some((obj) => obj.risque?.id === item.id);
+                return existingItems.some((obj) => obj.risque_id === item.id);
             case ObjectAnsweredObjects.DISPOSITIF:
-                return existingItems.some((obj) => obj.dispositif?.id === item.id);
+                return existingItems.some((obj) => obj.dispositif_id === item.id);
             case ObjectAnsweredObjects.PERMIT:
-                return existingItems.some((obj) => obj.permit?.id === item.id);
+                return existingItems.some((obj) => obj.permit_id === item.id);
             case ObjectAnsweredObjects.AUDIT:
-                return existingItems.some((obj) => obj.auditSecu?.id === item.id);
+                return existingItems.some((obj) => obj.auditSecu_id === item.id);
             default:
                 return false;
         }
@@ -95,16 +95,16 @@ function SelectOrCreateObjectAnswered<T extends Linkable, P extends { id?: numbe
                     // Set the appropriate property based on objectType
                     switch (props.objectType) {
                         case ObjectAnsweredObjects.RISQUE:
-                            objectAnswered.risque = selectedItem as any;
+                            objectAnswered.risque_id = selectedItem as any;
                             break;
                         case ObjectAnsweredObjects.DISPOSITIF:
-                            objectAnswered.dispositif = selectedItem as any;
+                            objectAnswered.dispositif_id = selectedItem as any;
                             break;
                         case ObjectAnsweredObjects.PERMIT:
-                            objectAnswered.permit = selectedItem as any;
+                            objectAnswered.permit_id = selectedItem as any;
                             break;
                         case ObjectAnsweredObjects.AUDIT:
-                            objectAnswered.auditSecu = selectedItem as any;
+                            objectAnswered.auditSecu_id = selectedItem as any;
                             break;
                     }
 
@@ -148,16 +148,16 @@ function SelectOrCreateObjectAnswered<T extends Linkable, P extends { id?: numbe
             // Set the appropriate property based on objectType
             switch (props.objectType) {
                 case ObjectAnsweredObjects.RISQUE:
-                    newObjectAnswered.risque = selectedItem as any;
+                    newObjectAnswered.risque_id = selectedItem as any;
                     break;
                 case ObjectAnsweredObjects.DISPOSITIF:
-                    newObjectAnswered.dispositif = selectedItem as any;
+                    newObjectAnswered.dispositif_id = selectedItem as any;
                     break;
                 case ObjectAnsweredObjects.PERMIT:
-                    newObjectAnswered.permit = selectedItem as any;
+                    newObjectAnswered.permit_id = selectedItem as any;
                     break;
                 case ObjectAnsweredObjects.AUDIT:
-                    newObjectAnswered.auditSecu = selectedItem as any;
+                    newObjectAnswered.auditSecu_id = selectedItem as any;
                     break;
             }
 

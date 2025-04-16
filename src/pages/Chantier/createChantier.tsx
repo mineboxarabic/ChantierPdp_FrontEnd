@@ -19,6 +19,9 @@ import usePdp from "../../hooks/usePdp.ts";
 import useBdt from "../../hooks/useBdt.ts";
 import { Pdp } from "../../utils/entities/Pdp.ts";
 import { BDT } from "../../utils/entities/BDT.ts";
+import ChantierDTO from "../../utils/entitiesDTO/ChantierDTO.ts";
+import {useNavigate} from "react-router-dom";
+import {getRoute} from "../../Routes.tsx";
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -38,8 +41,9 @@ const CreateChantier: React.FC = () => {
     const { getAllLocalisations } = useLocalisation();
     const { createPdp } = usePdp();
     const { createBDT } = useBdt();
-    const notifications = useNotifications();
 
+    const notifications = useNotifications();
+    const navigate = useNavigate();
     const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [localisations, setLocalisations] = useState<Localisation[]>([]);
@@ -50,7 +54,7 @@ const CreateChantier: React.FC = () => {
     // State to manage BDTs
     const [bdts, setBdts] = useState<Partial<BDT>[]>([]);
 
-    const [chantier, setChantier] = useState<Partial<Chantier>>({
+    const [chantier, setChantier] = useState<ChantierDTO>({
         nom: "",
         operation: "",
         dateDebut: undefined,
@@ -59,9 +63,9 @@ const CreateChantier: React.FC = () => {
         effectifMaxiSurChantier: undefined,
         nombreInterimaires: undefined,
         entrepriseExterieurs: [],
-        entrepriseUtilisatrice: {} as Entreprise,
-        localisation: {} as Localisation,
-        donneurDOrdre: {} as User,
+        entrepriseUtilisatrice: undefined,
+        localisation: undefined,
+        donneurDOrdre: undefined,
         bdts: [],
         pdps: [],
         workers: []
@@ -74,12 +78,6 @@ const CreateChantier: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-       /*         const enterprisesData = await getAllEntreprises();
-                console.log(enterprisesData);
-                if (enterprisesData) {
-                    setEntreprises(enterprisesData);
-                }*/
-
                 getAllEntreprises().then((response:Entreprise[]) =>{
                     setEntreprises(response);
                 });
@@ -116,8 +114,9 @@ const CreateChantier: React.FC = () => {
 
         // Map the selected IDs to their respective objects
         if (field === 'entrepriseExterieurs') {
-            const selectedEntreprises = entreprises.filter(e => selectedIds.includes(e.id as number));
-            setChantier({ ...chantier, entrepriseExterieurs: selectedEntreprises });
+            //const selectedEntreprises = entreprises.filter(e => selectedIds.includes(e.id as number));
+
+            setChantier({ ...chantier, entrepriseExterieurs: selectedIds });
         }
     };
 
@@ -183,7 +182,7 @@ const CreateChantier: React.FC = () => {
 
         try {
             // First create the chantier
-            const createdChantier = await createChantier(chantier as Chantier);
+            const createdChantier = await createChantier(chantier);
 
             // Then create all PDPs linked to this chantier
             if (pdps.length > 0) {
@@ -205,6 +204,8 @@ const CreateChantier: React.FC = () => {
             }
 
             notifications.show("Chantier created successfully with all associated elements!", { severity: "success" });
+            navigate(getRoute("VIEW_CHANTIER", {id: createdChantier.id}));
+
         } catch (error) {
             notifications.show("Error creating chantier!", { severity: "error" });
         }
@@ -312,7 +313,7 @@ const CreateChantier: React.FC = () => {
                             <Select
                                 labelId="entreprise-exterieurs-label"
                                 multiple
-                                value={chantier.entrepriseExterieurs?.map(e => e.id) || []}
+                                value={chantier.entrepriseExterieurs?.map(e => e) || []}
                                 onChange={(e) => handleMultiSelectChange(e as SelectChangeEvent<number[]>, 'entrepriseExterieurs')}
                                 input={<OutlinedInput label="Entreprises Exterieures" />}
                                 renderValue={(selected) => (
@@ -347,8 +348,8 @@ const CreateChantier: React.FC = () => {
                             select
                             label="Entreprise Utilisatrice"
                             name="entrepriseUtilisatrice"
-                            value={chantier.entrepriseUtilisatrice?.id || ""}
-                            onChange={(e) => setChantier({ ...chantier, entrepriseUtilisatrice: { id: Number(e.target.value) } as Entreprise })}
+                            value={chantier.entrepriseUtilisatrice || ""}
+                            onChange={(e) => setChantier({ ...chantier, entrepriseUtilisatrice:  Number(e.target.value) })}
                             required
                         >
                             {entreprises && entreprises.length > 0 && entreprises.map((entreprise) => (
@@ -368,8 +369,8 @@ const CreateChantier: React.FC = () => {
                             select
                             label="Donneur d'Ordre"
                             name="donneurDOrdre"
-                            value={chantier.donneurDOrdre?.id || ""}
-                            onChange={(e) => setChantier({ ...chantier, donneurDOrdre: { id: Number(e.target.value) } as User })}
+                            value={chantier.donneurDOrdre || ""}
+                            onChange={(e) => setChantier({ ...chantier, donneurDOrdre: Number(e.target.value ) })}
                             required
                         >
                             {users && users.length > 0 && users.map((user) => (
@@ -389,8 +390,8 @@ const CreateChantier: React.FC = () => {
                             select
                             label="Localisation"
                             name="localisation"
-                            value={chantier.localisation?.id || ""}
-                            onChange={(e) => setChantier({ ...chantier, localisation: { id: Number(e.target.value) } as Localisation })}
+                            value={chantier.localisation || ""}
+                            onChange={(e) => setChantier({ ...chantier, localisation: Number(e.target.value) })}
                             required
                         >
                             {localisations && localisations.length > 0 && localisations.map((localisation) => (

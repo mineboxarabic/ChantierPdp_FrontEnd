@@ -1,9 +1,21 @@
-export type EntrepriseDTO = {
+import {ImageModel} from "../image/ImageModel.ts";
+import {MedecinDuTravailleEE} from "../pdp/MedecinDuTravailleEE.ts";
+import {EntityRef} from "../EntityRef.ts";
+
+enum EntrepriseType {
+    EE= "EE", // ✅ Defines if it's EU or
+    EU = "EU"
+}
+export class EntrepriseDTO {
+    id?: number;
+    type?: EntrepriseType = EntrepriseType.EE;
     nom?: string;
-    fonction?: string;
+    description?: string;
     numTel?: string;
-    referentPdp?: string;
-    responsableChantier?: string;
+   /* chantiers?: Chantier[];*/
     raisonSociale?: string;
-    isUtilisatrice?: boolean;
+    image?: ImageModel;
+    medecinDuTravailleEE?: MedecinDuTravailleEE;
+    pdps?: number[];
+    workers?: number[];
 }

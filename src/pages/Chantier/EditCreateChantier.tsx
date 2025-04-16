@@ -63,6 +63,7 @@ import Worker from "../../utils/entities/Worker.ts";
 import useWoker from "../../hooks/useWoker.ts";
 import chantier from "../../utils/entities/Chantier.ts";
 import WorkerModal from "../Worker/WorkerModal.tsx";
+import ChantierDTO from "../../utils/entitiesDTO/ChantierDTO.ts";
 
 // Custom TabPanel component
 interface TabPanelProps {
@@ -150,7 +151,7 @@ const EditCreateChantier: FC = () => {
     const [workersOfChantier, setWorkersOfChantier] = useState<Worker[]>([]);
 
     // Chantier data state
-    const [formData, setFormData] = useState<Chantier>({
+    const [formData, setFormData] = useState<ChantierDTO>({
         id: undefined,
         isAnnuelle: false,
         nom: "",
@@ -166,7 +167,6 @@ const EditCreateChantier: FC = () => {
         donneurDOrdre: undefined,
         bdts: [],
         pdps: [],
-        pdpEnts: [],
         workers: []
     });
 
@@ -337,14 +337,20 @@ const EditCreateChantier: FC = () => {
     // Handle external enterprises
     const handleAddExternalEnterprise = (entreprise: number) => {
         // Check if enterprise is already added
-        if (formData.entrepriseExterieurs?.find(e => e.id === entreprise)) {
+        if (formData.entrepriseExterieurs?.find(e => e === entreprise)) {
             return;
         }
 
-        setFormData(prev => ({
+        setFormData(
+
+            prev => (
+                {
             ...prev,
-            entrepriseExterieurs: [...(prev.entrepriseExterieurs || []), { id: entreprise }]
-        }));
+            entrepriseExterieurs: [...(prev.entrepriseExterieurs || []), entreprise]
+        })
+
+
+        );
     };
 
     const handleRemoveExternalEnterprise = (id: number | undefined) => {
@@ -352,7 +358,7 @@ const EditCreateChantier: FC = () => {
 
         setFormData(prev => ({
             ...prev,
-            entrepriseExterieurs: prev.entrepriseExterieurs?.filter(e => e.id !== id) || []
+            entrepriseExterieurs: prev.entrepriseExterieurs?.filter(e => e !== id) || []
         }));
     };
 
@@ -383,6 +389,8 @@ const EditCreateChantier: FC = () => {
 
     // Save chantier
     const handleSaveChantier = async () => {
+
+        console.log('test', formData);
         // Validate all tabs
         for (let i = 0; i < (showDocumentsTab ? 5 : 4); i++) {
             if (!validateTab(i)) {
@@ -416,7 +424,7 @@ const EditCreateChantier: FC = () => {
 
         setFormData(prev => ({
             ...prev,
-            pdps: prev.pdps?.filter(p => p.id !== id) || []
+            pdps: prev.pdps?.filter(p => p !== id) || []
         }));
     };
 
@@ -438,7 +446,7 @@ const EditCreateChantier: FC = () => {
 
         setFormData(prev => ({
             ...prev,
-            bdts: prev.bdts?.filter(b => b.id !== id) || []
+            bdts: prev.bdts?.filter(b => b !== id) || []
         }));
 
 
@@ -466,10 +474,10 @@ const EditCreateChantier: FC = () => {
         const workers = new Set<Worker>();
 
         if (formData.entrepriseUtilisatrice) {
-            getEntreprise(formData.entrepriseUtilisatrice?.id).workers?.forEach(w => workers.add(w));
+            getEntreprise(formData.entrepriseUtilisatrice).workers?.forEach(w => workers.add(w));
 
             formData.entrepriseExterieurs?.map(ee => {
-                getEntreprise(ee.id).workers?.forEach(w => workers.add(w));
+                getEntreprise(ee).workers?.forEach(w => workers.add(w));
             })
         }
 
@@ -619,9 +627,9 @@ const EditCreateChantier: FC = () => {
                                 <FormControl fullWidth error={!!errors.entrepriseUtilisatrice}>
                                     <Autocomplete
                                         options={Array.from(entreprises.values())}
-                                        getOptionLabel={(option) => option.nom || ""}
-                                        value={formData.entrepriseUtilisatrice || null}
-                                        onChange={(_, value) => handleInputChange('entrepriseUtilisatrice', value ? { id: value.id } : undefined)}
+                                        getOptionLabel={(option) => option?.nom || ""}
+                                        value={entreprises.get(formData?.entrepriseUtilisatrice || 0) || null}
+                                        onChange={(_, value) => handleInputChange('entrepriseUtilisatrice', value ? value.id  : undefined)}
                                         renderInput={(params) => (
                                             <TextField
                                                 {...params}
@@ -653,19 +661,19 @@ const EditCreateChantier: FC = () => {
 
                                 {formData.entrepriseExterieurs && formData.entrepriseExterieurs.length > 0 ? (
                                     formData.entrepriseExterieurs.map((entrepriseRef) => (
-                                        <ListItem key={entreprises.get(entrepriseRef?.id)?.id} variant="outlined">
+                                        <ListItem key={entreprises.get(entrepriseRef)?.id} variant="outlined">
                                             <Box sx={{ display: "flex", alignItems: "center" }}>
                                                 <Business color="primary" sx={{ mr: 2 }} />
                                                 <Box>
-                                                    <Typography variant="subtitle1">{entreprises.get(entrepriseRef?.id)?.nom}</Typography>
+                                                    <Typography variant="subtitle1">{entreprises.get(entrepriseRef)?.nom}</Typography>
                                                     <Typography variant="caption" color="text.secondary">
-                                                        {entreprises.get(entrepriseRef?.id)?.raisonSociale} • {entreprises.get(entrepriseRef?.id)?.numTel}
+                                                        {entreprises.get(entrepriseRef)?.raisonSociale} • {entreprises.get(entrepriseRef)?.numTel}
                                                     </Typography>
                                                 </Box>
                                             </Box>
                                             <IconButton
                                                 color="error"
-                                                onClick={() => handleRemoveExternalEnterprise(entreprises.get(entrepriseRef?.id)?.id)}
+                                                onClick={() => handleRemoveExternalEnterprise(entreprises.get(entrepriseRef)?.id)}
                                             >
                                                 <Delete />
                                             </IconButton>
@@ -692,8 +700,8 @@ const EditCreateChantier: FC = () => {
                                     <Autocomplete
                                         options={users}
                                         getOptionLabel={(option) => option.username || "no name"}
-                                        value={formData.donneurDOrdre || null}
-                                        onChange={(_, value) => handleInputChange('donneurDOrdre', value)}
+                                        value={users.find(u => u.id === formData?.donneurDOrdre) || null}
+                                        onChange={(_, value) => handleInputChange('donneurDOrdre', value?.id)}
                                         renderInput={(params) => (
                                             <TextField
                                                 {...params}
@@ -729,7 +737,7 @@ const EditCreateChantier: FC = () => {
                                 <SelectOrCreateWorker
                                     open={workerSelectDialogOpen}
                                     onClose={() => setWorkerSelectDialogOpen(false)}
-                                    entreprisesGroupes={formData.entrepriseExterieurs?.map((x) => getEntreprise(x.id))}
+                                    entreprisesGroupes={formData.entrepriseExterieurs?.map((x) => getEntreprise(x))}
                                     onSelectWorkers={(workers) => {
                                         setWorkersOfChantier(workers);
                                     }}
@@ -789,8 +797,8 @@ const EditCreateChantier: FC = () => {
                                     <Autocomplete
                                         options={Array.from(localisations.values())}
                                         getOptionLabel={(option) => option.nom || ""}
-                                        value={formData.localisation || null}
-                                        onChange={(_, value) => handleInputChange('localisation', value)}
+                                        value={localisations.get(formData?.localisation as number) || null}
+                                        onChange={(_, value) => handleInputChange('localisation', value?.id)}
                                         renderInput={(params) => (
                                             <TextField
                                                 {...params}
@@ -810,15 +818,15 @@ const EditCreateChantier: FC = () => {
                                         <Box sx={{ display: "flex", alignItems: "flex-start" }}>
                                             <LocationOn color="primary" sx={{ mr: 2, mt: 0.5 }} />
                                             <Box>
-                                                <Typography variant="h6">{localisations.get(formData?.localisation.id)?.nom}</Typography>
+                                                <Typography variant="h6">{localisations.get(formData?.localisation)?.nom}</Typography>
                                                 <Chip
-                                                    label={localisations.get(formData?.localisation?.id)?.code}
+                                                    label={localisations.get(formData?.localisation)?.code}
                                                     color="primary"
                                                     size="small"
                                                     sx={{ mt: 1, mb: 2 }}
                                                 />
                                                 <Typography variant="body2">
-                                                    {localisations.get(formData?.localisation?.id)?.description}
+                                                    {localisations.get(formData?.localisation)?.description}
                                                 </Typography>
                                             </Box>
                                         </Box>
@@ -865,13 +873,13 @@ const EditCreateChantier: FC = () => {
                                             <TableBody>
                                                 {formData.pdps && formData.pdps.length > 0 ? (
                                                     formData.pdps.map((pdp, index) => {
-                                                        const entreprise = entreprises.get(pdps.get(pdp?.id)?.entrepriseExterieure?.id as number);
+                                                        const entreprise = entreprises.get(pdps.get(pdp)?.entrepriseExterieure as number);
                                                         return (
-                                                            <TableRow key={pdp?.id + index}>
-                                                                <TableCell>#{pdp.id}</TableCell>
+                                                            <TableRow key={pdp + index}>
+                                                                <TableCell>#{pdp}</TableCell>
                                                                 <TableCell>{entreprise?.nom || "N/A"}</TableCell>
                                                                 <TableCell>
-                                                                    {pdps.get(pdp?.id)?.dateInspection ? dayjs(pdps.get(pdp?.id)?.dateInspection).format("DD/MM/YYYY") : "Non planifiée"}
+                                                                    {pdps.get(pdp)?.dateInspection ? dayjs(pdps.get(pdp)?.dateInspection).format("DD/MM/YYYY") : "Non planifiée"}
                                                                 </TableCell>
                                                                 <TableCell>
                                                                     <Chip
@@ -885,14 +893,14 @@ const EditCreateChantier: FC = () => {
                                                                     <IconButton
                                                                         size="small"
                                                                         color="primary"
-                                                                        onClick={() => navigate(getRoute('EDIT_PDP', { id: pdp.id }))}
+                                                                        onClick={() => navigate(getRoute('EDIT_PDP', { id: pdp }))}
                                                                     >
                                                                         <Assignment />
                                                                     </IconButton>
                                                                     <IconButton
                                                                         size="small"
                                                                         color="error"
-                                                                        onClick={() => handleRemovePdp(pdp.id)}
+                                                                        onClick={() => handleRemovePdp(pdp)}
                                                                     >
                                                                         <Delete />
                                                                     </IconButton>
@@ -940,23 +948,23 @@ const EditCreateChantier: FC = () => {
                                             <TableBody>
                                                 {formData.bdts && formData.bdts.length > 0 ? (
                                                     formData.bdts.map((bdt) => (
-                                                        <TableRow key={bdt.id}>
-                                                            <TableCell>#{bdt.id}</TableCell>
-                                                            <TableCell>{getBDT(bdt?.id)?.nom || "Sans nom"}</TableCell>
-                                                            <TableCell>{getBDT(bdt?.id)?.risques?.length || 0}</TableCell>
-                                                            <TableCell>{getBDT(bdt?.id)?.auditSecu?.length || 0}</TableCell>
+                                                        <TableRow key={bdt}>
+                                                            <TableCell>#{bdt}</TableCell>
+                                                            <TableCell>{getBDT(bdt)?.nom || "Sans nom"}</TableCell>
+                                                            <TableCell>{getBDT(bdt)?.risques?.length || 0}</TableCell>
+                                                            <TableCell>{getBDT(bdt)?.auditSecu?.length || 0}</TableCell>
                                                             <TableCell align="right">
                                                                 <IconButton
                                                                     size="small"
                                                                     color="primary"
-                                                                    onClick={() => navigate(getRoute('EDIT_BDT', {id: bdt?.id}))}
+                                                                    onClick={() => navigate(getRoute('EDIT_BDT', {id: bdt}))}
                                                                 >
                                                                     <Assignment />
                                                                 </IconButton>
                                                                 <IconButton
                                                                     size="small"
                                                                     color="error"
-                                                                    onClick={() => handleRemoveBdt(bdt.id)}
+                                                                    onClick={() => handleRemoveBdt(bdt)}
                                                                 >
                                                                     <Delete />
                                                                 </IconButton>

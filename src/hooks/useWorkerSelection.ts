@@ -1,44 +1,28 @@
-import { useAxios } from "./useAxios";
-import { useEffect, useState } from "react";
+// useWorkerSelection.ts
+import { useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import { AxiosResponseState } from "../utils/AxiosResponse";
-import Worker from "../utils/entities/Worker";
-import Chantier from "../utils/entities/Chantier";
-import WorkerChantierSelection from "../utils/entities/WorkerChantierSelection";
+import Worker from "../utils/entities/Worker.ts";
+import Chantier from "../utils/entities/Chantier.ts";
+import WorkerChantierSelection from "../utils/entities/WorkerChantierSelection.ts";
+import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
 
 type WorkerSelectionResponse = WorkerChantierSelection | WorkerChantierSelection[] | Worker[] | Chantier[] | boolean | null;
 
-const useWorkerSelection = () => {
-    const [response, setResponse] = useState<WorkerSelectionResponse | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-
-    const notifications = useNotifications();
-    const { fetch, responseAxios, errorAxios, loadingAxios } = useAxios<AxiosResponseState<WorkerSelectionResponse>>();
-
-    useEffect(() => {
-        if (responseAxios) {
-            setResponse(responseAxios.data?.data as WorkerSelectionResponse);
-        }
-        if (errorAxios) {
-            setError(errorAxios);
-        }
-        setLoading(loadingAxios);
-    }, [responseAxios, errorAxios, loadingAxios]);
-
-    /**
-     * Sélectionne un travailleur pour un chantier
-     */
-    const selectWorkerForChantier = async (
-        workerId: number,
-        chantierId: number,
-        note?: string
-    ): Promise<WorkerChantierSelection> => {
-        return fetch("api/worker-selection/select", "POST", {
+// Function to select a worker for a chantier
+export const selectWorkerForChantier = async (
+    workerId: number,
+    chantierId: number,
+    note?: string
+): Promise<ApiResponse<WorkerChantierSelection>> => {
+    return fetchApi<WorkerChantierSelection>(
+        "api/worker-selection/select",
+        "POST",
+        {
             workerId,
             chantierId,
             note
-        }, [
+        },
+        [
             {
                 status: 404,
                 message: "Erreur: travailleur ou chantier non trouvé",
@@ -47,25 +31,23 @@ const useWorkerSelection = () => {
                 status: -1,
                 message: "Erreur lors de la sélection du travailleur",
             },
-        ]).then((r) => {
-            if (r != undefined) {
-                setResponse(r.data?.data as WorkerChantierSelection);
-                return r.data?.data as WorkerChantierSelection;
-            }
-        }) as Promise<WorkerChantierSelection>;
-    };
+        ]
+    );
+};
 
-    /**
-     * Désélectionne un travailleur d'un chantier
-     */
-    const deselectWorkerFromChantier = async (
-        workerId: number,
-        chantierId: number
-    ): Promise<boolean> => {
-        return fetch("api/worker-selection/deselect", "POST", {
+// Function to deselect a worker from a chantier
+export const deselectWorkerFromChantier = async (
+    workerId: number,
+    chantierId: number
+): Promise<ApiResponse<boolean>> => {
+    return fetchApi<boolean>(
+        "api/worker-selection/deselect",
+        "POST",
+        {
             workerId,
             chantierId
-        }, [
+        },
+        [
             {
                 status: 404,
                 message: "Erreur: travailleur ou chantier non trouvé",
@@ -74,18 +56,17 @@ const useWorkerSelection = () => {
                 status: -1,
                 message: "Erreur lors de la désélection du travailleur",
             },
-        ]).then((_) => {
-            return true;
-        }).catch((_) => {
-            return false;
-        });
-    };
+        ]
+    );
+};
 
-    /**
-     * Récupère tous les travailleurs sélectionnés pour un chantier
-     */
-    const getWorkersForChantier = async (chantierId: number): Promise<Worker[]> => {
-        return fetch(`api/worker-selection/chantier/${chantierId}/workers`, "GET", null, [
+// Function to get all workers selected for a chantier
+export const getWorkersForChantier = async (chantierId: number): Promise<ApiResponse<Worker[]>> => {
+    return fetchApi<Worker[]>(
+        `api/worker-selection/chantier/${chantierId}/workers`,
+        "GET",
+        null,
+        [
             {
                 status: 404,
                 message: "Erreur: chantier non trouvé",
@@ -94,19 +75,17 @@ const useWorkerSelection = () => {
                 status: -1,
                 message: "Erreur lors de la récupération des travailleurs du chantier",
             },
-        ]).then((r) => {
-            if (r != undefined) {
-                setResponse(r.data?.data as Worker[]);
-                return r.data?.data as Worker[];
-            }
-        }) as Promise<Worker[]>;
-    };
+        ]
+    );
+};
 
-    /**
-     * Récupère tous les chantiers pour lesquels un travailleur est sélectionné
-     */
-    const getChantiersForWorker = async (workerId: number): Promise<Chantier[]> => {
-        return fetch(`api/worker-selection/worker/${workerId}/chantiers`, "GET", null, [
+// Function to get all chantiers where a worker is selected
+export const getChantiersForWorker = async (workerId: number): Promise<ApiResponse<Chantier[]>> => {
+    return fetchApi<Chantier[]>(
+        `api/worker-selection/worker/${workerId}/chantiers`,
+        "GET",
+        null,
+        [
             {
                 status: 404,
                 message: "Erreur: travailleur non trouvé",
@@ -115,19 +94,17 @@ const useWorkerSelection = () => {
                 status: -1,
                 message: "Erreur lors de la récupération des chantiers du travailleur",
             },
-        ]).then((r) => {
-            if (r != undefined) {
-                setResponse(r.data?.data as Chantier[]);
-                return r.data?.data as Chantier[];
-            }
-        }) as Promise<Chantier[]>;
-    };
+        ]
+    );
+};
 
-    /**
-     * Récupère toutes les sélections (avec détails) pour un chantier
-     */
-    const getSelectionsForChantier = async (chantierId: number): Promise<WorkerChantierSelection[]> => {
-        return fetch(`api/worker-selection/chantier/${chantierId}/selections`, "GET", null, [
+// Function to get all selections (with details) for a chantier
+export const getSelectionsForChantier = async (chantierId: number): Promise<ApiResponse<WorkerChantierSelection[]>> => {
+    return fetchApi<WorkerChantierSelection[]>(
+        `api/worker-selection/chantier/${chantierId}/selections`,
+        "GET",
+        null,
+        [
             {
                 status: 404,
                 message: "Erreur: chantier non trouvé",
@@ -136,23 +113,101 @@ const useWorkerSelection = () => {
                 status: -1,
                 message: "Erreur lors de la récupération des sélections du chantier",
             },
-        ]).then((r) => {
-            if (r != undefined) {
-                setResponse(r.data?.data as WorkerChantierSelection[]);
-                return r.data?.data as WorkerChantierSelection[];
+        ]
+    );
+};
+
+// React hook that uses the API functions
+const useWorkerSelection = () => {
+    const [response, setResponse] = useState<WorkerSelectionResponse | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
+
+    const notifications = useNotifications();
+
+    // Helper function to handle API calls with common error handling
+    const executeApiCall = async <T>(
+        apiCall: () => Promise<ApiResponse<T>>,
+        errorMessage: string,
+        successAction?: (data: T) => void
+    ): Promise<T> => {
+        setLoading(true);
+        try {
+            const result = await apiCall();
+            if (result.data !== undefined) {
+                setResponse(result.data as WorkerSelectionResponse);
+                if (successAction) {
+                    successAction(result.data);
+                }
+                return result.data;
             }
-        }) as Promise<WorkerChantierSelection[]>;
+            throw new Error(result.message || errorMessage);
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Hook methods that wrap the API functions
+    const selectWorkerForChantierHook = async (
+        workerId: number,
+        chantierId: number,
+        note?: string
+    ): Promise<WorkerChantierSelection> => {
+        return executeApiCall(
+            () => selectWorkerForChantier(workerId, chantierId, note),
+            "Erreur lors de la sélection du travailleur"
+        );
+    };
+
+    const deselectWorkerFromChantierHook = async (
+        workerId: number,
+        chantierId: number
+    ): Promise<boolean> => {
+        try {
+            await executeApiCall(
+                () => deselectWorkerFromChantier(workerId, chantierId),
+                "Erreur lors de la désélection du travailleur"
+            );
+            return true;
+        } catch (e) {
+            return false;
+        }
+    };
+
+    const getWorkersForChantierHook = async (chantierId: number): Promise<Worker[]> => {
+        return executeApiCall(
+            () => getWorkersForChantier(chantierId),
+            "Erreur lors de la récupération des travailleurs du chantier"
+        );
+    };
+
+    const getChantiersForWorkerHook = async (workerId: number): Promise<Chantier[]> => {
+        return executeApiCall(
+            () => getChantiersForWorker(workerId),
+            "Erreur lors de la récupération des chantiers du travailleur"
+        );
+    };
+
+    const getSelectionsForChantierHook = async (chantierId: number): Promise<WorkerChantierSelection[]> => {
+        return executeApiCall(
+            () => getSelectionsForChantier(chantierId),
+            "Erreur lors de la récupération des sélections du chantier"
+        );
     };
 
     return {
         loading,
         error,
         response,
-        selectWorkerForChantier,
-        deselectWorkerFromChantier,
-        getWorkersForChantier,
-        getChantiersForWorker,
-        getSelectionsForChantier
+        selectWorkerForChantier: selectWorkerForChantierHook,
+        deselectWorkerFromChantier: deselectWorkerFromChantierHook,
+        getWorkersForChantier: getWorkersForChantierHook,
+        getChantiersForWorker: getChantiersForWorkerHook,
+        getSelectionsForChantier: getSelectionsForChantierHook
     };
 };
 

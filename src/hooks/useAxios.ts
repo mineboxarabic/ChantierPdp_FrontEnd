@@ -3,8 +3,7 @@ import axios, {Method, AxiosRequestHeaders, AxiosHeaders, AxiosError} from "axio
 import {useNotifications} from "@toolpad/core/useNotifications";
 import useToken from "./useToken.ts";
 import {useLoading} from "./useLoading.tsx";
-const apiUrl = import.meta.env.VITE_API_URL;
-
+const apiUrl =  import.meta.env.VITE_API_URL;
 
 export interface ErrorMapper{
     status?: number;
@@ -34,8 +33,8 @@ export const useAxios  =<T = any> () => {
         const token = localStorage.getItem("token");
         return {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,PATCH,OPTIONS",
+           // "Access-Control-Allow-Origin": "*",
+           // "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,PATCH,OPTIONS",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
         };
     }, []);

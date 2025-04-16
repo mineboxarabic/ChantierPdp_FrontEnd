@@ -1,17 +1,21 @@
-class RisqueDTO {
-    private title: string;
-    private description: string;
-    private logo: string;
-    private travailleDangereux: boolean;
-    private travaillePermit: boolean;
+import { ImageModel } from "../image/ImageModel";
 
-    constructor(title: string, description: string, logo: string, travailleDangereux: boolean, travaillePermit: boolean){
-        this.title = title;
-        this.description = description;
-        this.logo = logo;
-        this.travailleDangereux = travailleDangereux;
-        this.travaillePermit = travaillePermit;
-    }
+class RisqueDTO {
+    id?: number;
+    title: string;
+    description: string;
+    travailleDangereux: boolean;
+    travaillePermit: boolean;
+   logo?: ImageModel;
+
+   constructor(id: number, title: string, description: string, logo: string, travailleDangereux: boolean, travaillePermit: boolean){
+       this.id = id;
+       this.title = title;
+       this.description = description;
+       this.logo = {imageData: logo, mimeType: "image/png"};
+       this.travailleDangereux = travailleDangereux;
+       this.travaillePermit = travaillePermit;
+   }
 }
 
 export default RisqueDTO;

@@ -1,164 +1,216 @@
-import {useAxios} from "./useAxios.ts";
-import {RegisterUserData} from "../utils/user/RegisterUserData.ts";
-import axios, {AxiosResponse} from "axios";
-import {useEffect, useState} from "react";
-
-import { useNotifications } from '@toolpad/core/useNotifications';
-import {AxiosResponseState} from "../utils/AxiosResponse.ts";
-import RisqueDTO from "../utils/entitiesDTO/RisqueDTO.ts";
+// useRisque.ts
+import { useState } from "react";
+import { useNotifications } from "@toolpad/core/useNotifications";
 import Risque from "../utils/entities/Risque.ts";
+import RisqueDTO from "../utils/entitiesDTO/RisqueDTO.ts";
+import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
 
-type EntrepriseResponse = RisqueDTO |RisqueDTO[] |Risque | Risque[] |boolean| number | null; // Could be one Pdp, a list of Pdps, or null.
-const useRisque = ()=>{
-    const [response, setReponse] = useState<EntrepriseResponse | null>(null);
+type RisqueResponse = RisqueDTO | RisqueDTO[] | boolean | null;
+
+// Function to get a risque by ID
+export const getRisqueById = async (id: number): Promise<ApiResponse<RisqueDTO>> => {
+    return fetchApi<RisqueDTO>(
+        `api/risque/${id}`,
+        "GET",
+        null,
+        [
+            { status: 404, message: "GetRisque: Error risque not found" },
+            { status: -1, message: "GetRisque: Error while getting risque" }
+        ]
+    );
+};
+
+// Function to get all risques
+export const getAllRisques = async (): Promise<ApiResponse<RisqueDTO[]>> => {
+    return fetchApi<RisqueDTO[]>(
+        "api/risque",
+        "GET",
+        null,
+        [
+            { status: 404, message: "GetAllRisques: Error risques not found" },
+            { status: -1, message: "GetAllRisques: Error while getting risques" }
+        ]
+    );
+};
+
+// Function to update a risque
+export const updateRisque = async (risque: RisqueDTO, id: number): Promise<ApiResponse<RisqueDTO>> => {
+    return fetchApi<RisqueDTO>(
+        `api/risque/${id}`,
+        "PATCH",
+        risque,
+        [
+            { status: 409, message: "UpdateRisque: Error risque already exists" },
+            { status: 404, message: "UpdateRisque: Error risque or API link not found" },
+            { status: -1, message: "UpdateRisque: Error while updating risque" }
+        ]
+    );
+};
+
+// Function to delete a risque
+export const deleteRisque = async (id: number): Promise<ApiResponse<boolean>> => {
+    return fetchApi<boolean>(
+        `api/risque/${id}`,
+        "DELETE",
+        null,
+        [
+            { status: 409, message: "DeleteRisque: Error risque already exists" },
+            { status: 404, message: "DeleteRisque: Error risque or API link not found" },
+            { status: 405, message: "DeleteRisque: Error risque not deletable" },
+            { status: -1, message: "DeleteRisque: Error while deleting risque" }
+        ]
+    );
+};
+
+// Function to create a risque
+export const createRisque = async (risque: RisqueDTO): Promise<ApiResponse<RisqueDTO>> => {
+    return fetchApi<RisqueDTO>(
+        "api/risque",
+        "POST",
+        risque,
+        [
+            { status: 409, message: "CreateRisque: Error risque already exists" },
+            { status: 404, message: "CreateRisque: Error risque or API link not found" },
+            { status: -1, message: "CreateRisque: Error while creating risque" }
+        ]
+    );
+};
+
+// Function to create a risque
+export const getRisquesByIds = async (ids:number[]): Promise<ApiResponse<RisqueDTO[]>> => {
+    return fetchApi<RisqueDTO[]>(
+        "api/risque/list",
+        "POST",
+        ids,
+        [
+            { status: 409, message: "CreateRisque: Error risque already exists" },
+            { status: 404, message: "CreateRisque: Error risque or API link not found" },
+            { status: -1, message: "CreateRisque: Error while creating risque" }
+        ]
+    );
+};
+
+// React hook that uses the API functions
+const useRisque = () => {
+    const [response, setResponse] = useState<RisqueResponse>(null);
     const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-
+    const [loading, setLoading] = useState<boolean>(false);
     const [lastId, setLastId] = useState<number | null>(null);
+    const [risques, setRisques] = useState<Map<number, RisqueDTO>>(new Map<number, RisqueDTO>());
 
     const notifications = useNotifications();
-    const {fetch,responseAxios,errorAxios,loadingAxios} = useAxios<AxiosResponseState<EntrepriseResponse>>();
 
-    const [risques, setRisques] = useState<Map<number, Risque>>(new Map<number, Risque>());
-
-    useEffect(() => {
-        if (responseAxios) {
-            setReponse(responseAxios.data?.data as EntrepriseResponse);
+    // Helper function for handling API calls
+    const executeApiCall = async <T>(
+        apiCall: () => Promise<ApiResponse<T>>,
+        errorMessage: string,
+        successAction?: (data: T) => void
+    ): Promise<T> => {
+        setLoading(true);
+        try {
+            const result = await apiCall();
+            if (result.data !== undefined) {
+                setResponse(result.data as RisqueResponse);
+                if (successAction) {
+                    successAction(result.data);
+                }
+                return result.data;
+            }
+            throw new Error(result.message || errorMessage);
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
         }
-        if (errorAxios) {
-            setError(errorAxios);
-        }
-        setLoading(loadingAxios);
-    }, [responseAxios, errorAxios, loadingAxios]);
+    };
 
+    // Hook methods that wrap the API functions
+    const getRisqueHook = async (id: number): Promise<RisqueDTO> => {
+        return executeApiCall(
+            () => getRisqueById(id),
+            "Error while getting risque"
+        );
+    };
 
-    const getRisque = async (id:number) : Promise<Risque> => {
-
-        return fetch(`api/risque/${id}`, 'GET', null, [
-            {
-                status: 404,
-                message: 'GetRisque : Error risque not found',
-            },
-            {
-                status: -1,
-                message: 'GetRisque : Error while getting risque',
-            }
-        ]).then(r => {
-            if(r != undefined){
-                setReponse(r.data?.data as Risque);
-                return r;
-            }
-        }) as Promise<Risque>;
-    }
-
-
-    const getAllRisques = async () : Promise<Risque[]> => {
-
-        return fetch(`api/risque`, 'GET', null, [
-            {
-                status: 404,
-                message: 'GetAllRisques : Error risque not found',
-            },
-            {
-                status: -1,
-                message: 'GetAllRisques : Error while getting risque',
-            }
-        ]).then(r => {
-            if(r != undefined){
-
-                setReponse(r.data?.data as Risque[]);
-
-                (r.data?.data as Risque[]).forEach(e=>{
-                    risques.set(e?.id as number, e);
+    const getAllRisquesHook = async (): Promise<RisqueDTO[]> => {
+        return executeApiCall(
+            () => getAllRisques(),
+            "Error while getting all risques",
+            (data: RisqueDTO[]) => {
+                const updatedRisques = new Map<number, RisqueDTO>();
+                data.forEach(risque => {
+                    if (risque.id !== undefined) {
+                        updatedRisques.set(risque.id, risque);
+                    }
                 });
-
-
-
-                return r.data?.data as Risque[];
+                setRisques(updatedRisques);
             }
-        }) as Promise<Risque[]>;
+        );
+    };
+
+    const updateRisqueHook = async (risque: RisqueDTO, id: number): Promise<RisqueDTO> => {
+        return executeApiCall(
+            () => updateRisque(risque, id),
+            "Error while updating risque"
+        );
+    };
+
+    const deleteRisqueHook = async (id: number): Promise<boolean> => {
+        return executeApiCall(
+            () => deleteRisque(id),
+            "Error while deleting risque",
+            () => {
+                // Remove from local state if needed
+                if (risques.has(id)) {
+                    const updatedRisques = new Map(risques);
+                    updatedRisques.delete(id);
+                    setRisques(updatedRisques);
+                }
+            }
+        );
+    };
+
+    const createRisqueHook = async (risque: RisqueDTO): Promise<RisqueDTO> => {
+        return executeApiCall(
+            () => createRisque(risque),
+            "Error while creating risque"
+        );
+    };
+
+
+    const getRisquesByIdsHook = async (ids:number[]): Promise<RisqueDTO[]> => {
+        return executeApiCall(
+            () => getRisquesByIds(ids),
+            "Error while getting all risques",
+            (data: RisqueDTO[]) => {
+                const updatedRisques = new Map<number, RisqueDTO>();
+                if(!data) return;
+        
+                data.forEach(risque => {
+                    if (risque.id !== undefined) {
+                        updatedRisques.set(risque.id, risque);
+                    }
+                });
+                setRisques(updatedRisques);
+            }
+        );
     }
 
-
-    const updateRisque = async (risque: Risque, id:number) : Promise<Risque> => {
-
-        return fetch(`api/risque/${id}`, 'PATCH', risque, [
-            {
-                status: 409,
-                message: 'UpdateRisque : Error risque already exists',
-            },
-            {
-                status: 404,
-                message: 'UpdateRisque : Error risque or api link not found',
-            },
-            {
-                status: -1,
-                message: 'UpdateRisque : Error while updating risque',
-            }
-        ]).then(r => {
-            if(r != undefined){
-                setReponse(r.data?.data as Risque);
-                return r;
-            }
-        }) as Promise<Risque>;
-    }
-
-    const deleteRisque = async (id:number) : Promise<boolean> => {
-
-        return fetch(`api/risque/${id}`, 'DELETE', null, [
-            {
-                status: 409,
-                message: 'DeleteRisque : Error risque already exists',
-            },
-            {
-                status: 404,
-                message: 'DeleteRisque : Error risque or api link not found',
-            },
-            {
-                status: 405,
-                message: 'DeleteRisque : Error risque not deletable',
-            },
-            {
-                status: -1,
-                message: 'DeleteRisque : Error while deleting risque',
-            }
-        ]).then(r => {
-            if(r != undefined){
-                setReponse(r.data?.data as boolean);
-                return r.data?.data;
-            }
-        }) as Promise<boolean>;
-
-    }
-
-
-    const createRisque = async (risque: Risque) : Promise<Risque> => {
-
-        return fetch(`api/risque`, 'POST', risque, [
-            {
-                status: 409,
-                message: 'CreateRisque : Error risque already exists',
-            },
-            {
-                status: 404,
-                message: 'CreateRisque : Error risque or api link not found',
-            },
-            {
-                status: -1,
-                message: 'CreateRisque : Error while creating risque',
-            }
-        ]).then(r => {
-
-            if(r != undefined){
-                setReponse(r.data?.data as Risque);
-                return r;
-            }
-        }) as Promise<Risque>;
-    }
-
-    return {loading,error, response, lastId, getRisque, getAllRisques, updateRisque, deleteRisque, createRisque, risques};
-
-
-}
+    return {
+        loading,
+        error,
+        response,
+        lastId,
+        risques,
+        getRisque: getRisqueHook,
+        getAllRisques: getAllRisquesHook,
+        updateRisque: updateRisqueHook,
+        deleteRisque: deleteRisqueHook,
+        createRisque: createRisqueHook,
+        getRisquesByIds: getRisquesByIdsHook,
+    };
+};
 
 export default useRisque;

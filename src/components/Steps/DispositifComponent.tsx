@@ -62,19 +62,35 @@ import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
 import ObjectAnsweredComponent from "./ObjectAnsweredComponent.tsx";
 import {Pdp} from "../../utils/entities/Pdp.ts";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
+import { PdpDTO } from "../../utils/entitiesDTO/PdpDTO.ts";
+import useDispositif from "../../hooks/useDispositif.ts";
+import { useEffect, useState } from "react";
+import DispositifDTO from "../../utils/entitiesDTO/DispositifDTO.ts";
 
 interface PapierDemanderProps {
     dispositif: ObjectAnswered;
-    currentPdp:Pdp;
-    saveCurrentPdp: (pdp:Pdp) => void;
+    currentPdp:PdpDTO;
+    saveCurrentPdp: (pdp:PdpDTO) => void;
     setIsChanged: (value:boolean) => void;
 }
 const PapierDemander = ({dispositif,setIsChanged, currentPdp, saveCurrentPdp}:PapierDemanderProps) => {
 
 
+    const dispositifHook = useDispositif();
+    const [dispositifData, setDispositifData] = useState<DispositifDTO>();
+
+    useEffect(() => {
+        if (dispositif) {
+            dispositifHook.getDispositif(dispositif.dispositif_id as number).then((dispositif: DispositifDTO) => {
+                setDispositifData(dispositif);
+            });
+        }
+    }
+    , [dispositif]);
+
 
     return (
-        <ObjectAnsweredComponent item={dispositif} type={ObjectAnsweredObjects.DISPOSITIF} saveCurrentPdp={saveCurrentPdp} currentPdp={currentPdp} setIsChanged={setIsChanged} />
+        <ObjectAnsweredComponent item={dispositif} itemData={dispositifData} type={ObjectAnsweredObjects.DISPOSITIF} saveCurrentPdp={saveCurrentPdp} currentPdp={currentPdp} setIsChanged={setIsChanged} />
     )
 }
 

@@ -279,7 +279,7 @@ const ViewBdt: FC = () => {
                                                 </Box>
                                             </Box>
 
-                                            {risque.risque?.description && (
+                                            {risque.risque_id?.description && (
                                                 <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
                                                     {risque.risque.description}
                                                 </Typography>

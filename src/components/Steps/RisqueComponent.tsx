@@ -15,18 +15,20 @@ import Typography from "@mui/material/Typography";
 import MenuItem from "@mui/material/MenuItem";
 import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
 import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {Pdp} from "../../utils/entities/Pdp.ts";
 import usePdp from "../../hooks/usePdp.ts";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
 import useBdt from "../../hooks/useBdt.ts";
+import useRisque from "../../hooks/useRisque.ts";
+import RisqueDTO from "../../utils/entitiesDTO/RisqueDTO.ts";
 
 
 //Types are bdt and pdp
 
 
 interface RisqueProps {
-   risque:ObjectAnswered
+    object:ObjectAnswered
 
    currentPdp: any;
     saveCurrentPdp: (pdp: any) => void;
@@ -34,25 +36,47 @@ interface RisqueProps {
     typeOfObject: "pdp" | "bdt";
 }
 
-const RisqueComponent = ({risque,currentPdp, saveCurrentPdp, setIsChanged, typeOfObject}:RisqueProps) => {
+const RisqueComponent = ({object,currentPdp, saveCurrentPdp, setIsChanged, typeOfObject}:RisqueProps) => {
 
    const [openDialog, setOpenDialog] = useState(false);
 
    const {unlinkObjectFromPdp} = usePdp();
    const {unlinkRisqueToBDT} = useBdt();
+   const risqueHook = useRisque();
 
    const theme = useTheme();
+
+   const [risque, setRisque] = useState<RisqueDTO>();
+
+
+   useEffect(() => {
+
+
+    console.log('Risque object:', object);
+
+            // Fetch the risque data if it exists
+            const fetchRiqsue = async () =>{
+                if(object.risque_id){
+                    const r = await risqueHook.getRisque(object.risque_id);
+                    console.log('Risque fetched:', r);
+                    setRisque(r); 
+                }
+            }
+
+            fetchRiqsue();
+
+   },[]);
 
     const handleDeleteClick = () => {
          setOpenDialog(true);
     }
     const handleConfirmDelete = () => {
        if(typeOfObject === "pdp"){
-           unlinkObjectFromPdp(risque?.id,currentPdp?.id as number, ObjectAnsweredObjects.RISQUE).then(() => {
+           unlinkObjectFromPdp(risque?.id as number,currentPdp?.id as number, ObjectAnsweredObjects.RISQUE).then(() => {
 
                saveCurrentPdp({
                    ...currentPdp,
-                   risques: currentPdp["risques"]?.filter((p:ObjectAnswered) => p?.id !== risque?.id)
+                   risques: currentPdp["risques"]?.filter((p:ObjectAnswered) => p?.id !== object?.id)
                });
                setIsChanged(true);
            })
@@ -61,7 +85,7 @@ const RisqueComponent = ({risque,currentPdp, saveCurrentPdp, setIsChanged, typeO
            unlinkRisqueToBDT( currentPdp?.id as number, risque?.id as number).then(() => {
                    saveCurrentPdp({
                        ...currentPdp,
-                       risques: currentPdp["risques"]?.filter((p:ObjectAnswered) => p?.id !== risque?.id)
+                       risques: currentPdp["risques"]?.filter((p:ObjectAnswered) => p?.id !== object?.id)
                    });
                    setIsChanged(true);
                }
@@ -89,11 +113,11 @@ const RisqueComponent = ({risque,currentPdp, saveCurrentPdp, setIsChanged, typeO
                     gap: '16px',
                     alignItems: 'center',
                     padding: '16px',
-                    backgroundColor: `${risque.risque?.travailleDangereux ? theme.palette.customColor?.td : 'paper'}`,
+                    backgroundColor: `${risque?.travailleDangereux ? theme.palette.customColor?.td : 'paper'}`,
 
                 }}>
                     <img src={
-                        risque.risque?.logo?.imageData ? `data:${risque.risque?.logo.mimeType};base64,${risque.risque?.logo.imageData}` :
+                        risque?.logo?.imageData ? `data:${risque?.logo.mimeType};base64,${risque?.logo.imageData}` :
                         worning
                     } width={10} alt="Risque" style={{
                         width: '5%',
@@ -102,11 +126,11 @@ const RisqueComponent = ({risque,currentPdp, saveCurrentPdp, setIsChanged, typeO
 
 
                     <Typography>{
-                        risque?.risque?.title
+                        risque?.title
                     }</Typography>
-                    <Select defaultValue={ risque.answer ? 1 : 0}
+                    <Select defaultValue={ object.answer ? 1 : 0}
                     sx={{
-                        backgroundColor: `${risque?.risque?.travaillePermit ? theme.palette.customColor?.tp : 'paper'}`,
+                        backgroundColor: `${risque?.travaillePermit ? theme.palette.customColor?.tp : 'paper'}`,
                     }}
 
                             onChange={e => {
@@ -114,7 +138,7 @@ const RisqueComponent = ({risque,currentPdp, saveCurrentPdp, setIsChanged, typeO
                                 //onSelectChange(e.target.value === 1);
 
                                 currentPdp?.risques?.map((r: ObjectAnswered) => {
-                                    if (r.id === risque.id) {
+                                    if (r.id === object.id) {
                                         r.answer = e.target.value === 1;
                                     }
                                 });

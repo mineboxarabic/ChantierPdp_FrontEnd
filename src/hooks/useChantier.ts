@@ -1,36 +1,23 @@
-import { useAxios } from "./useAxios.ts";
-import { useEffect, useState } from "react";
+// useChantier.ts
+import { useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
 import Chantier from "../utils/entities/Chantier.ts";
-import { AxiosResponseState } from "../utils/AxiosResponse.ts";
-import usePdp from "./usePdp.ts";
-import {Pdp} from "../utils/entities/Pdp.ts";
-import {Entreprise} from "../utils/entities/Entreprise.ts";
-import useEntreprise from "./useEntreprise.ts";
+import fetchApi, { ApiResponse} from "../api/fetchApi.ts";
+import ChantierDTO from "../utils/entitiesDTO/ChantierDTO.ts";
+import {
+    mapChantierDTOToChantier,
+    mapChantierToChantierDTO
+} from "../utils/mappers/ChantierMapper.ts";
 
-type ChantierResponse = Chantier | Chantier[] | number | boolean | null;
+type ChantierResponse = ChantierDTO | ChantierDTO[] | number | boolean | null;
 
-const useChantier = () => {
-    const [response, setResponse] = useState<ChantierResponse | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-
-    const notifications = useNotifications();
-    const { fetch, responseAxios, errorAxios, loadingAxios } = useAxios<AxiosResponseState<ChantierResponse>>();
-
-    useEffect(() => {
-        if (responseAxios) {
-            setResponse(responseAxios.data?.data as ChantierResponse);
-        }
-        if (errorAxios) {
-            setError(errorAxios);
-        }
-        setLoading(loadingAxios);
-    }, [responseAxios, errorAxios, loadingAxios]);
-
-    const saveChantier = async (chantier: Chantier, id: number): Promise<AxiosResponseState<ChantierResponse>> => {
-        console.log("Chantier saveChantier", chantier);
-        return fetch(`api/chantier/${id}`, "PATCH", chantier, [
+// Function to save/update a chantier
+export const saveChantier = async (chantierDTO: ChantierDTO, id: number): Promise<ApiResponse<ChantierDTO>> => {
+    return await fetchApi<ChantierDTO>(
+        `api/chantier/${id}`,
+        "PATCH",
+        chantierDTO,
+        [
             {
                 status: 409,
                 message: "SaveChantier: Error chantier already exists",
@@ -43,16 +30,17 @@ const useChantier = () => {
                 status: -1,
                 message: "SaveChantier: Error while saving chantier",
             },
-        ]).then((r) => {
-            if (r != undefined) {
-                setResponse(r.data?.data as Chantier);
-                return r;
-            }
-        }) as Promise<AxiosResponseState<ChantierResponse>>;
-    };
+        ]
+    );
+};
 
-    const getChantier = async (id: number): Promise<Chantier> => {
-        const chantier:Chantier =  await fetch(`api/chantier/${id}`, "GET", null, [
+// Function to get a chantier by ID
+export const getChantier = async (id: number): Promise<ApiResponse<ChantierDTO>> => {
+    return fetchApi<ChantierDTO>(
+        `api/chantier/${id}`,
+        "GET",
+        null,
+        [
             {
                 status: 404,
                 message: "Error chantier not found",
@@ -61,23 +49,17 @@ const useChantier = () => {
                 status: -1,
                 message: "Error while getting chantier",
             },
-        ])
-            .then((response: AxiosResponseState<ChantierResponse> | null): Chantier => {
-                setResponse(response?.data?.data as Chantier);
-                console.log("Chantier getChantier", response?.data);
-                return response?.data?.data as Chantier;
-            })
-            .catch((e) => {
-                setError(e);
-                notifications.show("Error while getting chantier", { severity: "error" });
-            }) as Chantier;
+        ]
+    );
+};
 
-
-        return chantier;
-    };
-
-    const getAllChantiers = async (): Promise<Chantier[]> => {
-        return fetch("api/chantier/all", "GET", null, [
+// Function to get all chantiers
+export const getAllChantiers = async (): Promise<ApiResponse<ChantierDTO[]>> => {
+    return fetchApi<ChantierDTO[]>(
+        "api/chantier/all",
+        "GET",
+        null,
+        [
             {
                 status: 404,
                 message: "Error chantier not found",
@@ -86,19 +68,17 @@ const useChantier = () => {
                 status: -1,
                 message: "Error while getting chantier",
             },
-        ])
-            .then((response: AxiosResponseState<ChantierResponse> | null): Chantier[] => {
-                setResponse(response?.data?.data as Chantier[]);
-                return response?.data?.data as Chantier[];
-            })
-            .catch((e) => {
-                setError(e);
-                notifications.show("Error while getting chantiers", { severity: "error" });
-            }) as Promise<Chantier[]>;
-    };
+        ]
+    );
+};
 
-    const createChantier = (chantier: Chantier): Promise<Chantier> => {
-        return fetch("api/chantier/", "POST", chantier, [
+// Function to create a new chantier
+export const createChantier = async (chantierDTO: ChantierDTO): Promise<ApiResponse<ChantierDTO>> => {
+    return fetchApi<ChantierDTO>(
+        "api/chantier/",
+        "POST",
+        chantierDTO,
+        [
             {
                 status: 409,
                 message: "Error chantier already exists",
@@ -107,16 +87,17 @@ const useChantier = () => {
                 status: 404,
                 message: "Error chantier or API link not found",
             },
-        ]).then((r) => {
-            if (r != undefined) {
-                setResponse(r.data?.data as Chantier);
-                return r.data?.data as Chantier;
-            }
-        }) as Promise<Chantier>;
-    };
+        ]
+    );
+};
 
-    const deleteChantier = (id: number): Promise<void> => {
-        return fetch(`api/chantier/${id}`, "DELETE", null, [
+// Function to delete a chantier
+export const deleteChantier = async (id: number): Promise<ApiResponse<boolean>> => {
+    return fetchApi<boolean>(
+        `api/chantier/${id}`,
+        "DELETE",
+        null,
+        [
             {
                 status: 409,
                 message: "Error chantier already exists",
@@ -125,14 +106,17 @@ const useChantier = () => {
                 status: 404,
                 message: "Error chantier or API link not found",
             },
-        ]).then(response=>{
+        ]
+    );
+};
 
-
-        }) as Promise<void>;
-    };
-
-    const getLastId = (): Promise<number> => {
-        return fetch("api/chantier/last", "GET", null, [
+// Function to get the last chantier ID
+export const getLastId = async (): Promise<ApiResponse<number>> => {
+    return fetchApi<number>(
+        "api/chantier/last",
+        "GET",
+        null,
+        [
             {
                 status: 404,
                 message: "Error chantier or API link not found",
@@ -141,16 +125,17 @@ const useChantier = () => {
                 status: -1,
                 message: "Error while getting last chantier",
             },
-        ]).then((response: AxiosResponseState<ChantierResponse> | null) => {
-            if (response?.status === 200) {
-                return response.data?.data;
-            }
-            return null;
-        }) as Promise<number>;
-    };
+        ]
+    );
+};
 
-    const getRecentChantiers = async (): Promise<Chantier[]> => {
-        return fetch("api/chantier/recent", "GET", null, [
+// Function to get recent chantiers
+export const getRecentChantiers = async (): Promise<ApiResponse<ChantierDTO[]>> => {
+    return fetchApi<ChantierDTO[]>(
+        "api/chantier/recent",
+        "GET",
+        null,
+        [
             {
                 status: 404,
                 message: "Error chantier or API link not found",
@@ -159,16 +144,17 @@ const useChantier = () => {
                 status: -1,
                 message: "Error while getting recent chantiers",
             },
-        ]).then((response) => {
-            if (response?.status === 200) {
-                return response.data?.data as Chantier[];
-            }
-            return null;
-        }) as Promise<Chantier[]>;
-    };
+        ]
+    );
+};
 
-    const existChantier = async (id: number): Promise<boolean> => {
-        return fetch(`api/chantier/exist/${id}`, "GET", null, [
+// Function to check if a chantier exists
+export const existChantier = async (id: number): Promise<ApiResponse<boolean>> => {
+    return fetchApi<boolean>(
+        `api/chantier/exist/${id}`,
+        "GET",
+        null,
+        [
             {
                 status: 404,
                 message: "Error chantier not found",
@@ -177,29 +163,215 @@ const useChantier = () => {
                 status: -1,
                 message: "Error while getting chantier",
             },
-        ])
-            .then((response: AxiosResponseState<ChantierResponse> | null): boolean => {
-                setResponse(response?.data?.data as boolean);
-                return response?.data?.data as boolean;
-            })
-            .catch((e) => {
-                setError(e);
-                notifications.show("Error while checking chantier existence", { severity: "error" });
-            }) as Promise<boolean>;
+        ]
+    );
+};
+
+// React hook that uses the API functions
+const useChantier = () => {
+    const [response, setResponse] = useState<ChantierResponse | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
+
+    const notifications = useNotifications();
+
+    const saveChantierHook = async (chantierDTO: ChantierDTO, id: number): Promise<ChantierDTO> => {
+        setLoading(true);
+        try {
+            const result = await saveChantier(chantierDTO, id);
+            if (result.data) {
+                setResponse(result.data);
+                return result.data;
+            }
+            throw new Error(result.message || "Failed to save chantier");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getChantierHook = async (id: number): Promise<ChantierDTO> => {
+        setLoading(true);
+        try {
+            const result = await getChantier(id);
+            if (result.data) {
+                setResponse(result.data);
+                console.log("Chantier getChantier", result.data);
+                return result.data;
+            }
+            throw new Error(result.message || "Failed to get chantier");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getAllChantiersHook = async (): Promise<ChantierDTO[]> => {
+        setLoading(true);
+        try {
+            const result = await getAllChantiers();
+            if (result.data) {
+                setResponse(result.data);
+                return result.data;
+            }
+            throw new Error(result.message || "Failed to get all chantiers");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const createChantierHook = async (chantierDTO: ChantierDTO): Promise<ChantierDTO> => {
+        setLoading(true);
+        try {
+            // Convert Chantier to ChantierDTO
+            const result = await createChantier(chantierDTO);
+            if (result.data) {
+                setResponse(result.data);
+                return result.data;
+            }
+            throw new Error(result.message || "Failed to create chantier");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Alternative function that accepts ChantierDTO directly
+    const createChantierDTOHook = async (chantierDTO: ChantierDTO): Promise<ChantierDTO> => {
+        setLoading(true);
+        try {
+            const result = await createChantier(chantierDTO);
+            if (result.data) {
+                setResponse(result.data);
+                return result.data;
+            }
+            throw new Error(result.message || "Failed to create chantier");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const deleteChantierHook = async (id: number): Promise<void> => {
+        setLoading(true);
+        try {
+            await deleteChantier(id);
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getLastIdHook = async (): Promise<number> => {
+        setLoading(true);
+        try {
+            const result = await getLastId();
+            if (result.data !== undefined) {
+                return result.data;
+            }
+            throw new Error(result.message || "Failed to get last ID");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getRecentChantiersHook = async (): Promise<ChantierDTO[]> => {
+        setLoading(true);
+        try {
+            const result = await getRecentChantiers();
+            if (result.data) {
+                setResponse(result.data);
+                return result.data;
+            }
+
+                throw new Error(result.message || "Failed to get recent chantiers");
+
+
+         //   throw new Error(result.message || "Failed to get recent chantiers");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const existChantierHook = async (id: number): Promise<boolean> => {
+        setLoading(true);
+        try {
+            const result = await existChantier(id);
+            if (result.data !== undefined) {
+                setResponse(result.data);
+                return result.data;
+            }
+            throw new Error(result.message || "Failed to check if chantier exists");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Helper functions for converting between DTO and entity
+    const toChantier = async (chantierDTO: ChantierDTO): Promise<Chantier> => {
+        return await mapChantierDTOToChantier(chantierDTO);
+    };
+
+    const toChantierMulti = async (chantierDTOs: ChantierDTO[]): Promise<Chantier[]> => {
+        const chantiers: Chantier[] = [];
+        for (const chantierDTO of chantierDTOs) {
+            const chantier = await mapChantierDTOToChantier(chantierDTO);
+            chantiers.push(chantier);
+        }
+        return chantiers;
+    }
+
+    const toChantierDTO = async (chantier: Chantier): Promise<ChantierDTO> => {
+        return await mapChantierToChantierDTO(chantier);
     };
 
     return {
         loading,
         error,
         response,
-        existChantier,
-        getAllChantiers,
-        deleteChantier,
-        getChantier,
-        createChantier,
-        getLastId,
-        getRecentChantiers,
-        saveChantier,
+        saveChantier: saveChantierHook,
+        getChantier: getChantierHook,
+        getAllChantiers: getAllChantiersHook,
+        createChantier: createChantierHook,
+        createChantierDTO: createChantierDTOHook, // New function that accepts DTO directly
+        deleteChantier: deleteChantierHook,
+        getLastId: getLastIdHook,
+        getRecentChantiers: getRecentChantiersHook,
+        existChantier: existChantierHook,
+
+        toChantier, // Helper for converting from DTO to entity
+        toChantierDTO // Helper for converting from entity to DTO
     };
 };
 

@@ -1,82 +1,70 @@
-import {useAxios} from "./useAxios.ts";
-import {RegisterUserData} from "../utils/user/RegisterUserData.ts";
-import axios, {AxiosResponse} from "axios";
-import {useEffect, useState} from "react";
-
+// useUser.ts
+import { useState } from "react";
 import { useNotifications } from '@toolpad/core/useNotifications';
-import {UserDTO} from "../utils/entitiesDTO/UserDTO.ts";
+import { RegisterUserData } from "../utils/user/RegisterUserData.ts";
 import User from "../utils/entities/User.ts";
+import { UserDTO } from "../utils/entitiesDTO/UserDTO.ts";
+import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
 
+type UserResponse = UserDTO | User[] | UserDTO[] | User | number | null;
 
-const apiUrl = import.meta.env.VITE_API_URL;
-
-type UserResponse = UserDTO | User[] | UserDTO[] | User | number | null; // Could be one Pdp, a list of Pdps, or null.
-const useUser = ()=>{
-    const [response, setReponse] = useState<UserResponse | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-
-    const notifications = useNotifications();
-
-    const { fetch, responseAxios, errorAxios, loadingAxios } = useAxios();
-
-
-    useEffect(() => {
-        if (responseAxios) {
-            setReponse(responseAxios);
-        }
-        if (errorAxios) {
-            setError(errorAxios);
-        }
-        setLoading(loadingAxios);
-    }, [responseAxios, errorAxios, loadingAxios]);
-
-
-    const registerUser = (registerData:RegisterUserData)=>{
-
-        fetch('api/user/register', 'POST', registerData,[{
-            status: 409,
-            message: 'Error user already exists',
-        },{
-            status: 500,
-            message: 'Error while registering user register'
-        },{
-            status: -1,
-            message: 'Error while registering user register -1'
-        }])
-    }
-
-    const loginUser = (loginData:RegisterUserData)=>{
-        if(localStorage.getItem("user")){
-            //User already logged in
-            notifications.show("user already logged in")
-            return;
-        }
-
-
-        fetch('api/user/login', 'POST', loginData, [{
-            status: 409,
-            message: 'Error logining user login (Worng password)',
-        },{
-            status: 404,
-            message: 'Error logining user login (User not found)'
-        },{
-            status: 500,
-            message: 'Error logining user login'
-        },{
-            status: -1,
-            message: 'Error logining user login -1'
-        }]).then(response=>{
-            if(response.status === 200){
-                //Logged in with success
-                localStorage.setItem("user", JSON.stringify(response.data));
-                notifications.show('Successfully logged in', {severity:'success'});
+// Function to register a user
+export const registerUser = async (registerData: RegisterUserData): Promise<ApiResponse<User>> => {
+    return fetchApi<User>(
+        'api/user/register',
+        'POST',
+        registerData,
+        [
+            {
+                status: 409,
+                message: 'Error user already exists',
+            },
+            {
+                status: 500,
+                message: 'Error while registering user register',
+            },
+            {
+                status: -1,
+                message: 'Error while registering user register -1',
             }
-        });
-    }
+        ]
+    );
+};
 
-    const createUser = (user:User): Promise<User> =>{
-        return fetch('api/user','POST', user, [
+// Function to login a user
+export const loginUser = async (loginData: RegisterUserData): Promise<ApiResponse<User>> => {
+    return fetchApi<User>(
+        'api/user/login',
+        'POST',
+        loginData,
+        [
+            {
+                status: 409,
+                message: 'Error logining user login (Worng password)',
+            },
+            {
+                status: 404,
+                message: 'Error logining user login (User not found)',
+            },
+            {
+                status: 500,
+                message: 'Error logining user login',
+            },
+            {
+                status: -1,
+                message: 'Error logining user login -1',
+            }
+        ]
+    );
+};
+
+// Function to create a user
+export const createUser = async (user: User): Promise<ApiResponse<User>> => {
+    return fetchApi<User>(
+        'api/user',
+        'POST',
+        user,
+        [
             {
                 status: 500,
                 message: 'Error while creating user',
@@ -85,65 +73,64 @@ const useUser = ()=>{
                 status: -1,
                 message: 'Error while creating user -1',
             }
-        ]).then((response: User) => {
-            setReponse(response as User);
-            return response as User;
-        }) as Promise<User>;
+        ]
+    );
+};
+
+// Function to get all users
+export const getUsers = async (): Promise<ApiResponse<User[]>> => {
+    return fetchApi<User[]>(
+        `api/user`,
+        'GET',
+        null,
+        [
+            {
+                status: 404,
+                message: 'Error users not found',
+            },
+            {
+                status: -1,
+                message: 'Error while getting users',
+            }
+        ]
+    );
+};
+
+// Function to get a user by ID
+export const getUserById = async (id: number): Promise<ApiResponse<User>> => {
+
+    if(id <= 0) {
+        throw new Error("Invalid user ID");
     }
 
-    const getCurrentUser = ()=>{
-        return localStorage.getItem("user");
-    }
-
-
-    const getUsers = async () : Promise<User[]> => {
-
-            return fetch(`api/user`, 'GET', null, [
-                {
-                    status: 404,
-                    message: 'Error users not found',
-                },
-                {
-                    status: -1,
-                    message: 'Error while getting users',
-                }
-            ]).then(r => {
-
-                    setReponse(r.data?.data);
-                    return r.data?.data;
-
-            }) as Promise<User[]>;
-    }
-
-    const getUser = async (id:number):Promise<User> =>{
-        return fetch('api/user/' + id, 'GET', null,
-            [{
+    return fetchApi<User>(
+        'api/user/' + id,
+        'GET',
+        null,
+        [
+            {
                 status: 404,
                 message: 'Error user not found',
             },
-                {
-                    status: -1,
-                    message: 'Error while getting user',
-                }
-            ]).then((response:User): User =>{
-                setReponse(response as User);
-
-                return response as User;
-
-        }).catch(e=>{
-            setError(e);
-            if(e.status === 404){
-                notifications.show('Error user not found', {severity:'error'});
-            }else{
-
-                notifications.show('Error while getting user', {severity: 'error'});
+            {
+                status: 403,
+                message: 'Error not authorized',
+            },
+            {
+                status: -1,
+                message: 'Error while getting user',
             }
-        }) as Promise<User>;
-    }
+        ]
+    );
+};
 
-
-    const updateUser = (user:User):Promise<User> =>{
-       return fetch('api/user/' + user.id, 'PUT', user, [
+// Function to update a user
+export const updateUser = async (user: User): Promise<ApiResponse<User>> => {
+    return fetchApi<User>(
+        'api/user/' + user.id,
+        'PUT',
+        user,
+        [
             {
                 status: 404,
                 message: 'Error user not found',
@@ -156,15 +143,17 @@ const useUser = ()=>{
                 status: -1,
                 message: 'Error while updating user -1',
             }
-        ]).then((response: User)=>{
-            setReponse(response as User);
-            return response as User;
-        }) as Promise<User>;
-    }
+        ]
+    );
+};
 
-
-    const deleteUser = (id:number):Promise<void> =>{
-        return fetch('api/user/' + id, 'DELETE', null, [
+// Function to delete a user
+export const deleteUser = async (id: number): Promise<ApiResponse<void>> => {
+    return fetchApi<void>(
+        'api/user/' + id,
+        'DELETE',
+        null,
+        [
             {
                 status: 404,
                 message: 'Error user not found',
@@ -177,11 +166,155 @@ const useUser = ()=>{
                 status: -1,
                 message: 'Error while deleting user -1',
             }
-        ]).then(()=>{
-            setReponse(null);
-        }) as Promise<void>;
-    }
-    return {response, error, loading, registerUser, createUser, loginUser, deleteUser ,getCurrentUser, getUsers, getUser, updateUser}
-}
+        ]
+    );
+};
+
+// Function to get the current user from localStorage
+export const getCurrentUser = (): string | null => {
+    return localStorage.getItem("user");
+};
+
+// React hook that uses the API functions
+const useUser = () => {
+    const [response, setResponse] = useState<UserResponse | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
+
+    const notifications = useNotifications();
+
+    const registerUserHook = async (registerData: RegisterUserData): Promise<void> => {
+        setLoading(true);
+        try {
+            await registerUser(registerData);
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loginUserHook = async (loginData: RegisterUserData): Promise<void> => {
+        if (localStorage.getItem("user")) {
+            notifications.show("User already logged in");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const result = await loginUser(loginData);
+            if (result.data) {
+                localStorage.setItem("user", JSON.stringify(result.data));
+                notifications.show('Successfully logged in', { severity: 'success' });
+            }
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const createUserHook = async (user: User): Promise<User> => {
+        setLoading(true);
+        try {
+            const result = await createUser(user);
+            if (result.data) {
+                setResponse(result.data);
+                return result.data;
+            }
+            throw new Error(result.message || "Failed to create user");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getUsersHook = async (): Promise<User[]> => {
+        setLoading(true);
+        try {
+            const result = await getUsers();
+            if (result.data) {
+                setResponse(result.data);
+                return result.data;
+            }
+            throw new Error(result.message || "Failed to get users");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getUserHook = async (id: number): Promise<User> => {
+        setLoading(true);
+        try {
+            const result = await getUserById(id);
+            if (result.data) {
+                setResponse(result.data);
+                return result.data;
+            }
+            throw new Error(result.message || "Failed to get user");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const updateUserHook = async (user: User): Promise<User> => {
+        setLoading(true);
+        try {
+            const result = await updateUser(user);
+            if (result.data) {
+                setResponse(result.data);
+                return result.data;
+            }
+            throw new Error(result.message || "Failed to update user");
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const deleteUserHook = async (id: number): Promise<void> => {
+        setLoading(true);
+        try {
+            await deleteUser(id);
+            setResponse(null);
+        } catch (e: any) {
+            setError(e.message);
+            notifications.show(e.message, { severity: "error" });
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return {
+        response,
+        error,
+        loading,
+        registerUser: registerUserHook,
+        loginUser: loginUserHook,
+        createUser: createUserHook,
+        getCurrentUser,
+        getUsers: getUsersHook,
+        getUser: getUserHook,
+        updateUser: updateUserHook,
+        deleteUser: deleteUserHook
+    };
+};
 
 export default useUser;

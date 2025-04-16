@@ -11,10 +11,12 @@ import {ThemeProvider} from "@mui/material";
 import theme from "./Theme.tsx";
 import {AuthProvider} from "./hooks/useAuth.tsx";
 import {LoadingProvider} from "./hooks/useLoading.tsx";
+import {QueryClientProvider} from "react-query";
+import {QueryClient} from "react-query";
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <ThemeProvider theme={theme}>
+            <ThemeProvider theme={theme}>
 
             <NotificationsProvider>
                     <LoadingProvider>

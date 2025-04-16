@@ -27,6 +27,7 @@ import {useAuth} from "../hooks/useAuth.tsx";
 import useChantier from "../hooks/useChantier.ts";
 import Chantier from "../utils/entities/Chantier.ts";
 import {getRoute} from "../Routes.tsx";
+import ChantierDTO from "../utils/entitiesDTO/ChantierDTO.ts";
 
 interface DataToDisplay {
     id?: number;
@@ -41,16 +42,18 @@ const Home: FC = () => {
     const [modalPdpCreate, setModalPdpCreate] = useState<boolean>(false);
     const [modalPdpCreateResponse, setModalPdpCreateResponse] = useState<boolean>(false);
     const [recentPdps, setRecentPdps] = useState<DataToDisplay[]>([]);
-    const {loading, getRecentPdps, getLastId:getPdpLastId, createPdp, getPlanDePrevention} = usePdp();
 
     const [modalBdtCreate, setModalBdtCreate] = useState<boolean>(false);
     const [modalBdtCreateResponse, setModalBdtCreateResponse] = useState<boolean>(false);
     const [recentBdts, setRecentBdts] = useState<DataToDisplay[]>([]);
+
+
+    const {loading, getRecentPdps, getLastId:getPdpLastId, createPdp, getPlanDePrevention} = usePdp();
     const {loading:loadingBDT, getAllBDTs, createBDT} = useBdt();
+    const {loading:loadingChantier, getRecentChantiers, createChantier, toChantier} = useChantier();
 
     // Added for Chantier
     const [recentChantiers, setRecentChantiers] = useState<Chantier[]>([]);
-    const {loading:loadingChantier, getRecentChantiers, createChantier} = useChantier();
 
     const {connectedUser} = useAuth();
 
@@ -58,10 +61,6 @@ const Home: FC = () => {
 
         }, []);
 
-    const createPdpAndRedirect =async () => {
-        //  const createdPdp:Pdp = await createPdp(Pdp.createEmpty() as PdpDTO);
-        //navigate(`/create/pdps/${(createdPdp?.id as number )}/1`);
-    }
 
     async function createBdtAndRedirect() {
         const createdBdt:BDT = await createBDT(BDT.createEmpty() as BDT);
@@ -70,15 +69,11 @@ const Home: FC = () => {
     }
 
     useEffect(() => {
-        // Get recent PDPs
-        getRecentPdps().then((response:Pdp[]) =>{
-            setRecentPdps(response as DataToDisplay[]);
-        });
 
-        // Get recent Chantiers
-        getRecentChantiers().then((response:Chantier[]) =>{
-            setRecentChantiers(response);
-            console.log('resp', response)
+        getRecentChantiers().then((response: ChantierDTO[]) => {
+            Promise.all(response).then(chantiers => {
+                setRecentChantiers(chantiers as Chantier[]);
+            });
         });
     }, []);
 
@@ -109,7 +104,7 @@ const Home: FC = () => {
                     </Typography>
 
                     <Button  onClick={() => setModalPdpCreate(false)}>Non</Button>
-                    <Button variant={'contained'} onClick={() => createPdpAndRedirect()}>Oui</Button>
+                    <Button variant={'contained'}>Oui</Button>
                 </Box>
             </Modal>
             <Modal

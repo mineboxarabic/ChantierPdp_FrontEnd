@@ -6,18 +6,13 @@ import { AuditSecu } from "../entities/AuditSecu.ts";
 
 class ObjectAnswered {
 
-    id: number;
-    risque?: Risque;
-    dispositif?: Dispositif;
-    permit?: Permit;
-    auditSecu?: AuditSecu;
-    answer: boolean;
-
-    constructor(id:number, risque:Risque, answer:boolean) {
-        this.id = id;
-        this.risque = risque;
-        this.answer = answer;
-    }
+    id?: number;
+    risque_id?: number;
+    dispositif_id?: number;
+    permit_id?: number;
+    auditSecu_id?: number;
+    answer: boolean = false;
 }
+
 
 export default ObjectAnswered;

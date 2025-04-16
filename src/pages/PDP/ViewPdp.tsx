@@ -45,6 +45,16 @@ import usePdp from "../../hooks/usePdp";
 import { Pdp } from "../../utils/entities/Pdp.ts";
 import { getRoute } from "../../Routes";
 import useEntreprise from "../../hooks/useEntreprise.ts";
+import { PdpDTO } from "../../utils/entitiesDTO/PdpDTO.ts";
+import Risque from "../../utils/entities/Risque.ts";
+import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
+import useRisque from "../../hooks/useRisque.ts";
+import RisqueDTO from "../../utils/entitiesDTO/RisqueDTO.ts";
+import { Entreprise } from "../../utils/entities/Entreprise.ts";
+import { EntrepriseDTO } from "../../utils/entitiesDTO/EntrepriseDTO.ts";
+import useDispositif from "../../hooks/useDispositif.ts";
+import DispositifDTO from "../../utils/entitiesDTO/DispositifDTO.ts";
+import usePermit from "../../hooks/usePermit.ts";
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -123,13 +133,23 @@ const StyledAvatar = styled(Avatar)(({ theme }) => ({
 const ViewPdp: FC = () => {
     const {id} = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [pdpData, setPdpData] = useState<Pdp | null>(null);
+    const [pdpData, setPdpData] = useState<PdpDTO | null>(null);
     const [tabValue, setTabValue] = useState(0);
-    const {getPlanDePrevention, loading} = usePdp();
-    const {getAllEntreprises,entreprises} = useEntreprise();
+
+
+    //Hooks
+    const {getPlanDePrevention, loading, getObjectAnswered} = usePdp();
+    const risquesHook = useRisque();
+    const entrepriseHook = useEntreprise();
     const theme = useTheme();
+    const dispositifHook = useDispositif();
+    const permitHook = usePermit();
 
-
+    //Maps
+    const [risques, setRisques] = useState<Map<number, RisqueDTO>> (new Map<number, RisqueDTO>());
+    const [entreprises, setEntreprises] = useState<Map<number, EntrepriseDTO>> (new Map<number, EntrepriseDTO>());
+    const [dispositifs, setDispositifs] = useState<Map<number, DispositifDTO>> (new Map<number, DispositifDTO>());
+    const [permits, setPermits] = useState<Map<number, any>> (new Map<number, any>());
     useEffect(() => {
         const fetchPdp = async () => {
             if (id) {
@@ -139,11 +159,75 @@ const ViewPdp: FC = () => {
         };
 
         const fetchEntreprises = async () => {
-            getAllEntreprises();
+            
+            let entrepriseExterieure;// = await entrepriseHook.getEntreprise(pdpData?.entrepriseExterieure);
+            let entrepriseDInspection;// = await entrepriseHook.getEntreprise(pdpData?.entrepriseDInspection);
+            
+            if(pdpData?.entrepriseExterieure) {
+                entrepriseExterieure = await entrepriseHook.getEntreprise(pdpData?.entrepriseExterieure);
+            }
+            if(pdpData?.entrepriseDInspection) {
+                entrepriseDInspection = await entrepriseHook.getEntreprise(pdpData?.entrepriseDInspection);
+            }
+
+
+            setEntreprises(new Map<number, EntrepriseDTO>([
+                [pdpData?.entrepriseExterieure as number, entrepriseExterieure],
+                [pdpData?.entrepriseDInspection as number, entrepriseDInspection]
+            ]));
+        }
+
+        const fetchRisques = async () => {
+            if(!id) return;
+            const risquesIds = await getObjectAnswered(parseInt(id), ObjectAnsweredObjects.RISQUE);
+            if(risquesIds.length === 0) return;
+            const risques = await risquesHook.getRisquesByIds(risquesIds.map(risque => risque.risque_id) as number[]);
+            const risquesMap = new Map<number, RisqueDTO>();
+            risques.forEach(risque => {
+                if (risque) {
+                    risquesMap.set(risque?.id as number, risque);
+                }
+            });
+            
+            setRisques(risquesMap);
+        }
+
+
+        const fetchDispositifs = async () => {
+            if(!id) return;
+            const dispositifsIds = await getObjectAnswered(parseInt(id), ObjectAnsweredObjects.DISPOSITIF);
+            if(dispositifsIds.length === 0) return;
+            const dispositifs = await dispositifHook.getDispositifsByIds(dispositifsIds.map(dispositif => dispositif.dispositif_id) as number[]);
+            const dispositifsMap = new Map<number, DispositifDTO>();
+            dispositifs.forEach(dispositif => {
+                if (dispositif) {
+                    dispositifsMap.set(dispositif?.id as number, dispositif);
+                }
+            });
+            
+            setDispositifs(dispositifsMap);
+        }
+
+        const fetchPermits = async () => {
+            if(!id) return;
+            const permitsIds = await getObjectAnswered(parseInt(id), ObjectAnsweredObjects.PERMIT);
+            if(permitsIds.length === 0) return;
+            const permits = await permitHook.getPermitsByIds(permitsIds.map(permit => permit.permit_id) as number[]);
+            const permitsMap = new Map<number, any>();
+            permits.forEach(permit => {
+                if (permit) {
+                    permitsMap.set(permit?.id as number, permit);
+                }
+            });
+            
+            setPermits(permitsMap);
         }
 
         fetchPdp();
         fetchEntreprises();
+        fetchRisques();
+        fetchDispositifs();
+        fetchPermits();
         }, [id]);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -195,7 +279,7 @@ const ViewPdp: FC = () => {
                         </Typography>
                         <Typography variant="h6" sx={{mt: 1, opacity: 0.9}}>
                             {pdpData.entrepriseExterieure ?
-                                `Entreprise extérieure: ${pdpData?.entrepriseExterieureEnt?.nom || "N/A"}` :
+                                `Entreprise extérieure: ${entreprises.get(pdpData?.entrepriseExterieure)?.nom || "N/A"}` :
                                 "Aucune entreprise extérieure spécifiée"}
                         </Typography>
                         <Box sx={{display: "flex", flexWrap: "wrap", gap: 1, mt: 2}}>
@@ -258,10 +342,10 @@ const ViewPdp: FC = () => {
                             {pdpData.entrepriseExterieure ? (
                                 <>
                                     <Typography variant="body1" fontWeight="bold">
-                                        {entreprises.get(pdpData?.entrepriseExterieure.id)?.nom || "N/A"}
+                                        {entreprises.get(pdpData?.entrepriseExterieure)?.nom || "N/A"}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
-                                        {entreprises.get(pdpData?.entrepriseExterieure.id)?.raisonSociale || "N/A"}
+                                        {entreprises.get(pdpData?.entrepriseExterieure)?.raisonSociale || "N/A"}
                                     </Typography>
                                 </>
                             ) : (
@@ -284,10 +368,10 @@ const ViewPdp: FC = () => {
                             {pdpData.entrepriseDInspection ? (
                                 <>
                                     <Typography variant="body1" fontWeight="bold">
-                                        {entreprises.get(pdpData?.entrepriseDInspection.id)?.nom || "N/A"}
+                                        {entreprises.get(pdpData?.entrepriseDInspection)?.nom || "N/A"}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
-                                        {entreprises.get(pdpData?.entrepriseDInspection.id)?.raisonSociale || "N/A"}
+                                        {entreprises.get(pdpData?.entrepriseDInspection)?.raisonSociale || "N/A"}
                                     </Typography>
                                 </>
                             ) : (
@@ -367,15 +451,15 @@ const ViewPdp: FC = () => {
                                                 <Box sx={{display: "flex", alignItems: "center"}}>
                                                     <Avatar
                                                         sx={{bgcolor: risque.answer ? "error.main" : "grey.500", mr: 2}}
-                                                        src={risque.risque?.logo ?
-                                                            `data:${risque.risque.logo.mimeType};base64,${risque.risque.logo.imageData}` :
+                                                        src={risques.get(risque?.risque_id as number)?.logo ?
+                                                            `data:${risques.get(risque?.risque_id as number)?.logo?.mimeType};base64,${risques.get(risque?.risque_id as number)?.logo?.imageData}` :
                                                             undefined}
                                                     >
                                                         <Warning/>
                                                     </Avatar>
                                                     <Box>
                                                         <Typography variant="h6">
-                                                            {risque.risque?.title || `Risque #${risque.id}`}
+                                                            {risques.get(risque?.risque_id as number)?.title || `Risque #${risques.get(risque?.risque_id as number)?.id}`}
                                                         </Typography>
                                                         <Chip
                                                             size="small"
@@ -390,19 +474,19 @@ const ViewPdp: FC = () => {
                                                 </IconButton>
                                             </Box>
 
-                                            {risque.risque?.description && (
+                                            {risques.get(risque?.risque_id as number)?.description && (
                                                 <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
-                                                    {risque.risque.description}
+                                                    {risques.get(risque?.risque_id as number)?.description}
                                                 </Typography>
                                             )}
 
-                                            {risque.risque?.description && (
+                                            {risques.get(risque?.risque_id as number)?.description && (
                                                 <Box sx={{mt: 2, p: 1, bgcolor: 'background.paper', borderRadius: 1}}>
                                                     <Typography variant="caption" color="text.secondary">
                                                         Commentaire:
                                                     </Typography>
                                                     <Typography variant="body2">
-                                                        {risque.risque?.description}
+                                                        {risques.get(risque?.risque_id as number)?.description}
                                                     </Typography>
                                                 </Box>
                                             )}
@@ -426,6 +510,7 @@ const ViewPdp: FC = () => {
                     <Grid container spacing={3}>
                         {pdpData.dispositifs && pdpData.dispositifs.length > 0 ? (
                             pdpData.dispositifs.map((dispositif, index) => (
+                                
                                 <Grid xs={12} md={6} key={dispositif.id || index}>
                                     <ItemCard elevation={2}>
                                         <CardContent>
@@ -440,15 +525,15 @@ const ViewPdp: FC = () => {
                                                             bgcolor: dispositif.answer ? "success.main" : "grey.500",
                                                             mr: 2
                                                         }}
-                                                        src={dispositif.dispositif?.logo ?
-                                                            `data:${dispositif.dispositif.logo.mimeType};base64,${dispositif.dispositif.logo.imageData}` :
+                                                        src={dispositifs.get(dispositif?.dispositif_id as number)?.logo ?
+                                                            `data:${dispositifs.get(dispositif?.dispositif_id as number)?.logo?.mimeType};base64,${dispositifs.get(dispositif?.dispositif_id as number)?.logo?.imageData}` :
                                                             undefined}
                                                     >
                                                         <VerifiedUser/>
                                                     </Avatar>
                                                     <Box>
                                                         <Typography variant="h6">
-                                                            {dispositif.dispositif?.title || `Dispositif #${dispositif.id}`}
+                                                            {dispositifs.get(dispositif?.dispositif_id as number)?.title || `Dispositif #${dispositifs.get(dispositif?.dispositif_id as number)?.id}`}
                                                         </Typography>
                                                         <Chip
                                                             size="small"
@@ -463,19 +548,19 @@ const ViewPdp: FC = () => {
                                                 </IconButton>
                                             </Box>
 
-                                            {dispositif.dispositif?.description && (
+                                            {dispositifs.get(dispositif?.dispositif_id as number)?.description && (
                                                 <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
-                                                    {dispositif.dispositif.description}
+                                                    {dispositifs.get(dispositif?.dispositif_id as number)?.description}
                                                 </Typography>
                                             )}
 
-                                            {dispositif.dispositif?.description && (
+                                            {dispositifs.get(dispositif?.dispositif_id as number)?.description && (
                                                 <Box sx={{mt: 2, p: 1, bgcolor: 'background.paper', borderRadius: 1}}>
                                                     <Typography variant="caption" color="text.secondary">
                                                         Commentaire:
                                                     </Typography>
                                                     <Typography variant="body2">
-                                                        {dispositif.dispositif?.description}
+                                                        {dispositifs.get(dispositif?.dispositif_id as number)?.description}
                                                     </Typography>
                                                 </Box>
                                             )}
@@ -518,7 +603,7 @@ const ViewPdp: FC = () => {
                                                     </Avatar>
                                                     <Box>
                                                         <Typography variant="h6">
-                                                            {permit.permit?.title || `Permis #${permit.id}`}
+                                                            {permits.get(permit?.permit_id as number)?.title || `Permis #${permits.get(permit?.permit_id  as number)?.id}`}
                                                         </Typography>
                                                         <Chip
                                                             size="small"
@@ -533,9 +618,9 @@ const ViewPdp: FC = () => {
                                                 </IconButton>
                                             </Box>
 
-                                            {permit.permit?.description && (
+                                            {permits.get(permit?.permit_id as number)?.description && (
                                                 <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
-                                                    {permit.permit.description}
+                                                    {permits.get(permit?.permit_id as number)?.description}
                                                 </Typography>
                                             )}
                                         </CardContent>

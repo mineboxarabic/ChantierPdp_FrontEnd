@@ -4,8 +4,8 @@ class ChantierDTO {
     operation?: string;
     dateDebut?: Date;
     dateFin?: Date;
-    nbHeurs?: number;
-    effectifMaxiSurChantier?: number;
+    nbHeurs: number = 0;
+    effectifMaxiSurChantier: number = 0;
     nombreInterimaires?: number;
     entrepriseExterieurs?: number[];
     entrepriseUtilisatrice?: number;
@@ -16,11 +16,6 @@ class ChantierDTO {
     workers?: number[];
     isAnnuelle?:boolean;
     workerSelections?: number[];
-
-    entrepriseExterieurEnts?: number[];
-    entrepriseUtilisatriceEnt?: number;
-    localisationEnt?: number;
-    workerEnts?: number[];
 }
 
 export default ChantierDTO;

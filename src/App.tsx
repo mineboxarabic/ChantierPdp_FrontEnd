@@ -18,6 +18,7 @@ import Steps from "./pages/PDPSteps/Steps.tsx";
 import {Font} from "@react-pdf/renderer";
 import {getRouteLists} from "./Routes.tsx";
 import NotFoundPage from "./pages/common/NotFoundPage.tsx";
+import {QueryClient, QueryClientProvider} from "react-query";
 
 Font.register({
     family: "Inter",
@@ -30,7 +31,17 @@ const { protectedRoutes, publicRoutes } = getRouteLists();
 
 
 function App() {
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                retry: 1,
+                staleTime: 5000,
+            }
+        }
+    });
     return (
+
+        <QueryClientProvider client={queryClient}>
         <Router>
             <Routes>
                 {/* Protected routes with mustLogin=true */}
@@ -61,6 +72,7 @@ function App() {
                 <Route path="*" element={<NotFoundPage />} />
             </Routes>
         </Router>
+        </QueryClientProvider>
     );
 
 }

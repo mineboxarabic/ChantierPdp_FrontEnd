@@ -25,11 +25,6 @@ class Chantier {
     workers?: Worker[];
     isAnnuelle?:boolean;
     workerSelections?: WorkerChantierSelection[];
-
-    entrepriseExterieurEnts?: Entreprise[];
-    entrepriseUtilisatriceEnt?: Entreprise;
-    localisationEnt?: Localisation;
-    workerEnts?: Worker[];
 }
 
 export default Chantier;

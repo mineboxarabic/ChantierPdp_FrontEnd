@@ -484,8 +484,8 @@ const EditCreateBdt: React.FC = () => {
                 if (savedBdt && savedBdt.id) {
                     // Link risques
                    for (const risque of formData.risques || []) {
-                        if (risque.risque?.id) {
-                            await linkRisqueToBDT(savedBdt.id, risque.risque.id);
+                        if (risque.risque_id) {
+                            await linkRisqueToBDT(savedBdt.id, risque.risque_id);
                         }
                     }
 

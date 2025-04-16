@@ -41,6 +41,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { styled } from "@mui/material/styles";
 import dayjs from "dayjs";
 import {getRoute} from "../../Routes.tsx";
+import {mapChantierDTOToChantier} from "../../utils/mappers/ChantierMapper.ts";
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -128,7 +129,8 @@ const ViewChantier: FC = () => {
         const fetchChantier = async () => {
             if (id) {
                 const data = await getChantier(parseInt(id));
-                setChantierData(data);
+                console.log('dfiajdifj',await mapChantierDTOToChantier(data))
+                setChantierData(await mapChantierDTOToChantier(data));
             }
         };
 
@@ -255,10 +257,10 @@ const ViewChantier: FC = () => {
                                 <Typography variant="h6">Entreprise Utilisatrice</Typography>
                             </Box>
                             <Divider sx={{ mb: 2 }} />
-                            {chantierData.entrepriseUtilisatrice ? (
+                            {chantierData?.entrepriseUtilisatrice ? (
                                 <>
                                     <Typography variant="body1" fontWeight="bold">
-                                        {chantierData.entrepriseUtilisatrice.nom}
+                                        {chantierData?.entrepriseUtilisatrice?.nom}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                                         {chantierData.entrepriseUtilisatrice.raisonSociale}
@@ -319,10 +321,10 @@ const ViewChantier: FC = () => {
                                 <Typography variant="h6">Localisation</Typography>
                             </Box>
                             <Divider sx={{ mb: 2 }} />
-                            {chantierData.localisation ? (
+                            {chantierData?.localisation ? (
                                 <>
                                     <Typography variant="body1" fontWeight="bold">
-                                        {chantierData.localisation.nom}
+                                        {chantierData?.localisation?.nom}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                                         Code: {chantierData.localisation.code}

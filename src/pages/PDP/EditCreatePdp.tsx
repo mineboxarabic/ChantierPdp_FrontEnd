@@ -72,6 +72,10 @@ import {Visibility} from "@mui/icons-material";
 import EditAnalyseRisque from "../../components/AnalyseDeRisque/EditAnalyseRisque.tsx";
 import analyseDeRisque from "../../utils/entities/AnalyseDeRisque.ts";
 import {useNotifications} from "@toolpad/core/useNotifications";
+import RisqueDTO from '../../utils/entitiesDTO/RisqueDTO.ts';
+import PermitDTO from '../../utils/entitiesDTO/PermitDTO.ts';
+import { PdpDTO } from '../../utils/entitiesDTO/PdpDTO.ts';
+import ChantierDTO from '../../utils/entitiesDTO/ChantierDTO.ts';
 
 // Define the interface for URL params
 interface ParamTypes {
@@ -134,7 +138,7 @@ const EditCreatePdp: React.FC = () => {
     const [dialogData, setDialogData] = useState<Risque | Permit | AnalyseDeRisque | null>(null);
 
     // Form state
-    const [formData, setFormData] = useState<Pdp>({
+    const [formData, setFormData] = useState<PdpDTO>({
         id: undefined,
         chantier: undefined,
         entrepriseExterieure: undefined,
@@ -188,8 +192,8 @@ const EditCreatePdp: React.FC = () => {
     const { saveChantier } = useChantier();
     // Data states
     //const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
-    const [risques, setRisques] = useState<Risque[]>([]);
-    const [permits, setPermits] = useState<Permit[]>([]);
+    const [risques, setRisques] = useState<RisqueDTO[]>([]);
+    const [permits, setPermits] = useState<PermitDTO[]>([]);
     const [selectedAnalyseDeRisque, setSelectedAnalyseDeRisque] = useState<AnalyseDeRisque | null>(null);
 
     //Error states
@@ -264,10 +268,10 @@ const EditCreatePdp: React.FC = () => {
             // Handle nested properties like horaireDeTravail.enJournee
             const [parent, child] = name.split('.');
 
-            setFormData((prev:Pdp) => ({
+            setFormData((prev:PdpDTO) => ({
                 ...prev,
                 [parent]: {
-                    ...prev[parent as keyof Pdp] as Record<string, any> ?? {},
+                    ...prev[parent as keyof PdpDTO] as Record<string, any> ?? {},
                     [child]: type === 'checkbox' ? checked : value
                 }
             }));
@@ -423,7 +427,7 @@ const EditCreatePdp: React.FC = () => {
                 savedPdp = await savePdp(formData, formData.id);
 
                 if(chantierId){
-                    saveChantier({pdps: savedPdp} as Chantier, parseInt(chantierId));
+                    saveChantier({pdps: savedPdp} as ChantierDTO, parseInt(chantierId));
                 }
 
             } else {
@@ -499,11 +503,11 @@ const EditCreatePdp: React.FC = () => {
         const errors: Record<string, string | number> = {};
 
         // Validate required fields
-            if (!formData.entrepriseExterieure?.id) {
+            if (!formData.entrepriseExterieure) {
                 errors.entrepriseExterieure = "L'entreprise extérieure est requise";
             }
 
-            if (!formData.entrepriseDInspection?.id) {
+            if (!formData.entrepriseDInspection) {
                 errors.entrepriseDInspection = "L'entreprise d'inspection est requise";
 
             }
@@ -659,7 +663,7 @@ const EditCreatePdp: React.FC = () => {
                                         <Autocomplete
                                             options={Array.from(entreprises.values())}
                                             getOptionLabel={(option) => option.nom || option.nom || ''}
-                                            value={formData.entrepriseExterieure?.id && entreprises.get(formData.entrepriseExterieure?.id) || null}
+                                            value={formData.entrepriseExterieure && entreprises.get(formData.entrepriseExterieure) || null}
                                             onChange={(_, newValue) => handleAutocompleteChange('entrepriseExterieure', new EntityRef(newValue?.id as number))}
                                             renderInput={(params) => (
                                                 <TextField
@@ -679,7 +683,7 @@ const EditCreatePdp: React.FC = () => {
                                         <Autocomplete
                                             options={Array.from(entreprises.values())}
                                             getOptionLabel={(option) => option.nom || option.nom || ''}
-                                            value={formData.entrepriseDInspection?.id && entreprises.get(formData.entrepriseDInspection?.id) || null}
+                                            value={formData.entrepriseDInspection && entreprises.get(formData.entrepriseDInspection) || null}
                                             onChange={(_, newValue) => handleAutocompleteChange('entrepriseDInspection', new EntityRef(newValue?.id as number))}
                                             renderInput={(params) => (
                                                 <TextField
@@ -956,10 +960,11 @@ const EditCreatePdp: React.FC = () => {
                                                             .map((risque) => (
                                                                 <RisqueComponent
                                                                     key={risque.id}
-                                                                    risque={risque}
+                                                                    object={risque}
                                                                     currentPdp={formData}
                                                                     saveCurrentPdp={setFormData}
                                                                     setIsChanged={() => {}}
+                                                                    typeOfObject={"pdp"}
                                                                 />
                                                             ))}
                                                     </Stack>
@@ -971,10 +976,11 @@ const EditCreatePdp: React.FC = () => {
                                                             .map((risque) => (
                                                                 <RisqueComponent
                                                                     key={risque.id}
-                                                                    risque={risque}
+                                                                    object={risque}
                                                                     currentPdp={formData}
                                                                     saveCurrentPdp={setFormData}
                                                                     setIsChanged={() => {}}
+                                                                    typeOfObject={"pdp"}
                                                                 />
                                                             ))}
                                                     </Stack>
@@ -1107,7 +1113,7 @@ const EditCreatePdp: React.FC = () => {
                                                         borderRadius: 1
                                                     }}
                                                 >
-                                                    <Typography>{permit.permit?.title || `Permis #${permit.id}`}</Typography>
+                                                    <Typography>{permit.permit_id?.title || `Permis #${permit.id}`}</Typography>
                                                     <Box>
                                                         <FormControlLabel
                                                             control={
