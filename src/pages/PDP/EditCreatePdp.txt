@@ -1,0 +1,1241 @@
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+    Alert,
+    Autocomplete,
+    Avatar,
+    Box,
+    Button,
+    Checkbox,
+    Chip,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Divider,
+    FormControlLabel,
+    Grid,
+    IconButton,
+    Modal,
+    Paper,
+    Stack,
+    // Stepper component is removed as Tabs handle the flow adequately
+    Switch,
+    Tab,
+    Tabs,
+    TextField,
+    Tooltip, // Import Tooltip
+    Typography
+} from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+
+// --- Custom Hooks ---
+import usePdp from '../../hooks/usePdp';
+import useEntreprise from '../../hooks/useEntreprise';
+import useRisque from '../../hooks/useRisque';
+import usePermit from '../../hooks/usePermit';
+import useDispositif from '../../hooks/useDispositif';
+import useAnalyseRisque from '../../hooks/useAnalyseRisque';
+import useChantier from "../../hooks/useChantier.ts";
+// --- Icons ---
+import SaveIcon from '@mui/icons-material/Save';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import BusinessIcon from '@mui/icons-material/Business';
+import WarningIcon from '@mui/icons-material/Warning';
+import ShieldIcon from '@mui/icons-material/Shield';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from "@mui/icons-material/Edit";
+import { Visibility } from "@mui/icons-material"; // Ensure Visibility is imported
+// --- Utils & Types ---
+// import { Pdp } from '../../utils/entities/Pdp.ts'; // Assuming PdpDTO covers necessary fields
+import ObjectAnsweredDTO from '../../utils/pdp/ObjectAnswered';
+import AnalyseDeRisque from '../../utils/entities/AnalyseDeRisque.ts'; // Keep if needed for specific operations
+import ObjectAnsweredObjects from '../../utils/ObjectAnsweredObjects';
+import { getRoute } from "../../Routes.tsx";
+import RisqueDTO from '../../utils/entitiesDTO/RisqueDTO.ts';
+import PermitDTO from '../../utils/entitiesDTO/PermitDTO.ts';
+import { PdpDTO } from '../../utils/entitiesDTO/PdpDTO.ts';
+import {ChantierDTO} from '../../utils/entitiesDTO/ChantierDTO.ts';
+import {AnalyseDeRisqueDTO} from '../../utils/entitiesDTO/AnalyseDeRisqueDTO.ts';
+import DispositifDTO from '../../utils/entitiesDTO/DispositifDTO.ts';
+// --- Custom Components ---
+import RisqueComponent from "../../components/Steps/RisqueComponent.tsx";
+// import DispositifComponent from "../../components/Steps/DispositifComponent.tsx"; // Replaced with ObjectAnsweredComponent
+import SelectOrCreateObjectAnswered from "../../components/Pdp/SelectOrCreateObjectAnswered.tsx";
+import ObjectAnsweredComponent from '../../components/Steps/ObjectAnsweredComponent.tsx';
+import CreateEditAnalyseDeRisqueForm from "../../components/CreateAnalyseDeRisqueForm.tsx";
+import { useNotifications } from "@toolpad/core/useNotifications"; // Correct import if needed, or use a different notification library
+
+// Define the TabPanel props interface
+interface TabPanelProps {
+    children?: React.ReactNode;
+    index: number;
+    value: number;
+}
+
+// TabPanel component for tab navigation
+function TabPanel(props: TabPanelProps) {
+    const { children, value, index, ...other } = props;
+
+    return (
+        <div
+            role="tabpanel"
+            hidden={value !== index}
+            id={`pdps-tabpanel-${index}`}
+            aria-labelledby={`pdps-tab-${index}`}
+            {...other}
+        >
+            {value === index && (
+                // Add key to potentially help React diffing if children change significantly
+                <Box sx={{ p: 3 }} key={`tabpanel-${index}`}>
+                    {children}
+                </Box>
+            )}
+        </div>
+    );
+}
+
+// Accessibility props for tabs
+function a11yProps(index: number) {
+    return {
+        id: `pdps-tab-${index}`,
+        'aria-controls': `pdps-tabpanel-${index}`,
+    };
+}
+
+// Define dialog data types - Explicitly define possible data types
+type DialogData = RisqueDTO | DispositifDTO | PermitDTO | AnalyseDeRisqueDTO | null;
+type DialogTypes = 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'editAnalyseDeRisque' | '';
+
+// Style for Modal Content
+const modalStyle = {
+    position: 'absolute' as 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: '80%', // Adjust width as needed
+    maxWidth: '800px', // Max width
+    bgcolor: 'background.paper',
+    border: '2px solid #000',
+    boxShadow: 24,
+    p: 4,
+    maxHeight: '90vh', // Limit height
+    overflowY: 'auto' // Enable scrolling
+};
+
+
+const EditCreatePdp: React.FC = () => {
+    const { id, chantierId } = useParams<{ id: string, chantierId?: string }>();
+    const navigate = useNavigate();
+    const notifications = useNotifications(); // Ensure this hook provides a `show` method
+
+    const isEditMode = Boolean(id);
+
+    // --- State ---
+    const [tabIndex, setTabIndex] = useState<number>(0); // Renamed from tabValue/activeStep for clarity
+
+    // Dialog state
+    const [openDialog, setOpenDialog] = useState<boolean>(false);
+    const [dialogType, setDialogType] = useState<DialogTypes>('');
+    const [dialogData, setDialogData] = useState<DialogData>(null); // State for selected item in dialog (Autocomplete)
+    const [editItemData, setEditItemData] = useState<AnalyseDeRisqueDTO | null>(null); // Specific state for item being edited
+    const [openNestedModal, setOpenNestedModal] = useState<boolean>(false); // State for the nested create/edit form modal
+
+    // Form state - Initialize with sensible defaults
+    const initialFormData: PdpDTO = useMemo(() => ({
+        id: undefined,
+        chantier: chantierId ? parseInt(chantierId, 10) : undefined,
+        entrepriseExterieure: undefined,
+        dateInspection: dayjs().toDate(), // Use dayjs for initial date
+        icpdate: dayjs().toDate(),
+        datePrevenirCSSCT: dayjs().toDate(),
+        datePrev: dayjs().toDate(),
+        horairesDetails: '',
+        entrepriseDInspection: undefined,
+        horaireDeTravail: {
+            enJournee: false,
+            enNuit: false,
+            samedi: false
+        },
+        misesEnDisposition: {
+            vestiaires: false,
+            sanitaires: false,
+            restaurant: false,
+            energie: false
+        },
+        relations: [],
+        signatures: [],
+    }), [chantierId]); // Recalculate only if chantierId changes
+
+    const [formData, setFormData] = useState<PdpDTO>(initialFormData);
+
+    // Loading and Saving state
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isSaving, setIsSaving] = useState<boolean>(false); // Separate state for saving operation
+    const [saveError, setSaveError] = useState<string | null>(null);
+
+    // Error state for form validation
+    const [errors, setErrors] = useState<Record<string, string>>({}); // Use string for error messages
+
+    // --- Custom Hooks for Data Fetching & Actions ---
+    const { getPlanDePrevention, createPdp, savePdp } = usePdp();
+    const { getAllEntreprises, entreprises } = useEntreprise();
+    const { getAllRisques, risques: allRisques } = useRisque(); // Removed getRisquesByIds if not strictly needed after initial load
+    const { getAllPermits, permits: allPermits } = usePermit(); // Store all permits fetched
+    const { getAllDispositifs, dispositifs: allDispositifs } = useDispositif();
+    const { getAllAnalyses, analyses: allAnalyses } = useAnalyseRisque();
+    const { saveChantier } = useChantier();
+
+    // --- Data Fetching ---
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            setSaveError(null); // Clear previous errors on new load
+            try {
+                // Fetch static lists needed for dropdowns/selection
+                await Promise.all([
+                    getAllEntreprises(),
+                    getAllRisques(),
+                    getAllDispositifs(),
+                    getAllPermits(),
+                    getAllAnalyses()
+                ]);
+
+                // If editing, load existing PDP data
+                if (isEditMode && id) {
+                    const pdpData = await getPlanDePrevention(Number(id));
+                    if (pdpData) {
+                        // Merge fetched data with initial state structure to ensure all fields exist
+                        setFormData(prev => ({
+                            ...initialFormData, // Start with default structure
+                            ...pdpData,        // Override with fetched data
+                            chantier: pdpData.chantier ?? prev.chantier, // Ensure chantierId from URL is kept if pdpData doesn't have it
+                            // Ensure nested objects are correctly initialized if missing in fetched data
+                            horaireDeTravail: pdpData.horaireDeTravail || initialFormData.horaireDeTravail,
+                            misesEnDisposition: pdpData.misesEnDisposition || initialFormData.misesEnDisposition,
+                            relations: pdpData.relations || [],
+                            signatures: pdpData.signatures || [],
+                            // Convert date strings back to Date objects if necessary (API might return strings)
+                            dateInspection: pdpData.dateInspection ? dayjs(pdpData.dateInspection).toDate() : initialFormData.dateInspection,
+                            icpdate: pdpData.icpdate ? dayjs(pdpData.icpdate).toDate() : initialFormData.icpdate,
+                            datePrevenirCSSCT: pdpData.datePrevenirCSSCT ? dayjs(pdpData.datePrevenirCSSCT).toDate() : initialFormData.datePrevenirCSSCT,
+                            datePrev: pdpData.datePrev ? dayjs(pdpData.datePrev).toDate() : initialFormData.datePrev,
+                        }));
+                    } else {
+                        setSaveError(`Plan de Prévention avec ID ${id} non trouvé.`);
+                        notifications.show(`PDP avec ID ${id} non trouvé.`, { severity: 'error' });
+                        // Optionally navigate back or to an error page
+                        // navigate('/error');
+                    }
+                } else {
+                    // For create mode, ensure initial state is set (already handled by useState initial value)
+                    setFormData(initialFormData);
+                }
+            } catch (error) {
+                console.error("Error loading data:", error);
+                const errorMsg = "Erreur lors du chargement des données initiales.";
+                setSaveError(errorMsg);
+                notifications.show(errorMsg, { severity: 'error' });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchData();
+        // Dependencies: Fetch when ID changes (edit mode) or when component mounts
+        // Also include hook functions if they aren't guaranteed stable references (though often they are)
+    }, [id, isEditMode, chantierId, initialFormData, notifications]);
+
+
+    // Optional: Log formData changes for debugging
+    useEffect(() => {
+        console.log('formData updated:', formData);
+        console.log('Current errors:', errors);
+         console.log('allAnalyses Map:', allAnalyses);
+    }, [formData, errors, allAnalyses]);
+
+    // --- Form Input Handlers ---
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value, type } = e.target as HTMLInputElement;
+        const checked = (e.target as HTMLInputElement).checked;
+        const isCheckbox = type === 'checkbox'; // Use 'checkbox' for Switch as well
+
+        setFormData(prev => {
+            // Handle nested properties like 'horaireDeTravail.enJournee'
+            if (name.includes('.')) {
+                const [parentKey, childKey] = name.split('.');
+                // Type assertion needed here, assuming parentKey is a valid key of PdpDTO
+                const parentObject = prev[parentKey as keyof PdpDTO] as Record<string, any> ?? {};
+                return {
+                    ...prev,
+                    [parentKey]: {
+                        ...parentObject,
+                        [childKey]: isCheckbox ? checked : value
+                    }
+                };
+            } else {
+                // Handle direct properties
+                return {
+                    ...prev,
+                    [name]: isCheckbox ? checked : value
+                };
+            }
+        });
+        // Clear validation error for this field on change
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: '' }));
+        }
+    }, [errors]); // Include errors in dependency if clearing them
+
+    const handleDateChange = useCallback((name: keyof PdpDTO, date: Date | null) => {
+        setFormData(prev => ({
+            ...prev,
+            [name]: date
+        }));
+        // Clear validation error for this field on change
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: '' }));
+        }
+    }, [errors]);
+
+    // Improved type safety for Autocomplete
+    const handleAutocompleteChange = useCallback(<T,>(name: keyof PdpDTO, newValue: T | null) => {
+        setFormData(prev => ({
+            ...prev,
+            // Assuming the relevant property on newValue is 'id'
+            [name]: newValue ? (newValue as any).id : null
+        }));
+        // Clear validation error for this field on change
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: '' }));
+        }
+    }, [errors]);
+
+    // --- Tab Navigation ---
+    const handleTabChange = useCallback((_event: React.SyntheticEvent, newIndex: number) => {
+        setTabIndex(newIndex);
+    }, []);
+
+    // --- Validation Logic ---
+    const validateForm = useCallback((currentData: PdpDTO): boolean => {
+        const newErrors: Record<string, string> = {};
+        let firstErrorTabIndex = -1; // Track the tab index of the first error
+
+        // --- Tab 0: Informations générales ---
+        if (!currentData.entrepriseExterieure) {
+            newErrors.entrepriseExterieure = "L'entreprise extérieure est requise";
+            if (firstErrorTabIndex === -1) firstErrorTabIndex = 0;
+        }
+        if (!currentData.entrepriseDInspection) {
+            newErrors.entrepriseDInspection = "L'entreprise d'inspection est requise";
+             if (firstErrorTabIndex === -1) firstErrorTabIndex = 0;
+        }
+        if (!currentData.dateInspection) {
+            newErrors.dateInspection = "La date d'inspection est requise";
+             if (firstErrorTabIndex === -1) firstErrorTabIndex = 0;
+        }
+        if (!currentData.icpdate) {
+            newErrors.icpdate = "La date ICP est requise";
+             if (firstErrorTabIndex === -1) firstErrorTabIndex = 0;
+        }
+        if (!currentData.datePrevenirCSSCT) {
+            newErrors.datePrevenirCSSCT = "La date de prévenir CSSCT est requise";
+             if (firstErrorTabIndex === -1) firstErrorTabIndex = 0;
+        }
+        if (!currentData.datePrev) {
+            newErrors.datePrev = "La date prévisionnelle est requise";
+             if (firstErrorTabIndex === -1) firstErrorTabIndex = 0;
+        }
+        if (currentData.dateInspection && currentData.datePrev) {
+            if (dayjs(currentData.datePrev).isBefore(dayjs(currentData.dateInspection))) {
+                newErrors.datePrev = "La date prévisionnelle ne peut pas être antérieure à la date d'inspection";
+                 if (firstErrorTabIndex === -1) firstErrorTabIndex = 0;
+            }
+        }
+
+        // --- Tab 1: Horaires --- (Optional validation)
+        // Consider if horairesDetails should be required if any horaireDeTravail is true
+        // if (currentData.horaireDeTravail &&
+        //     (currentData.horaireDeTravail.enJournee || currentData.horaireDeTravail.enNuit || currentData.horaireDeTravail.samedi) &&
+        //     !currentData.horairesDetails?.trim()) {
+        //     newErrors.horairesDetails = "Veuillez fournir des détails sur les horaires si une plage est sélectionnée.";
+        //      if (firstErrorTabIndex === -1) firstErrorTabIndex = 1;
+        // }
+
+        // --- Tab 2: Risques et Dispositifs ---
+        const activeRisques = currentData.relations?.filter(r => r.objectType === ObjectAnsweredObjects.RISQUE && r.answer !== null) || [];
+        if (activeRisques.length === 0) {
+             newErrors.risques = "Au moins un risque doit être ajouté et applicable.";
+             if (firstErrorTabIndex === -1) firstErrorTabIndex = 2;
+        }
+         const activeDispositifs = currentData.relations?.filter(r => r.objectType === ObjectAnsweredObjects.DISPOSITIF && r.answer !== null) || [];
+        if (activeDispositifs.length === 0) {
+             newErrors.dispositifs = "Au moins un dispositif doit être ajouté et applicable.";
+            if (firstErrorTabIndex === -1) firstErrorTabIndex = 2;
+        }
+
+        // --- Tab 3: Permis --- (Validation might depend on specific permits being required)
+         const activePermits = currentData.relations?.filter(r => r.objectType === ObjectAnsweredObjects.PERMIT && r.answer === true) || [];
+         // Example: Add validation if at least one permit *must* be selected true
+         // if (activePermits.length === 0) {
+         //     newErrors.permits = "Au moins un permis doit être sélectionné comme applicable.";
+         //      if (firstErrorTabIndex === -1) firstErrorTabIndex = 3;
+         // }
+
+
+        // --- Tab 4: Analyse des risques ---
+         const activeAnalyses = currentData.relations?.filter(r => r.objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE && r.answer !== null) || [];
+         // Add validation if needed, e.g., at least one analysis required
+         // if (activeAnalyses.length === 0) {
+         //     newErrors.analyseDeRisques = "Au moins une analyse de risque doit être ajoutée.";
+         //      if (firstErrorTabIndex === -1) firstErrorTabIndex = 4;
+         // }
+
+
+        setErrors(newErrors);
+
+        // If errors exist, switch to the first tab with an error
+        if (firstErrorTabIndex !== -1) {
+            setTabIndex(firstErrorTabIndex);
+             notifications.show("Veuillez corriger les erreurs indiquées.", { severity: 'warning' });
+        }
+
+        console.log("Validation errors:", newErrors);
+        return Object.keys(newErrors).length === 0;
+    }, [notifications]); // Add dependencies if they affect validation logic
+
+    // --- Stepper/Tab Navigation Actions ---
+    const handleNext = useCallback(() => {
+        // Validate only the *current* and *previous* tabs before moving forward?
+        // Or validate the whole form? Let's validate the whole form for simplicity here.
+        if (validateForm(formData)) {
+             if (tabIndex < 4) { // 4 is the last tab index (0-based)
+                 setTabIndex(prev => prev + 1);
+             }
+        }
+    }, [formData, tabIndex, validateForm]);
+
+    const handleBack = useCallback(() => {
+         if (tabIndex > 0) {
+             setTabIndex(prev => prev - 1);
+         }
+    }, [tabIndex]);
+
+    // --- Dialog Handlers ---
+    const handleOpenDialog = useCallback((type: DialogTypes, dataToEdit: DialogData = null) => {
+        setDialogType(type);
+        setDialogData(null); // Reset selection
+        setEditItemData(null); // Reset edit data
+
+        if (type === 'editAnalyseDeRisque' && dataToEdit) {
+             setEditItemData(dataToEdit as AnalyseDeRisqueDTO); // Set data for the edit form
+            setOpenNestedModal(true); // Open the modal containing the form directly
+        } else {
+             setOpenDialog(true); // Open the main selection dialog
+        }
+    }, []);
+
+    const handleCloseDialog = useCallback(() => {
+        setOpenDialog(false);
+        setDialogType('');
+        setDialogData(null);
+        setEditItemData(null); // Also clear edit item on close
+    }, []);
+
+    const handleCloseNestedModal = useCallback(() => {
+        setOpenNestedModal(false);
+        setEditItemData(null); // Clear edit data when nested modal closes
+        // Important: Also close the main dialog if the nested modal was opened from it
+        // This depends on the flow. If 'editAnalyseDeRisque' bypasses the main dialog, this isn't needed.
+        // If the main dialog remains open underneath, uncomment the below:
+        // handleCloseDialog();
+    }, []);
+
+
+    // Handler for when an item is selected in the 'SelectOrCreateObjectAnswered' or Autocomplete inside Dialog
+    const addRelation = useCallback((objectType: ObjectAnsweredObjects, selectedItem: { id?: number }) => {
+        if (!selectedItem || selectedItem.id === undefined) return;
+
+        setFormData(prev => {
+            // Avoid adding duplicates based on objectId and objectType
+            const exists = prev.relations?.some(rel => rel.objectId === selectedItem.id && rel.objectType === objectType);
+            if (exists) {
+                notifications.show("Cet élément est déjà ajouté.", { severity: "info" });
+                return prev; // Don't add if it exists
+            }
+
+            const newRelation: ObjectAnsweredDTO = {
+                // id: undefined, // ID should be generated by backend on save
+                objectId: selectedItem.id as number, // Ensure this is a number
+                objectType: objectType,
+                answer: true, // Default to true (applicable) or false based on needs? Let's use true.
+                ee: objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE ? false : undefined, // Default EE/EU for Analyse
+                eu: objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE ? false : undefined,
+            };
+
+            return {
+                ...prev,
+                relations: [...(prev.relations || []), newRelation],
+            };
+        });
+
+        handleCloseDialog(); // Close dialog after adding
+        notifications.show("Élément ajouté.", { severity: "success", autoHideDuration: 1500 });
+
+    }, [handleCloseDialog, notifications]);
+
+
+    // Handler to remove a relation (marks answer as null)
+    const deleteRelation = useCallback((relationId: number | undefined) => {
+        if (relationId === undefined) return;
+        console.log("Attempting to delete relation with temp ID or real ID:", relationId); // ID might be temporary if not saved yet
+
+        setFormData((prev) => (
+            {
+            ...prev,
+            relations: prev.relations?.map((relation) =>
+                relation.id === relationId ? { ...relation, answer: null } : relation
+            ) ?? [],
+        }
+    
+    ));
+         notifications.show("Élément marqué pour suppression.", { severity: "info", autoHideDuration: 1500 });
+
+    }, [notifications]);
+
+    // --- Memoized Relation Getters ---
+    // Use useMemo to avoid recalculating these lists on every render unless formData.relations changes
+    const getActiveRelations = useCallback((type: ObjectAnsweredObjects) => {
+        return formData.relations?.filter(r => r.objectType === type && r.answer !== null) ?? [];
+    }, [formData.relations]);
+
+    const risquesRelations = useMemo(() => getActiveRelations(ObjectAnsweredObjects.RISQUE), [getActiveRelations]);
+    const dispositifsRelations = useMemo(() => getActiveRelations(ObjectAnsweredObjects.DISPOSITIF), [getActiveRelations]);
+    const permitsRelations = useMemo(() => getActiveRelations(ObjectAnsweredObjects.PERMIT), [getActiveRelations]);
+    const analysesRelations = useMemo(() => getActiveRelations(ObjectAnsweredObjects.ANALYSE_DE_RISQUE), [getActiveRelations]);
+
+    // --- Form Submission ---
+    const handleSubmit = useCallback(async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!validateForm(formData)) {
+             notifications.show("Validation échouée. Veuillez vérifier le formulaire.", { severity: 'error' });
+            return;
+        }
+
+        setIsSaving(true);
+        setSaveError(null);
+
+        // Prepare data for saving: potentially filter out relations where answer is null if backend expects that
+        const dataToSave: PdpDTO = {
+             ...formData,
+             // Example: Filter relations marked for deletion if needed
+             // relations: formData.relations?.filter(r => r.answer !== null) ?? [],
+        };
+        console.log("Submitting data:", dataToSave);
+
+
+        try {
+            let savedPdp: PdpDTO | null = null;
+
+            if (isEditMode && dataToSave.id) {
+                savedPdp = await savePdp(dataToSave, dataToSave.id);
+            } else {
+                // Ensure chantier is set correctly if creating from chantier context
+                 const createData = { ...dataToSave, chantier: chantierId ? parseInt(chantierId, 10) : dataToSave.chantier };
+                savedPdp = await createPdp(createData);
+            }
+
+            if (savedPdp) {
+                 notifications.show("Le Plan de Prévention a été enregistré avec succès.", { severity: "success", autoHideDuration: 3000 });
+
+                 // Update form data with potentially new data from backend (like generated IDs for relations)
+                 setFormData(prev => ({ ...prev, ...savedPdp }));
+
+                if (!isEditMode && savedPdp.id) {
+                    // Navigate to edit mode after successful creation
+                    navigate(getRoute('EDIT_PDP', { id: savedPdp.id }), { replace: true }); // Use replace to avoid back button going to create page
+                }
+                 // If created within a chantier, potentially update the chantier link (though savePdp/createPdp might handle this)
+                 // Consider if saveChantier call is needed here or handled by the hooks
+                 // if (chantierId && savedPdp.id) {
+                 //     await saveChantier({ pdps: [savedPdp] } as Partial<ChantierDTO>, parseInt(chantierId));
+                 // }
+
+            } else {
+                 // Handle case where save operation didn't return expected data
+                 throw new Error("L'opération de sauvegarde n'a pas retourné de données valides.");
+            }
+        } catch (error: any) {
+            console.error("Error saving PDP:", error);
+            const errorMsg = error?.message || "Erreur lors de l'enregistrement du PDP.";
+            setSaveError(errorMsg);
+             notifications.show(errorMsg, { severity: 'error' });
+        } finally {
+            setIsSaving(false);
+        }
+    }, [formData, validateForm, isEditMode, id, chantierId, savePdp, createPdp, navigate, notifications /*, saveChantier*/]);
+
+
+    // --- Render ---
+    if (isLoading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+                <CircularProgress />
+                <Typography sx={{ ml: 2 }}>Chargement des données...</Typography>
+            </Box>
+        );
+    }
+
+    return (
+        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="fr"> {/* Optional: set locale */}
+            <Box sx={{ width: '100%', p: { xs: 1, sm: 2, md: 3 } }} component="form" onSubmit={handleSubmit} noValidate>
+                <Paper elevation={3} sx={{ p: { xs: 1, sm: 2, md: 3 }, mb: 3 }}>
+                    {/* --- Header --- */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap' }}>
+                        <Typography variant="h4" component="h1" gutterBottom sx={{ mb: { xs: 2, md: 0 } }}>
+                            {isEditMode ? "Modifier le Plan de Prévention" : "Créer un Plan de Prévention"}
+                        </Typography>
+                        <Button
+                            variant="outlined"
+                            startIcon={<ArrowBackIcon />}
+                            onClick={() => navigate(-1)} // Consider navigating to a specific list page instead of just -1
+                        >
+                            Retour
+                        </Button>
+                    </Box>
+
+                    {/* --- Global Save Error Alert --- */}
+                    {saveError && (
+                        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setSaveError(null)}>
+                            {saveError}
+                        </Alert>
+                    )}
+
+                     {/* --- Tabs Navigation --- */}
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                        <Tabs
+                            value={tabIndex}
+                            onChange={handleTabChange}
+                            aria-label="pdps tabs"
+                            variant="scrollable"
+                            scrollButtons="auto"
+                        >
+                            <Tab icon={<BusinessIcon />} label="Infos Générales" {...a11yProps(0)} />
+                            <Tab icon={<AccessTimeIcon />} label="Horaires / Dispo." {...a11yProps(1)} />
+                            <Tab icon={<WarningIcon />} label="Risques / Dispositifs" {...a11yProps(2)} />
+                            <Tab icon={<VerifiedIcon />} label="Permis" {...a11yProps(3)} />
+                            <Tab icon={<ShieldIcon />} label="Analyses Risques" {...a11yProps(4)} />
+                        </Tabs>
+                    </Box>
+
+                    {/* --- Tab Panels --- */}
+                    <TabPanel value={tabIndex} index={0}>
+                         {/* Tab 0: Informations générales */}
+                        <Grid container spacing={3}>
+                            <Grid item xs={12} md={6}>
+                                <Autocomplete
+                                    options={Array.from(entreprises.values())} // Ensure this is performant
+                                    getOptionLabel={(option) => option?.nom || ''}
+                                    value={formData.entrepriseExterieure ? entreprises.get(formData.entrepriseExterieure) : null}
+                                    onChange={(_, newValue) => handleAutocompleteChange('entrepriseExterieure', newValue)}
+                                    isOptionEqualToValue={(option, value) => option.id === value.id} // Important for object comparison
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Entreprise Extérieure *"
+                                            variant="outlined"
+                                            fullWidth
+                                            error={!!errors.entrepriseExterieure}
+                                            helperText={errors.entrepriseExterieure || ' '} // Add space to prevent layout shifts
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                             <Grid item xs={12} md={6}>
+                                <Autocomplete
+                                    options={Array.from(entreprises.values())}
+                                    getOptionLabel={(option) => option?.nom || ''}
+                                    value={formData.entrepriseDInspection ? entreprises.get(formData.entrepriseDInspection) : null}
+                                    onChange={(_, newValue) => handleAutocompleteChange('entrepriseDInspection', newValue)}
+                                     isOptionEqualToValue={(option, value) => option.id === value.id}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Entreprise d'Inspection *"
+                                            variant="outlined"
+                                            fullWidth
+                                            error={!!errors.entrepriseDInspection}
+                                            helperText={errors.entrepriseDInspection || ' '}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <DatePicker
+                                    label="Date d'inspection *"
+                                    value={formData.dateInspection ? dayjs(formData.dateInspection) : null} // Use dayjs value
+                                    onChange={(date) => handleDateChange('dateInspection', date ? date.toDate() : null)}
+                                    slotProps={{
+                                        textField: {
+                                            fullWidth: true,
+                                            variant: 'outlined',
+                                            error: !!errors.dateInspection,
+                                            helperText: errors.dateInspection || ' ',
+                                        },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                 <DatePicker
+                                    label="Date ICP *"
+                                    value={formData.icpdate ? dayjs(formData.icpdate) : null}
+                                    onChange={(date) => handleDateChange('icpdate', date ? date.toDate() : null)}
+                                     slotProps={{
+                                        textField: {
+                                            fullWidth: true,
+                                            variant: 'outlined',
+                                            error: !!errors.icpdate,
+                                            helperText: errors.icpdate || ' ',
+                                        },
+                                    }}
+                                />
+                            </Grid>
+                             <Grid item xs={12} md={6}>
+                                <DatePicker
+                                    label="Date prévenir CSSCT *"
+                                    value={formData.datePrevenirCSSCT ? dayjs(formData.datePrevenirCSSCT) : null}
+                                    onChange={(date) => handleDateChange('datePrevenirCSSCT', date ? date.toDate() : null)}
+                                     slotProps={{
+                                        textField: {
+                                            fullWidth: true,
+                                            variant: 'outlined',
+                                            error: !!errors.datePrevenirCSSCT,
+                                            helperText: errors.datePrevenirCSSCT || ' ',
+                                        },
+                                    }}
+                                />
+                            </Grid>
+                             <Grid item xs={12} md={6}>
+                                <DatePicker
+                                    label="Date prévisionnelle *"
+                                    value={formData.datePrev ? dayjs(formData.datePrev) : null}
+                                    onChange={(date) => handleDateChange('datePrev', date ? date.toDate() : null)}
+                                     slotProps={{
+                                        textField: {
+                                            fullWidth: true,
+                                            variant: 'outlined',
+                                            error: !!errors.datePrev,
+                                            helperText: errors.datePrev || ' ',
+                                        },
+                                    }}
+                                />
+                            </Grid>
+                        </Grid>
+                        {/* Navigation Buttons */}
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+                            <Button variant="contained" color="primary" onClick={handleNext}>
+                                Suivant
+                            </Button>
+                        </Box>
+                    </TabPanel>
+
+                    <TabPanel value={tabIndex} index={1}>
+                         {/* Tab 1: Horaires et mise à disposition */}
+                         <Grid container spacing={3}>
+                             <Grid item xs={12}>
+                                 <TextField
+                                     label="Détails des horaires"
+                                     name="horairesDetails"
+                                     value={formData.horairesDetails || ''}
+                                     onChange={handleInputChange}
+                                     variant="outlined"
+                                     fullWidth
+                                     multiline
+                                     rows={3}
+                                     error={!!errors.horairesDetails}
+                                     helperText={errors.horairesDetails || ' '}
+                                 />
+                            </Grid>
+                             <Grid item xs={12}>
+                                 <Typography variant="h6" gutterBottom>Horaires de travail</Typography>
+                                <Grid container spacing={1}> {/* Reduced spacing for checkboxes */}
+                                    <Grid item xs={12} sm={4}>
+                                         <FormControlLabel control={<Switch checked={formData.horaireDeTravail?.enJournee || false} onChange={handleInputChange} name="horaireDeTravail.enJournee" color="primary" />} label="En journée" />
+                                    </Grid>
+                                    <Grid item xs={12} sm={4}>
+                                        <FormControlLabel control={<Switch checked={formData.horaireDeTravail?.enNuit || false} onChange={handleInputChange} name="horaireDeTravail.enNuit" color="primary" />} label="En nuit" />
+                                    </Grid>
+                                    <Grid item xs={12} sm={4}>
+                                        <FormControlLabel control={<Switch checked={formData.horaireDeTravail?.samedi || false} onChange={handleInputChange} name="horaireDeTravail.samedi" color="primary" />} label="Samedi" />
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                             <Grid item xs={12}>
+                                 <Divider sx={{ my: 2 }} />
+                                 <Typography variant="h6" gutterBottom>Mise à disposition</Typography>
+                                <Grid container spacing={1}> {/* Reduced spacing */}
+                                     <Grid item xs={6} sm={3}>
+                                         <FormControlLabel control={<Switch checked={formData.misesEnDisposition?.vestiaires || false} onChange={handleInputChange} name="misesEnDisposition.vestiaires" color="primary" />} label="Vestiaires" />
+                                    </Grid>
+                                     <Grid item xs={6} sm={3}>
+                                        <FormControlLabel control={<Switch checked={formData.misesEnDisposition?.sanitaires || false} onChange={handleInputChange} name="misesEnDisposition.sanitaires" color="primary" />} label="Sanitaires" />
+                                    </Grid>
+                                     <Grid item xs={6} sm={3}>
+                                         <FormControlLabel control={<Switch checked={formData.misesEnDisposition?.restaurant || false} onChange={handleInputChange} name="misesEnDisposition.restaurant" color="primary" />} label="Restaurant" />
+                                    </Grid>
+                                     <Grid item xs={6} sm={3}>
+                                         <FormControlLabel control={<Switch checked={formData.misesEnDisposition?.energie || false} onChange={handleInputChange} name="misesEnDisposition.energie" color="primary" />} label="Énergie" />
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                        {/* Navigation Buttons */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+                            <Button variant="outlined" onClick={handleBack}>Précédent</Button>
+                            <Button variant="contained" color="primary" onClick={handleNext}>Suivant</Button>
+                        </Box>
+                    </TabPanel>
+
+                    <TabPanel value={tabIndex} index={2}>
+                        {/* Tab 2: Risques et dispositifs */}
+                        <Grid container spacing={3}>
+                            {/* Risques Section */}
+                            <Grid item xs={12}>
+                                <Paper elevation={1} sx={{ p: 2, borderLeft: 3, borderColor: 'primary.main' }}>
+                                    {errors.risques && <Alert severity="error" sx={{ mb: 2 }}>{errors.risques}</Alert>}
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                        <Typography variant="h6">Risques</Typography>
+                                        <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={() => handleOpenDialog('risques')}>Ajouter</Button>
+                                    </Box>
+                                    {risquesRelations.length > 0 ? (
+                                        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
+                                            {/* Column 1 */}
+                                            <Stack spacing={1.5} sx={{ flex: 1 }}>
+                                                {risquesRelations
+                                                    .filter((_, index) => index % 2 === 0)
+                                                    .map((risqueRelation) => (
+                                                        risqueRelation.answer != null && <RisqueComponent<RisqueDTO, PdpDTO> // Assuming RisqueComponent takes these generics
+                                                            key={risqueRelation.id ?? `risque-${risqueRelation.objectId}`} // Use real ID if available, fallback
+                                                            object={risqueRelation}
+                                                            parent={formData}
+                                                            itemData={allRisques.get(risqueRelation.objectId as number)}
+                                                            saveParent={setFormData}
+                                                            setIsChanged={() => { }} // Consider if needed
+                                                            objectType={ObjectAnsweredObjects.RISQUE}
+                                                        />
+                                                    ))}
+                                            </Stack>
+                                            {/* Column 2 */}
+                                            <Stack spacing={1.5} sx={{ flex: 1 }}>
+                                                {risquesRelations
+                                                    .filter((_, index) => index % 2 !== 0)
+                                                    .map((risqueRelation) => (
+                                                        risqueRelation.answer != null && <RisqueComponent<RisqueDTO, PdpDTO>
+                                                            key={risqueRelation.id ?? `risque-${risqueRelation.objectId}`}
+                                                            object={risqueRelation}
+                                                            parent={formData}
+                                                            itemData={allRisques.get(risqueRelation.objectId as number)}
+                                                            saveParent={setFormData}
+                                                            setIsChanged={() => { }}
+                                                            objectType={ObjectAnsweredObjects.RISQUE}
+                                                        />
+                                                    ))}
+                                            </Stack>
+                                        </Box>
+                                    ) : (
+                                        <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center', py: 2 }}>Aucun risque ajouté.</Typography>
+                                    )}
+                                </Paper>
+                            </Grid>
+
+                             {/* Dispositifs Section */}
+                            <Grid item xs={12}>
+                                <Paper elevation={1} sx={{ p: 2, borderLeft: 3, borderColor: 'secondary.main' }}>
+                                     {errors.dispositifs && <Alert severity="error" sx={{ mb: 2 }}>{errors.dispositifs}</Alert>}
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                        <Typography variant="h6">Dispositifs</Typography>
+                                        <Button variant="contained" color="secondary" size="small" startIcon={<AddIcon />} onClick={() => handleOpenDialog('dispositifs')}>Ajouter</Button>
+                                    </Box>
+                                     {dispositifsRelations.length > 0 ? (
+                                        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
+                                            {/* Column 1 */}
+                                             <Stack spacing={1.5} sx={{ flex: 1 }}>
+                                                {dispositifsRelations
+                                                     .filter((_, index) => index % 2 === 0)
+                                                    .map((dispRelation) => (
+                                                         <ObjectAnsweredComponent<DispositifDTO, PdpDTO>
+                                                            key={dispRelation.id ?? `disp-${dispRelation.objectId}`}
+                                                            object={dispRelation}
+                                                            objectType={ObjectAnsweredObjects.DISPOSITIF}
+                                                            parent={formData}
+                                                            saveParent={setFormData}
+                                                            setIsChanged={() => {}}
+                                                            itemData={allDispositifs.get(dispRelation.objectId as number)}
+                                                        />
+                                                    ))}
+                                            </Stack>
+                                            {/* Column 2 */}
+                                             <Stack spacing={1.5} sx={{ flex: 1 }}>
+                                                 {dispositifsRelations
+                                                     .filter((_, index) => index % 2 !== 0)
+                                                     .map((dispRelation) => (
+                                                         <ObjectAnsweredComponent<DispositifDTO, PdpDTO>
+                                                            key={dispRelation.id ?? `disp-${dispRelation.objectId}`}
+                                                             object={dispRelation}
+                                                             objectType={ObjectAnsweredObjects.DISPOSITIF}
+                                                             parent={formData}
+                                                             saveParent={setFormData}
+                                                             setIsChanged={() => {}}
+                                                             itemData={allDispositifs.get(dispRelation.objectId as number)}
+                                                         />
+                                                    ))}
+                                             </Stack>
+                                         </Box>
+                                    ) : (
+                                         <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center', py: 2 }}>Aucun dispositif ajouté.</Typography>
+                                    )}
+                                </Paper>
+                            </Grid>
+                        </Grid>
+                        {/* Navigation Buttons */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+                            <Button variant="outlined" onClick={handleBack}>Précédent</Button>
+                            <Button variant="contained" color="primary" onClick={handleNext}>Suivant</Button>
+                        </Box>
+                    </TabPanel>
+
+                     <TabPanel value={tabIndex} index={3}>
+                        {/* Tab 3: Permis */}
+                         <Paper elevation={1} sx={{ p: 2 }}>
+                             {errors.permits && <Alert severity="error" sx={{ mb: 2 }}>{errors.permits}</Alert>}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                 <Typography variant="h6">Permis</Typography>
+                                <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={() => handleOpenDialog('permits')}>Ajouter</Button>
+                            </Box>
+
+                             {permitsRelations.length > 0 ? (
+                                 <Stack spacing={1}>
+                                     {permitsRelations.map((relationPermis) => {
+                                         const permitData = Array.from(allPermits.values()).find(p => p.id === relationPermis.objectId); // Find permit data
+                                         return (
+                                             <Paper key={relationPermis.id ?? `permit-${relationPermis.objectId}`} variant="outlined" sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                 <Typography>{permitData?.title || `Permis ID: ${relationPermis.objectId}`}</Typography> {/* Show permit name */}
+                                                 <Box>
+                                                     <FormControlLabel
+                                                        control={
+                                                             <Checkbox
+                                                                checked={relationPermis.answer || false}
+                                                                onChange={(e) => {
+                                                                    const updatedRelations = formData.relations?.map(rel =>
+                                                                        rel.id === relationPermis.id ? { ...rel, answer: e.target.checked } : rel
+                                                                    ) || [];
+                                                                     setFormData(prev => ({ ...prev, relations: updatedRelations }));
+                                                                }}
+                                                                color="primary"
+                                                            />
+                                                        }
+                                                        label="Applicable"
+                                                    />
+                                                    <Tooltip title="Supprimer ce permis de la liste">
+                                                         <IconButton size="small" color="error" onClick={() => deleteRelation(relationPermis.id)}>
+                                                            <DeleteIcon />
+                                                        </IconButton>
+                                                     </Tooltip>
+                                                </Box>
+                                            </Paper>
+                                         );
+                                    })}
+                                </Stack>
+                            ) : (
+                                 <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center', py: 2 }}>Aucun permis ajouté.</Typography>
+                            )}
+                        </Paper>
+                        {/* Navigation Buttons */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+                            <Button variant="outlined" onClick={handleBack}>Précédent</Button>
+                            <Button variant="contained" color="primary" onClick={handleNext}>Suivant</Button>
+                        </Box>
+                    </TabPanel>
+
+                    <TabPanel value={tabIndex} index={4}>
+                        {/* Tab 4: Analyse des risques */}
+                        <Paper elevation={1} sx={{ p: 2 }}>
+                             {errors.analyseDeRisques && <Alert severity="error" sx={{ mb: 2 }}>{errors.analyseDeRisques}</Alert>}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                 <Typography variant="h6">Analyse des risques</Typography>
+                                <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={() => handleOpenDialog('analyseDeRisques')}>Ajouter/Créer</Button>
+                            </Box>
+
+                            {analysesRelations.length > 0 ? (
+                                 <Stack spacing={2}>
+                                    {analysesRelations.map((analyseRelation) => {
+                                        // Get the full AnalyseDeRisqueDTO from the map using the objectId from the relation
+                                        const analyseData = allAnalyses.get(analyseRelation.objectId as number);
+
+                                        if (!analyseData) {
+                                            console.warn(`Analyse data not found for relation objectId: ${analyseRelation.objectId}`);
+                                            return <Typography key={analyseRelation.id ?? `analyse-${analyseRelation.objectId}`} color="error">Données d'analyse introuvables.</Typography>; // Handle missing data case
+                                        }
+
+
+                                        const risqueData = analyseData.risque ? allRisques.get(analyseData.risque.id as number) : null; // Get related risque data
+
+
+                                         return (
+                                             <Paper
+                                                key={analyseRelation.id ?? `analyse-${analyseRelation.objectId}`}
+                                                variant="outlined"
+                                                 sx={{ p: 2, borderRadius: 1, borderLeft: 4, borderColor: analyseRelation.answer ? 'primary.main' : 'grey.400' }} // Visual cue if applicable
+                                             >
+                                                 {/* Header with Title, Icon, EE/EU checks, Delete */}
+                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1, flexWrap: 'wrap' }}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 1, sm: 0 } }}>
+                                                        {risqueData?.logo && (
+                                                            <Tooltip title={risqueData.title || 'Risque associé'}>
+                                                                <Avatar
+                                                                    src={`data:${risqueData.logo.mimeType};base64,${risqueData.logo.imageData}`}
+                                                                    alt={risqueData.title}
+                                                                    sx={{ width: 32, height: 32 }}
+                                                                />
+                                                            </Tooltip>
+                                                        )}
+                                                        <Typography variant="subtitle1" fontWeight="bold">
+                                                             {risqueData?.title || `Analyse #${analyseRelation.objectId}`}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                         <Tooltip title="Applicable par l'Entreprise Extérieure (EE)">
+                                                             <FormControlLabel
+                                                                sx={{ mr: 0 }} // Reduce margin
+                                                                control={<Checkbox size="small" checked={analyseRelation.ee || false} onChange={(e) => {
+                                                                     const updatedRelations = formData.relations?.map(a => a.id === analyseRelation.id ? { ...a, ee: e.target.checked } : a) || [];
+                                                                     setFormData(prev => ({ ...prev, relations: updatedRelations }));
+                                                                }} />}
+                                                                label="EE"
+                                                            />
+                                                         </Tooltip>
+                                                         <Tooltip title="Applicable par l'Entreprise Utilisatrice (EU)">
+                                                             <FormControlLabel
+                                                                 sx={{ mr: 0 }} // Reduce margin
+                                                                control={<Checkbox size="small" checked={analyseRelation.eu || false} onChange={(e) => {
+                                                                     const updatedRelations = formData.relations?.map(a => a.id === analyseRelation.id ? { ...a, eu: e.target.checked } : a) || [];
+                                                                     setFormData(prev => ({ ...prev, relations: updatedRelations }));
+                                                                }} />}
+                                                                label="EU"
+                                                            />
+                                                         </Tooltip>
+                                                         <Tooltip title="Modifier cette analyse">
+                                                             <IconButton size="small" color="primary" sx={{ ml: 1 }} onClick={() => handleOpenDialog('editAnalyseDeRisque', analyseData)}>
+                                                                <EditIcon fontSize="small" />
+                                                            </IconButton>
+                                                         </Tooltip>
+                                                         <Tooltip title="Retirer cette analyse du plan">
+                                                             <IconButton size="small" color="error" sx={{ ml: 0.5 }} onClick={() => deleteRelation(analyseRelation.id)}>
+                                                                <DeleteIcon fontSize="small" />
+                                                            </IconButton>
+                                                         </Tooltip>
+                                                     </Box>
+                                                 </Box>
+
+                                                 {/* Description */}
+                                                 {risqueData?.description && (
+                                                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                                         {risqueData.description}
+                                                     </Typography>
+                                                 )}
+
+                                                 <Divider sx={{ my: 1 }} />
+
+                                                 {/* Details Grid */}
+                                                 <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
+                                                     <Grid item xs={12} md={6}>
+                                                         <Typography variant="caption" display="block" color="text.secondary">Déroulement des tâches:</Typography>
+                                                         <Typography variant="body2">{analyseData.deroulementDesTaches || "Non spécifié"}</Typography>
+                                                     </Grid>
+                                                    <Grid item xs={12} md={6}>
+                                                         <Typography variant="caption" display="block" color="text.secondary">Moyens utilisés:</Typography>
+                                                         <Typography variant="body2">{analyseData.moyensUtilises || "Non spécifié"}</Typography>
+                                                     </Grid>
+                                                     <Grid item xs={12}>
+                                                         <Typography variant="caption" display="block" color="text.secondary">Mesures de prévention:</Typography>
+                                                         <Typography variant="body2">{analyseData.mesuresDePrevention || "Non spécifié"}</Typography>
+                                                    </Grid>
+                                                 </Grid>
+
+                                                 {/* Chips for flags */}
+                                                 {(risqueData?.travailleDangereux || risqueData?.travaillePermit) && (
+                                                     <Box sx={{ mt: 1.5, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                                         {risqueData?.travailleDangereux && <Chip size="small" color="error" label="Travail dangereux" icon={<WarningIcon />} />}
+                                                         {risqueData?.travaillePermit && <Chip size="small" color="warning" label="Travail avec permis" />}
+                                                     </Box>
+                                                 )}
+
+                                                 {/* Removed Edit/Details buttons from here, moved actions to header */}
+                                             </Paper>
+                                         );
+                                    })}
+                                </Stack>
+                             ) : (
+                                <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center', py: 2 }}>Aucune analyse de risque ajoutée.</Typography>
+                             )}
+                        </Paper>
+                        {/* Navigation Buttons & Final Save */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+                            <Button variant="outlined" onClick={handleBack}>Précédent</Button>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                type="submit" // This button now submits the form
+                                startIcon={<SaveIcon />}
+                                disabled={isSaving || isLoading} // Disable while saving or initial loading
+                            >
+                                {isSaving ? <CircularProgress size={24} color="inherit" /> : (isEditMode ? "Mettre à jour" : "Enregistrer")}
+                            </Button>
+                        </Box>
+                    </TabPanel>
+
+                    {/* --- Dialog for Adding/Selecting Items --- */}
+                    <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+                         <DialogTitle>
+                             {dialogType === 'risques' && 'Ajouter un Risque'}
+                             {dialogType === 'dispositifs' && 'Ajouter un Dispositif'}
+                             {dialogType === 'permits' && 'Ajouter un Permis'}
+                             {dialogType === 'analyseDeRisques' && 'Ajouter/Créer une Analyse de Risque'}
+                             {/* Title for editAnalyseDeRisque is handled by the nested modal */}
+                         </DialogTitle>
+                         <DialogContent dividers> {/* Add dividers for better separation */}
+                             {/* --- Risques Selection --- */}
+                             {dialogType === 'risques' && (
+                                 <SelectOrCreateObjectAnswered<RisqueDTO, PdpDTO>
+                                    key="select-risque" // Add key for potential re-mount on type change
+                                     open={openDialog} // Pass open state
+                                     setOpen={setOpenDialog} // Allow component to close dialog
+                                     parent={formData}
+                                     saveParent={setFormData} // May not be needed if addRelation is used
+                                     setIsChanged={()=>{}} // May not be needed
+                                     objectType={ObjectAnsweredObjects.RISQUE}
+                                     // Use onSelect to trigger adding the relation
+                                 />
+                             )}
+                            {/* --- Dispositifs Selection --- */}
+                            {dialogType === 'dispositifs' && (
+                                <SelectOrCreateObjectAnswered<DispositifDTO, PdpDTO>
+                                     key="select-dispositif"
+                                    open={openDialog}
+                                     setOpen={setOpenDialog}
+                                     parent={formData}
+                                     saveParent={setFormData}
+                                     setIsChanged={()=>{}}
+                                     objectType={ObjectAnsweredObjects.DISPOSITIF}
+                                 />
+                            )}
+                            {/* --- Permits Selection --- */}
+                            {dialogType === 'permits' && (
+                                 <SelectOrCreateObjectAnswered<PermitDTO, PdpDTO>
+                                     key="select-permit"
+                                     open={openDialog}
+                                     setOpen={setOpenDialog}
+                                     parent={formData}
+                                     saveParent={setFormData}
+                                     setIsChanged={()=>{}}
+                                     objectType={ObjectAnsweredObjects.PERMIT}
+                                 />
+                            )}
+                            {/* --- Analyse de Risques Selection/Creation --- */}
+                             {dialogType === 'analyseDeRisques' && (
+                                 <Stack spacing={2}>
+                                     <Autocomplete
+                                        options={Array.from(allAnalyses.values())} // Use the map's values
+                                        getOptionLabel={(option) => {
+                                             const risqueTitle = option.risque ? allRisques.get(option.risque.id as number)?.title : 'Risque inconnu';
+                                             return `${risqueTitle} - ${option.mesuresDePrevention?.substring(0, 50) || 'Analyse sans mesure'}${option.mesuresDePrevention && option.mesuresDePrevention.length > 50 ? '...' : ''}`; // Example label
+                                         }}
+                                        renderInput={(params) => <TextField {...params} label="Sélectionner une analyse existante" variant="outlined" />}
+                                        onChange={(_, value) => setDialogData(value)} // Store selected analysis in dialogData
+                                         value={dialogData as AnalyseDeRisqueDTO | null} // Control the value
+                                         isOptionEqualToValue={(option, value) => option.id === value.id}
+                                    />
+                                    <Button
+                                         variant="contained"
+                                         color="primary"
+                                         onClick={() => addRelation(ObjectAnsweredObjects.ANALYSE_DE_RISQUE, dialogData as AnalyseDeRisqueDTO)} // Use dialogData
+                                         disabled={!dialogData} // Disable if nothing is selected
+                                     >
+                                         Ajouter l'Analyse Sélectionnée
+                                     </Button>
+                                     <Divider>OU</Divider>
+                                     <Button
+                                         variant="outlined"
+                                         color="secondary"
+                                         startIcon={<AddIcon />}
+                                         onClick={() => {
+                                             handleCloseDialog(); // Close selection dialog
+                                             setEditItemData(null); // Ensure we are in create mode
+                                             setOpenNestedModal(true); // Open creation modal
+                                         }}
+                                    >
+                                         Créer une Nouvelle Analyse de Risque
+                                     </Button>
+                                </Stack>
+                             )}
+                         </DialogContent>
+                         <DialogActions>
+                             <Button onClick={handleCloseDialog}>Annuler</Button>
+                             {/* Keep Add button only if needed, e.g., for non-autocomplete selections */}
+                             {/* The logic is now handled within the DialogContent for analyseDeRisques */}
+                         </DialogActions>
+                     </Dialog>
+
+                    {/* --- Modal for Creating/Editing AnalyseDeRisque --- */}
+                    <Modal
+                        open={openNestedModal}
+                        onClose={handleCloseNestedModal} // Use specific closer
+                        aria-labelledby="modal-create-edit-analyse-title"
+                    >
+                         <Box sx={modalStyle}>
+                             <Typography id="modal-create-edit-analyse-title" variant="h6" component="h2" sx={{ mb: 2 }}>
+                                 {editItemData ? "Modifier l'Analyse de Risque" : "Créer une Analyse de Risque"}
+                            </Typography>
+                             <CreateEditAnalyseDeRisqueForm
+                                 key={editItemData ? `edit-${editItemData.id}` : 'create-analyse'} // Force re-mount when switching between create/edit
+                                 onSave={(savedAnalyse) => {
+                                     console.log("Analyse saved/created in modal:", savedAnalyse);
+                                      // Refresh the list of all analyses from the hook after saving/creating
+                                      getAllAnalyses(); // Assume this hook updates the `allAnalyses` map
+
+                                      // If it was a *new* analyse, add its relation to the PDP
+                                      if (!editItemData && savedAnalyse.id) {
+                                         addRelation(ObjectAnsweredObjects.ANALYSE_DE_RISQUE, savedAnalyse);
+                                     }
+                                      // If it was an *edit*, the relation already exists, just ensure data is fresh.
+                                      // The main view will use the updated `allAnalyses` map.
+
+                                     handleCloseNestedModal(); // Close this modal
+                                  }}
+                                 onCancel={handleCloseNestedModal}
+                                 parent={formData} // Pass parent PDP if needed by the form
+                                 saveParent={setFormData} // Pass setter if needed by the form
+                                 setIsChanged={() => { }} // Pass if needed
+                                 currentAnalyse={editItemData as AnalyseDeRisqueDTO} // Pass data for editing
+                                 isEdit={!!editItemData}
+                             />
+                         </Box>
+                     </Modal>
+
+                    {/* --- Footer Save Button (Removed - Submit is handled by the last tab's button) --- */}
+                     {/* The final save button is now inside the last TabPanel */}
+
+                 </Paper>
+             </Box>
+         </LocalizationProvider>
+    );
+};
+
+export default EditCreatePdp;

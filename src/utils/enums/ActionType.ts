@@ -1,0 +1,5 @@
+export enum ActionType {
+    NONE = "NONE",
+    SIGNATURES_MISSING = "SIGNATURES_MISSING",
+    PERMIT_MISSING = "PERMIT_MISSING",
+}
