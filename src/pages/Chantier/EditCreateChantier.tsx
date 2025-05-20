@@ -63,7 +63,8 @@ import Worker from "../../utils/entities/Worker.ts";
 import useWoker from "../../hooks/useWoker.ts";
 import chantier from "../../utils/entities/Chantier.ts";
 import WorkerModal from "../Worker/WorkerModal.tsx";
-import ChantierDTO from "../../utils/entitiesDTO/ChantierDTO.ts";
+import {ChantierDTO} from "../../utils/entitiesDTO/ChantierDTO.ts";
+import {WorkerDTO} from "../../utils/entitiesDTO/WorkerDTO.ts";
 
 // Custom TabPanel component
 interface TabPanelProps {
@@ -148,7 +149,7 @@ const EditCreateChantier: FC = () => {
     // Data states
     const [users, setUsers] = useState<User[]>([]);
     const [currentBdt, setCurrentBdt] = useState<BDT>(new BDT());
-    const [workersOfChantier, setWorkersOfChantier] = useState<Worker[]>([]);
+    const [workersOfChantier, setWorkersOfChantier] = useState<WorkerDTO[]>([]);
 
     // Chantier data state
     const [formData, setFormData] = useState<ChantierDTO>({
@@ -167,7 +168,6 @@ const EditCreateChantier: FC = () => {
         donneurDOrdre: undefined,
         bdts: [],
         pdps: [],
-        workers: []
     });
 
     // Dialog state
@@ -660,20 +660,20 @@ const EditCreateChantier: FC = () => {
                                 </Box>
 
                                 {formData.entrepriseExterieurs && formData.entrepriseExterieurs.length > 0 ? (
-                                    formData.entrepriseExterieurs.map((entrepriseRef) => (
-                                        <ListItem key={entreprises.get(entrepriseRef)?.id} variant="outlined">
+                                    formData.entrepriseExterieurs.map((entrepriseId) => (
+                                        <ListItem key={entreprises.get(entrepriseId)?.id} variant="outlined">
                                             <Box sx={{ display: "flex", alignItems: "center" }}>
                                                 <Business color="primary" sx={{ mr: 2 }} />
                                                 <Box>
-                                                    <Typography variant="subtitle1">{entreprises.get(entrepriseRef)?.nom}</Typography>
+                                                    <Typography variant="subtitle1">{entreprises.get(entrepriseId)?.nom}</Typography>
                                                     <Typography variant="caption" color="text.secondary">
-                                                        {entreprises.get(entrepriseRef)?.raisonSociale} • {entreprises.get(entrepriseRef)?.numTel}
+                                                        {entreprises.get(entrepriseId)?.raisonSociale} • {entreprises.get(entrepriseId)?.numTel}
                                                     </Typography>
                                                 </Box>
                                             </Box>
                                             <IconButton
                                                 color="error"
-                                                onClick={() => handleRemoveExternalEnterprise(entreprises.get(entrepriseRef)?.id)}
+                                                onClick={() => handleRemoveExternalEnterprise(entreprises.get(entrepriseId)?.id)}
                                             >
                                                 <Delete />
                                             </IconButton>
@@ -737,7 +737,7 @@ const EditCreateChantier: FC = () => {
                                 <SelectOrCreateWorker
                                     open={workerSelectDialogOpen}
                                     onClose={() => setWorkerSelectDialogOpen(false)}
-                                    entreprisesGroupes={formData.entrepriseExterieurs?.map((x) => getEntreprise(x))}
+                                    entreprisesGroupes={Array.from(entreprises.values())}
                                     onSelectWorkers={(workers) => {
                                         setWorkersOfChantier(workers);
                                     }}

@@ -42,6 +42,19 @@ import { styled } from "@mui/material/styles";
 import dayjs from "dayjs";
 import {getRoute} from "../../Routes.tsx";
 import {mapChantierDTOToChantier} from "../../utils/mappers/ChantierMapper.ts";
+import { ChantierDTO } from "../../utils/entitiesDTO/ChantierDTO.ts";
+import useEntreprise, { getEntrepriseById } from "../../hooks/useEntreprise.ts";
+import { EntrepriseDTO } from "../../utils/entitiesDTO/EntrepriseDTO.ts";
+import { UserDTO } from "../../utils/entitiesDTO/UserDTO.ts";
+import { getUserById } from "../../hooks/useUser.ts";
+import { LocalisationDTO } from "../../utils/entitiesDTO/LocalisationDTO.ts";
+import { getLocalisationById } from "../../hooks/useLocalisation.ts";
+import { WorkerDTO } from "../../utils/entitiesDTO/WorkerDTO.ts";
+import { getWorkersByChantier, getWorkersByEntreprise } from "../../hooks/useWoker.ts";
+import { PdpDTO } from "../../utils/entitiesDTO/PdpDTO.ts";
+import { BdtDTO } from "../../utils/entitiesDTO/BdtDTO.ts";
+import { getPdpById } from "../../hooks/usePdp.ts";
+import { getBDTById } from "../../hooks/useBdt.ts";
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -117,25 +130,117 @@ const StyledAvatar = styled(Avatar)(({ theme }) => ({
     boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
 }));
 
+
+interface dataToDisplay {
+    entrepriseUtilisatrice?: EntrepriseDTO;
+    entrepriseExterieurs?: EntrepriseDTO[];
+    donneurDOrdre?: UserDTO;
+    localisation?:LocalisationDTO;
+    workers?: WorkerDTO[];
+    pdps?: PdpDTO[];
+    bdts?: BdtDTO[];
+}
+
 const ViewChantier: FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [chantierData, setChantierData] = useState<Chantier | null>(null);
+    const [chantierData, setChantierData] = useState<ChantierDTO>();
     const [tabValue, setTabValue] = useState(0);
     const { loading, getChantier } = useChantier();
+    const [dataToDisplay, setDataToDisplay] = useState<dataToDisplay>();
     const theme = useTheme();
+
+
+    
 
     useEffect(() => {
         const fetchChantier = async () => {
             if (id) {
-                const data = await getChantier(parseInt(id));
-                console.log('dfiajdifj',await mapChantierDTOToChantier(data))
-                setChantierData(await mapChantierDTOToChantier(data));
+                const data:ChantierDTO = await getChantier(parseInt(id));
+                console.log('dfiajdifj',data.entrepriseExterieurs)
+                setChantierData(data);
+
+
+                getEntrepriseById(data?.entrepriseUtilisatrice as number).then((res) => {
+                    console.log("Entreprise Utilisatrice:", res);
+                    setDataToDisplay((prevState) => ({
+                        ...prevState,
+                        entrepriseUtilisatrice: res.data,
+                    }));
+                });
+
+
+                if (data.entrepriseExterieurs) {
+                    const entreprisesPromises = data.entrepriseExterieurs.map((entrepriseId) => getEntrepriseById(entrepriseId));
+                    const entreprises = await Promise.all(entreprisesPromises) as EntrepriseDTO[];
+                    setDataToDisplay((prevState) => ({
+                        ...prevState,
+                        entrepriseExterieurs: entreprises,
+                    }));
+                }
+
+                if (data.donneurDOrdre) {
+                    const donneurDOrdre = await getUserById(data.donneurDOrdre as number);
+                    setDataToDisplay((prevState) => ({
+                        ...prevState,
+                        donneurDOrdre: donneurDOrdre.data,
+                    }));
+                }
+
+                if (data.localisation) {
+                    const localisation = await getLocalisationById(data.localisation as number);
+                    setDataToDisplay((prevState) => ({
+                        ...prevState,
+                        localisation: localisation.data,
+                    }));
+                }
+
+
+                if (data) {
+                    getWorkersByChantier(data.id as number).then((res) => {
+                        console.log("Workers:", res);
+                        setDataToDisplay((prevState) => ({
+                            ...prevState,
+                            workers: res.data,
+                        }));
+                    });
+                }
+
+                if (data.pdps) {
+                    const pdpsPromises = data.pdps.map((pdpId) => getPdpById(pdpId));
+                    const pdps = await Promise.all(pdpsPromises) as PdpDTO[];
+                    setDataToDisplay((prevState) => ({
+                        ...prevState,
+                        pdps: pdps,
+                    }));
+                }
+
+                if (data.bdts) {
+                    const bdtsPromises = data.bdts.map((bdtId) => getBDTById(bdtId));
+                    const bdts = await Promise.all(bdtsPromises) as BdtDTO[];
+                    setDataToDisplay((prevState) => ({
+                        ...prevState,
+                        bdts: bdts,
+                    }));
+                }
+
+
+
             }
         };
 
         fetchChantier();
+
+     
+ 
+
     }, [id]);
+
+   
+    useEffect(() => {
+            console.log("Data to display:", dataToDisplay);
+
+    }, [dataToDisplay]);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);
@@ -148,7 +253,6 @@ const ViewChantier: FC = () => {
             </Box>
         );
     }
-
     if (!chantierData) {
         return (
             <Box sx={{ p: 3 }}>
@@ -257,20 +361,25 @@ const ViewChantier: FC = () => {
                                 <Typography variant="h6">Entreprise Utilisatrice</Typography>
                             </Box>
                             <Divider sx={{ mb: 2 }} />
-                            {chantierData?.entrepriseUtilisatrice ? (
+
+                            {dataToDisplay?.entrepriseUtilisatrice ? 
+                            
+                            (
                                 <>
                                     <Typography variant="body1" fontWeight="bold">
-                                        {chantierData?.entrepriseUtilisatrice?.nom}
+                                        {dataToDisplay?.entrepriseUtilisatrice?.nom}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                                        {chantierData.entrepriseUtilisatrice.raisonSociale}
+                                        {dataToDisplay.entrepriseUtilisatrice.raisonSociale}
                                     </Typography>
                                     <Typography variant="body2" sx={{ display: "flex", alignItems: "center", mt: 1 }}>
                                         <Phone fontSize="small" sx={{ mr: 1 }} />
-                                        {chantierData.entrepriseUtilisatrice.numTel || "N/A"}
+                                        {dataToDisplay.entrepriseUtilisatrice.numTel || "N/A"}
                                     </Typography>
                                 </>
-                            ) : (
+                            ) 
+                            
+                            : (
                                 <Typography variant="body2" color="text.secondary">
                                     Aucune entreprise utilisatrice associée
                                 </Typography>
@@ -287,21 +396,21 @@ const ViewChantier: FC = () => {
                                 <Typography variant="h6">Donneur d'Ordre</Typography>
                             </Box>
                             <Divider sx={{ mb: 2 }} />
-                            {chantierData.donneurDOrdre ? (
+                            {dataToDisplay && dataToDisplay.donneurDOrdre ? (
                                 <>
                                     <Typography variant="body1" fontWeight="bold">
-                                        {chantierData.donneurDOrdre.name}
+                                        {dataToDisplay.donneurDOrdre.name}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                                        {chantierData.donneurDOrdre.fonction}
+                                        {dataToDisplay.donneurDOrdre.fonction}
                                     </Typography>
                                     <Typography variant="body2" sx={{ display: "flex", alignItems: "center", mt: 1 }}>
                                         <Phone fontSize="small" sx={{ mr: 1 }} />
-                                        {chantierData.donneurDOrdre.notel || "N/A"}
+                                        {dataToDisplay.donneurDOrdre.notel || "N/A"}
                                     </Typography>
                                     <Typography variant="body2" sx={{ display: "flex", alignItems: "center", mt: 1 }}>
                                         <Email fontSize="small" sx={{ mr: 1 }} />
-                                        {chantierData.donneurDOrdre.email || "N/A"}
+                                        {dataToDisplay.donneurDOrdre.email || "N/A"}
                                     </Typography>
                                 </>
                             ) : (
@@ -321,16 +430,16 @@ const ViewChantier: FC = () => {
                                 <Typography variant="h6">Localisation</Typography>
                             </Box>
                             <Divider sx={{ mb: 2 }} />
-                            {chantierData?.localisation ? (
+                            {dataToDisplay && dataToDisplay?.localisation ? (
                                 <>
                                     <Typography variant="body1" fontWeight="bold">
-                                        {chantierData?.localisation?.nom}
+                                        {dataToDisplay?.localisation?.nom}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                                        Code: {chantierData.localisation.code}
+                                        Code: {dataToDisplay.localisation.code}
                                     </Typography>
                                     <Typography variant="body2" sx={{ mt: 1 }}>
-                                        {chantierData.localisation.description}
+                                        {dataToDisplay.localisation.description}
                                     </Typography>
                                 </>
                             ) : (
@@ -362,8 +471,9 @@ const ViewChantier: FC = () => {
                 <TabPanel value={tabValue} index={0}>
                     <SectionTitle variant="h5">Entreprises externes</SectionTitle>
                     <Grid container spacing={3}>
-                        {chantierData.entrepriseExterieurs && chantierData.entrepriseExterieurs.length > 0 ? (
-                            chantierData.entrepriseExterieurs.map((entreprise, index) => (
+                        {dataToDisplay && dataToDisplay.entrepriseExterieurs && dataToDisplay.entrepriseExterieurs.length > 0 ? (
+                            dataToDisplay.entrepriseExterieurs.map((entreprise, index) => (
+                                
                                 <Grid  size={{xs:12, md:6, lg:4}} key={entreprise.id || index}>
                                     <RelatedCard elevation={2}>
                                         <CardContent>
@@ -373,7 +483,7 @@ const ViewChantier: FC = () => {
                                                         <Business />
                                                     </Avatar>
                                                     <Typography variant="h6" noWrap sx={{ maxWidth: 200 }}>
-                                                        {entreprise.nom}
+                                                        {entreprise?.nom || "Entreprise Externe"}
                                                     </Typography>
                                                 </Box>
                                                 <IconButton size="small">
@@ -382,16 +492,16 @@ const ViewChantier: FC = () => {
                                             </Box>
                                             <Divider sx={{ my: 1.5 }} />
                                             <Typography variant="body2" color="text.secondary">
-                                                {entreprise.raisonSociale || "N/A"}
+                                                {entreprise?.raisonSociale || "N/A"}
                                             </Typography>
                                             <Typography variant="body2" sx={{ display: "flex", alignItems: "center", mt: 1 }}>
                                                 <Phone fontSize="small" sx={{ mr: 1 }} />
-                                                {entreprise.numTel || "N/A"}
+                                                {entreprise?.numTel || "N/A"}
                                             </Typography>
                                             <Box sx={{ mt: 2 }}>
                                                 <Chip
                                                     size="small"
-                                                    label={entreprise.type || "EE"}
+                                                    label={ entreprise.type || "EE"}
                                                     color="primary"
                                                     variant="outlined"
                                                 />
@@ -414,8 +524,8 @@ const ViewChantier: FC = () => {
                 <TabPanel value={tabValue} index={1}>
                     <SectionTitle variant="h5">Intervenants sur le chantier</SectionTitle>
                     <Grid container spacing={3}>
-                        {chantierData.workers && chantierData.workers.length > 0 ? (
-                            chantierData.workers.map((worker, index) => (
+                        {dataToDisplay && dataToDisplay.workers && dataToDisplay.workers.length > 0 ? (
+                            dataToDisplay.workers.map((worker, index) => (
                                 <Grid  size={{xs:12, md:6, lg:4}} key={worker.id || index}>
                                     <RelatedCard elevation={2}>
                                         <CardContent>
@@ -467,8 +577,8 @@ const ViewChantier: FC = () => {
                         <Grid size={{xs:12, md:6}}>
                             <SectionTitle variant="h5">Plans de Prévention</SectionTitle>
                             <List sx={{ bgcolor: "background.paper", borderRadius: 2, boxShadow: 1 }}>
-                                {chantierData.pdps && chantierData.pdps.length > 0 ? (
-                                    chantierData.pdps.map((pdp, index) => (
+                                {dataToDisplay && dataToDisplay.pdps && dataToDisplay.pdps.length > 0 ? (
+                                    dataToDisplay.pdps.map((pdp, index) => (
                                         <React.Fragment key={pdp.id || index}>
                                             <ListItem
                                                 secondaryAction={
@@ -517,8 +627,8 @@ const ViewChantier: FC = () => {
                         <Grid size={{xs:12, md:6}}>
                             <SectionTitle variant="h5">Bons De Travail</SectionTitle>
                             <List sx={{ bgcolor: "background.paper", borderRadius: 2, boxShadow: 1 }}>
-                                {chantierData.bdts && chantierData.bdts.length > 0 ? (
-                                    chantierData.bdts.map((bdt, index) => (
+                                {dataToDisplay && dataToDisplay.bdts && dataToDisplay.bdts.length > 0 ? (
+                                    dataToDisplay.bdts.map((bdt, index) => (
                                         <React.Fragment key={bdt.id || index}>
                                             <ListItem
                                                 secondaryAction={
@@ -541,7 +651,8 @@ const ViewChantier: FC = () => {
                                                     secondary={
                                                         <React.Fragment>
                                                             <Typography variant="body2" component="span">
-                                                                {bdt.risques?.length || 0} risques identifiés
+                                                                {/* {bdt.risques?.length || 0} risques identifiés */}
+                                                                risques number todo find it
                                                             </Typography>
                                                         </React.Fragment>
                                                     }

@@ -30,6 +30,7 @@
     "react-query": "^3.39.3",
     "react-router-dom": "^6.28.1",
     "react-signature-canvas": "^1.1.0-alpha.1",
+    "recharts": "^2.15.3",
     "sass-embedded": "^1.82.0"
   },
   "devDependencies": {

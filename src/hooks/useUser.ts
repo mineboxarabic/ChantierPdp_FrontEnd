@@ -2,15 +2,14 @@
 import { useState } from "react";
 import { useNotifications } from '@toolpad/core/useNotifications';
 import { RegisterUserData } from "../utils/user/RegisterUserData.ts";
-import User from "../utils/entities/User.ts";
 import { UserDTO } from "../utils/entitiesDTO/UserDTO.ts";
 import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
 
-type UserResponse = UserDTO | User[] | UserDTO[] | User | number | null;
+type UserResponse = UserDTO  | UserDTO[] | number | null;
 
 // Function to register a user
-export const registerUser = async (registerData: RegisterUserData): Promise<ApiResponse<User>> => {
-    return fetchApi<User>(
+export const registerUser = async (registerData: RegisterUserData): Promise<ApiResponse<UserDTO>> => {
+    return fetchApi<UserDTO>(
         'api/user/register',
         'POST',
         registerData,
@@ -32,8 +31,8 @@ export const registerUser = async (registerData: RegisterUserData): Promise<ApiR
 };
 
 // Function to login a user
-export const loginUser = async (loginData: RegisterUserData): Promise<ApiResponse<User>> => {
-    return fetchApi<User>(
+export const loginUser = async (loginData: RegisterUserData): Promise<ApiResponse<UserDTO>> => {
+    return fetchApi<UserDTO>(
         'api/user/login',
         'POST',
         loginData,
@@ -59,8 +58,8 @@ export const loginUser = async (loginData: RegisterUserData): Promise<ApiRespons
 };
 
 // Function to create a user
-export const createUser = async (user: User): Promise<ApiResponse<User>> => {
-    return fetchApi<User>(
+export const createUser = async (user: UserDTO): Promise<ApiResponse<UserDTO>> => {
+    return fetchApi<UserDTO>(
         'api/user',
         'POST',
         user,
@@ -78,8 +77,8 @@ export const createUser = async (user: User): Promise<ApiResponse<User>> => {
 };
 
 // Function to get all users
-export const getUsers = async (): Promise<ApiResponse<User[]>> => {
-    return fetchApi<User[]>(
+export const getUsers = async (): Promise<ApiResponse<UserDTO[]>> => {
+    return fetchApi<UserDTO[]>(
         `api/user`,
         'GET',
         null,
@@ -97,13 +96,13 @@ export const getUsers = async (): Promise<ApiResponse<User[]>> => {
 };
 
 // Function to get a user by ID
-export const getUserById = async (id: number): Promise<ApiResponse<User>> => {
+export const getUserById = async (id: number): Promise<ApiResponse<UserDTO>> => {
 
     if(id <= 0) {
         throw new Error("Invalid user ID");
     }
 
-    return fetchApi<User>(
+    return fetchApi<UserDTO>(
         'api/user/' + id,
         'GET',
         null,
@@ -125,8 +124,8 @@ export const getUserById = async (id: number): Promise<ApiResponse<User>> => {
 };
 
 // Function to update a user
-export const updateUser = async (user: User): Promise<ApiResponse<User>> => {
-    return fetchApi<User>(
+export const updateUser = async (user: UserDTO): Promise<ApiResponse<UserDTO>> => {
+    return fetchApi<UserDTO>(
         'api/user/' + user.id,
         'PUT',
         user,
@@ -181,6 +180,8 @@ const useUser = () => {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
 
+    const [users, setUsers] = useState<Map<number, UserDTO>>(new Map());
+
     const notifications = useNotifications();
 
     const registerUserHook = async (registerData: RegisterUserData): Promise<void> => {
@@ -197,7 +198,7 @@ const useUser = () => {
 
     const loginUserHook = async (loginData: RegisterUserData): Promise<void> => {
         if (localStorage.getItem("user")) {
-            notifications.show("User already logged in");
+            notifications.show("UserDTO already logged in");
             return;
         }
 
@@ -216,7 +217,7 @@ const useUser = () => {
         }
     };
 
-    const createUserHook = async (user: User): Promise<User> => {
+    const createUserHook = async (user: UserDTO): Promise<UserDTO> => {
         setLoading(true);
         try {
             const result = await createUser(user);
@@ -234,12 +235,13 @@ const useUser = () => {
         }
     };
 
-    const getUsersHook = async (): Promise<User[]> => {
+    const getUsersHook = async (): Promise<UserDTO[]> => {
         setLoading(true);
         try {
             const result = await getUsers();
             if (result.data) {
                 setResponse(result.data);
+                setUsers(new Map(result.data.filter((user) => user.id !== undefined).map((user) => [user.id as number, user])));
                 return result.data;
             }
             throw new Error(result.message || "Failed to get users");
@@ -252,7 +254,7 @@ const useUser = () => {
         }
     };
 
-    const getUserHook = async (id: number): Promise<User> => {
+    const getUserHook = async (id: number): Promise<UserDTO> => {
         setLoading(true);
         try {
             const result = await getUserById(id);
@@ -270,7 +272,7 @@ const useUser = () => {
         }
     };
 
-    const updateUserHook = async (user: User): Promise<User> => {
+    const updateUserHook = async (user: UserDTO): Promise<UserDTO> => {
         setLoading(true);
         try {
             const result = await updateUser(user);
@@ -306,6 +308,7 @@ const useUser = () => {
         response,
         error,
         loading,
+        users,
         registerUser: registerUserHook,
         loginUser: loginUserHook,
         createUser: createUserHook,

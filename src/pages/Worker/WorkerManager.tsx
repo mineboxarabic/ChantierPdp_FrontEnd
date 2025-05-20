@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Box, Container, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import ManagerCRUD from "../../components/GenericCRUD/ManagerCRUD";
 import { EntityConfig, FieldType, CrudOperations } from "../../components/GenericCRUD/TypeConfig";
-import Worker from "../../utils/entities/Worker.ts";
 import useWorker from "../../hooks/useWoker.ts";
 import useEntreprise from "../../hooks/useEntreprise.ts";
 import usePdp from "../../hooks/usePdp";
 import useChantier from "../../hooks/useChantier";
 import { EntityRef } from "../../utils/EntityRef";
+import WorkerDTO from '../../utils/entitiesDTO/WorkerDTO.ts';
 
 // Create a theme instance (reusing the same theme for consistency)
 const theme = createTheme({
@@ -41,7 +41,7 @@ const theme = createTheme({
 
 // WorkerManager component using the generic CRUD system
 const WorkerManager = () => {
-    // Get hooks for Worker and related entities CRUD operations
+    // Get hooks for WorkerDTO and related entities CRUD operations
     const workerService = useWorker();
     const entrepriseService = useEntreprise();
     const pdpService = usePdp();
@@ -91,10 +91,10 @@ const WorkerManager = () => {
         loadReferenceData();
     }, []);
 
-    // Define the entity configuration for Worker
+    // Define the entity configuration for WorkerDTO
     const workerConfig: EntityConfig = {
         entityType: 'worker',
-        displayName: 'Worker',
+        displayName: 'WorkerDTO',
         pluralName: 'Workers',
         keyField: 'id',
         displayField: 'nom',
@@ -125,12 +125,16 @@ const WorkerManager = () => {
             },
             {
                 key: 'entreprise',
-                type: FieldType.ArrayOfEntityRefs,
+                type: FieldType.EntityRef,
                 label: 'Companies',
                 order: 3,
                 section: 'Affiliations',
                 entityType: 'entreprise',
                 helperText: 'Companies the worker is affiliated with',
+                reference:{
+                   fieldName: 'nom',
+                     keyField: 'id',
+                }
             },
             {
                 key: 'pdp',
@@ -167,7 +171,7 @@ const WorkerManager = () => {
         {
             name: 'filterByCompany',
             label: 'Filter by Company',
-            action: async (selected: Worker[]) => {
+            action: async (selected: WorkerDTO[]) => {
                 // This would need a custom implementation - placeholder for now
                 console.log('Filter workers by company');
             },
@@ -176,7 +180,7 @@ const WorkerManager = () => {
         {
             name: 'filterByPdp',
             label: 'Filter by Prevention Plan',
-            action: async (selected: Worker[]) => {
+            action: async (selected: WorkerDTO[]) => {
                 console.log('Filter workers by PDP');
             },
             multiple: false,
@@ -184,7 +188,7 @@ const WorkerManager = () => {
         {
             name: 'filterBySite',
             label: 'Filter by Site',
-            action: async (selected: Worker[]) => {
+            action: async (selected: WorkerDTO[]) => {
                 console.log('Filter workers by site');
             },
             multiple: false,
@@ -192,7 +196,7 @@ const WorkerManager = () => {
     ];
 
     // Create CRUD operations adapter from the worker service
-    const crudOperations: CrudOperations<Worker> = {
+    const crudOperations: CrudOperations<WorkerDTO> = {
         getAll: async () => {
             const workers = await workerService.getAllWorkers();
             return workers || [];
@@ -201,11 +205,11 @@ const WorkerManager = () => {
             const worker = await workerService.getWorker(id);
             return worker;
         },
-        create: async (entity: Worker) => {
+        create: async (entity: WorkerDTO) => {
             const newWorker = await workerService.createWorker(entity);
             return newWorker;
         },
-        update: async (id: number, entity: Worker) => {
+        update: async (id: number, entity: WorkerDTO) => {
             const updatedWorker = await workerService.updateWorker(entity, id);
             return updatedWorker;
         },

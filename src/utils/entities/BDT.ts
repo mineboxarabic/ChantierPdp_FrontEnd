@@ -2,7 +2,7 @@
 import Risque from "./Risque.ts";
 import {AuditSecu} from "./AuditSecu.ts";
 import {EntityRef} from "../EntityRef.ts";
-import ObjectAnswered from "../pdp/ObjectAnswered.ts";
+import ObjectAnsweredDTO from "../pdp/ObjectAnswered.ts";
 
 class ComplementOuRappel {
     complement?: string;
@@ -12,8 +12,8 @@ class ComplementOuRappel {
 export class BDT {
     id?: number;
     nom?: string;
-    risques?: ObjectAnswered[];
-    auditSecu?: ObjectAnswered[];
+    risques?: ObjectAnsweredDTO[];
+    auditSecu?: ObjectAnsweredDTO[];
     complementOuRappels?: ComplementOuRappel[];
 
     signatureChargeDeTravail?: EntityRef;

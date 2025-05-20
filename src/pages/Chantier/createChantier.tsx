@@ -19,9 +19,12 @@ import usePdp from "../../hooks/usePdp.ts";
 import useBdt from "../../hooks/useBdt.ts";
 import { Pdp } from "../../utils/entities/Pdp.ts";
 import { BDT } from "../../utils/entities/BDT.ts";
-import ChantierDTO from "../../utils/entitiesDTO/ChantierDTO.ts";
+import {ChantierDTO} from "../../utils/entitiesDTO/ChantierDTO.ts";
 import {useNavigate} from "react-router-dom";
 import {getRoute} from "../../Routes.tsx";
+import { EntrepriseDTO } from "../../utils/entitiesDTO/EntrepriseDTO.ts";
+import {LocalisationDTO} from "../../utils/entitiesDTO/LocalisationDTO.ts";
+import { PdpDTO } from "../../utils/entitiesDTO/PdpDTO.ts";
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -44,13 +47,13 @@ const CreateChantier: React.FC = () => {
 
     const notifications = useNotifications();
     const navigate = useNavigate();
-    const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
+    const [entreprises, setEntreprises] = useState<EntrepriseDTO[]>([]);
     const [users, setUsers] = useState<User[]>([]);
-    const [localisations, setLocalisations] = useState<Localisation[]>([]);
+    const [localisations, setLocalisations] = useState<LocalisationDTO[]>([]);
     const [isAnuelle, setIsAnuelle] = useState<boolean>(false);
 
     // State to manage PDPs
-    const [pdps, setPdps] = useState<Partial<Pdp>[]>([]);
+    const [pdps, setPdps] = useState<Partial<PdpDTO>[]>([]);
     // State to manage BDTs
     const [bdts, setBdts] = useState<Partial<BDT>[]>([]);
 
@@ -59,8 +62,8 @@ const CreateChantier: React.FC = () => {
         operation: "",
         dateDebut: undefined,
         dateFin: undefined,
-        nbHeurs: undefined,
-        effectifMaxiSurChantier: undefined,
+        nbHeurs: 0,
+        effectifMaxiSurChantier: 0,
         nombreInterimaires: undefined,
         entrepriseExterieurs: [],
         entrepriseUtilisatrice: undefined,
@@ -68,7 +71,6 @@ const CreateChantier: React.FC = () => {
         donneurDOrdre: undefined,
         bdts: [],
         pdps: [],
-        workers: []
     });
 
     // Current PDP and BDT being edited
@@ -78,7 +80,7 @@ const CreateChantier: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                getAllEntreprises().then((response:Entreprise[]) =>{
+                getAllEntreprises().then((response:EntrepriseDTO[]) =>{
                     setEntreprises(response);
                 });
 
@@ -100,12 +102,22 @@ const CreateChantier: React.FC = () => {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        if (chantier.nbHeurs && chantier.nbHeurs > 400) {
+            setIsAnuelle(true);
+        } else {
+            setIsAnuelle(false);
+        }
+
+    },[chantier])
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setChantier({ ...chantier, [e.target.name]: e.target.value });
     };
 
     const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setChantier({ ...chantier, [e.target.name]: Number(e.target.value) });
+
     };
 
     const handleMultiSelectChange = (event: SelectChangeEvent<number[]>, field: string) => {
@@ -121,10 +133,14 @@ const CreateChantier: React.FC = () => {
     };
 
     const checkDates = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-        if (e.target.name === "nbHeurs" && Number(e.target.value) > 400) {
-            setIsAnuelle(true);
-        } else if (e.target.name !== "nbHeurs") {
-            setIsAnuelle(false);
+
+           //Check if the dateFin is before dateDebut
+        if (chantier.dateDebut && chantier.dateFin) {
+            const dateDebut: Date = new Date(chantier.dateDebut);
+            const dateFin: Date = new Date(chantier.dateFin);
+            if (dateFin < dateDebut) {
+                notifications.show("Date Fin cannot be before Date Debut!x", { severity: "error" });
+            }
         }
 
         if (e.target.name === "dateDebut" || e.target.name === "dateFin") {
@@ -136,11 +152,16 @@ const CreateChantier: React.FC = () => {
                 }
             }
         }
+
+
+
+     
+
     };
 
     // PDP handlers
     const handleAddPdp = () => {
-        setPdps([...pdps, { ...currentPdp }]);
+        setPdps([...pdps, { ...currentPdp } as PdpDTO]);
         setCurrentPdp({});
     };
 
@@ -178,6 +199,16 @@ const CreateChantier: React.FC = () => {
         if (!chantier.nom || !chantier.entrepriseUtilisatrice || !chantier.donneurDOrdre || !chantier.localisation) {
             notifications.show("Please fill in all required fields!", { severity: "error" });
             return;
+        }
+
+        // Check if the dateFin is before dateDebut
+        if (chantier.dateDebut && chantier.dateFin) {
+            const dateDebut: Date = new Date(chantier.dateDebut);
+            const dateFin: Date = new Date(chantier.dateFin);
+            if (dateFin < dateDebut) {
+                notifications.show("Date Fin cannot be before Date Debut!", { severity: "error" });
+                return;
+            }
         }
 
         try {
@@ -279,7 +310,6 @@ const CreateChantier: React.FC = () => {
                             value={chantier.nbHeurs || ''}
                             onChange={(e) => {
                                 handleNumberChange(e);
-                                checkDates(e);
                             }}
                             type="number"
                         />
@@ -405,7 +435,7 @@ const CreateChantier: React.FC = () => {
                         </TextField>
                     </Grid>
 
-                    {/* PDP Section */}
+                  {/*   PDP Section
                     <Grid size={{ xs: 12 }}>
                         <Accordion>
                             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -413,7 +443,7 @@ const CreateChantier: React.FC = () => {
                             </AccordionSummary>
                             <AccordionDetails>
                                 <Grid container spacing={2}>
-                                    {/* List of added PDPs */}
+                                     List of added PDPs
                                     {pdps && pdps.length > 0 && (
                                         <Grid size={{ xs: 12 }}>
                                             <Typography variant="subtitle2" gutterBottom>PDPs ajoutés:</Typography>
@@ -433,7 +463,7 @@ const CreateChantier: React.FC = () => {
                                         </Grid>
                                     )}
 
-                                    {/* PDP form */}
+                                     PDP form
                                     <Grid size={{ xs: 12, md: 6 }}>
                                         <TextField
                                             fullWidth
@@ -512,7 +542,7 @@ const CreateChantier: React.FC = () => {
                         </Accordion>
                     </Grid>
 
-                    {/* BDT Section */}
+                     BDT Section 
                     <Grid size={{ xs: 12 }}>
                         <Accordion>
                             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -520,7 +550,7 @@ const CreateChantier: React.FC = () => {
                             </AccordionSummary>
                             <AccordionDetails>
                                 <Grid container spacing={2}>
-                                    {/* List of added BDTs */}
+                                     List of added BDTs
                                     {bdts && bdts.length > 0 && (
                                         <Grid size={{ xs: 12 }}>
                                             <Typography variant="subtitle2" gutterBottom>BDTs ajoutés:</Typography>
@@ -540,7 +570,7 @@ const CreateChantier: React.FC = () => {
                                         </Grid>
                                     )}
 
-                                    {/* BDT form */}
+                                     BDT form
                                     <Grid size={{ xs: 12 }}>
                                         <TextField
                                             fullWidth
@@ -565,7 +595,7 @@ const CreateChantier: React.FC = () => {
                                 </Grid>
                             </AccordionDetails>
                         </Accordion>
-                    </Grid>
+                    </Grid>*/}
 
                     <Grid size={{ xs: 12 }} sx={{ mt: 3 }}>
                         <Button

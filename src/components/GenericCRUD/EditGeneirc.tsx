@@ -167,18 +167,18 @@ const EditGeneric = <T extends BaseEntity>({
         }
     }, [entity, open]);
     useEffect(() => {
-        console.log('entity',entity)
+        //console.log('entity',entity)
     }, []);
     // Debug log to help track formData changes
     useEffect(() => {
 
-        console.log("Form data updated:", formData);
+        //console.log("Form data updated:", formData);
 
     }, [formData]);
 
     // Load reference options for entity reference fields
     const loadReferenceOptions = async () => {
-        if (!crudOperations.getReferences) return;
+        if (crudOperations && !crudOperations.getReferences) return;
 
         setLoading(true);
 
@@ -190,8 +190,11 @@ const EditGeneric = <T extends BaseEntity>({
             if (!field.entityType) return null;
 
             try {
-                if (!crudOperations.getReferences) return null;
-                const options = await crudOperations?.getReferences(field.entityType);
+                if (crudOperations && !crudOperations.getReferences) return null;
+                if(!crudOperations) return null;
+
+                const options =   await crudOperations?.getReferences(field.entityType);
+
                 return { field: field.key, options };
             } catch (error) {
                 console.error(`Error loading reference options for ${field.key}:`, error);
@@ -281,6 +284,7 @@ const EditGeneric = <T extends BaseEntity>({
 
     // Handle field change
     const handleChange = (key: string, value: any) => {
+        console.log("Field changed:", key, value);
         setFormData(prev => ({
             ...prev,
             [key]: value
@@ -315,7 +319,7 @@ const EditGeneric = <T extends BaseEntity>({
                 newItem = new Date();
                 break;
             case FieldType.EntityRef:
-                newItem = { id: 0 };
+                newItem = 0;
                 break;
             default:
                 newItem = '';
@@ -494,10 +498,13 @@ const EditGeneric = <T extends BaseEntity>({
         );
     };
 
+
+
     // Render a field input based on its type
     const renderField = (field: FieldConfig) => {
         // Get value from formData, ensuring we have direct access
         const fieldValue = formData[field.key];
+
 
         // Use custom field component if provided
         if (field.fieldComponent) {
@@ -634,9 +641,9 @@ const EditGeneric = <T extends BaseEntity>({
                                 if (!option) return '';
                                 if (typeof option === 'string') return option;
                                 console.log('this is the option', option);
-                                return  option[field.reference?.fieldName && field.reference?.fieldName || ''] || `ID: ${option.id}`;
+                                return  option[field.reference?.fieldName && field.reference?.fieldName || ''] || `ID: ${option}`;
                             }}
-                            isOptionEqualToValue={(option, value) => option.id === value?.id}
+                            isOptionEqualToValue={(option, value) => option === value}
                             onChange={(_, newValue) => handleChange(field.key, newValue)}
                             renderInput={(params) => (
                                 <TextField
@@ -662,7 +669,8 @@ const EditGeneric = <T extends BaseEntity>({
                 );
 
             case FieldType.ArrayOfEntityRefs:
-                return (
+               
+            return (
                     <Box>
                         <Autocomplete
                             multiple
@@ -672,11 +680,22 @@ const EditGeneric = <T extends BaseEntity>({
                             getOptionLabel={(option) => {
                                 if (!option) return '';
                                 if (typeof option === 'string') return option;
-
-                                return option[field.reference?.fieldName && field.reference?.fieldName || ''] || `ID: ${option.id}`;
+                                return option[field.reference?.fieldName && field.reference?.fieldName || ''] || `ID: ${referenceOptions && referenceOptions[field.key]?.find(o => o.id === option)?.[field.reference?.fieldName || '']}`;
                             }}
-                            isOptionEqualToValue={(option, value) => option.id === value?.id}
-                            onChange={(_, newValue) => handleChange(field.key, newValue)}
+                            isOptionEqualToValue={(option, value) => {
+                                return option.id === value;
+                            }}
+                            onChange={(_, newValue) =>{
+
+                                //Add only id to the list 
+                                const newValueWithId = newValue.map((item) => {
+                                    if (typeof item === 'number') return item;
+                                   else return item.id;
+                                });
+                                console.log('this is the new value', newValueWithId);
+                                handleChange(field.key, newValueWithId )
+                            
+                            } }
                             filterSelectedOptions
                             renderInput={(params) => (
                                 <TextField

@@ -8,7 +8,7 @@ class InfoDeBase {
     logo: ImageModel;
 
 
-    constructor(id:number, title:string, description:string, logo:ImageModel) {
+    constructor(id:number|undefined, title:string, description:string, logo:ImageModel) {
         this.id = id;
         this.title = title;
         this.description = description;

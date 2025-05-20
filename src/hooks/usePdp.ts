@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNotifications } from '@toolpad/core/useNotifications';
 import { Pdp } from "../utils/entities/Pdp.ts";
 import { PdpDTO } from "../utils/entitiesDTO/PdpDTO.ts";
-import ObjectAnswered from "../utils/pdp/ObjectAnswered.ts";
+import ObjectAnsweredDTO from "../utils/pdp/ObjectAnswered.ts";
 import ObjectAnsweredEntreprises from "../utils/pdp/ObjectAnsweredEntreprises.ts";
 import ObjectAnsweredObjects from "../utils/ObjectAnsweredObjects.ts";
 import fetchApi, { ApiResponse} from "../api/fetchApi.ts";
@@ -12,10 +12,11 @@ type PdpResponse = PdpDTO | PdpDTO[] | number | boolean | null;
 
 // Function to save/update a PDP
 export const savePdp = async (pdp: PdpDTO, id: number): Promise<ApiResponse<PdpDTO>> => {
+    console.log("Saving PDP with IDxxx:", pdp);
     return fetchApi<PdpDTO>(
         `api/pdp/${id}`,
         'PATCH',
-        pdp,
+        JSON.stringify(pdp),
         [
             {
                 status: 409,
@@ -73,10 +74,11 @@ export const getAllPDPs = async (): Promise<ApiResponse<PdpDTO[]>> => {
 
 // Function to create a new PDP
 export const createPdp = async (pdpData: PdpDTO): Promise<ApiResponse<PdpDTO>> => {
+    console.log("Creating PDP with data:", pdpData);
     return fetchApi<PdpDTO>(
         'api/pdp/',
         'POST',
-        pdpData,
+        JSON.stringify(pdpData),
         [
             {
                 status: 409,
@@ -147,143 +149,117 @@ export const getRecentPdps = async (): Promise<ApiResponse<PdpDTO[]>> => {
     );
 };
 
-// Function to link a risk to a PDP
-export const linkRisqueToPdp = async (risqueId: number, pdpId: number): Promise<ApiResponse<ObjectAnswered>> => {
-    return fetchApi<ObjectAnswered>(
-        `api/pdp/${pdpId}/risque/${risqueId}`,
-        'POST',
-        null,
-        [
-            {
-                status: 409,
-                message: 'Error pdps already exists',
-            },
-            {
-                status: 404,
-                message: 'Error pdps or api link not found',
-            }
-        ]
-    );
-};
 
-// Function to link a device to a PDP
-export const linkDispositifToPdp = async (dispositifId: number, pdpId: number): Promise<ApiResponse<ObjectAnswered>> => {
-    return fetchApi<ObjectAnswered>(
-        `api/pdp/${pdpId}/dispositif/${dispositifId}`,
-        'POST',
-        null,
-        [
-            {
-                status: 409,
-                message: 'Error pdps already exists',
-            },
-            {
-                status: 404,
-                message: 'Error pdps or api link not found',
-            }
-        ]
-    );
-};
+/*    @PostMapping("/{pdpId}/object-answred/type/{objectType}")
+    public ResponseEntity<ApiResponse<ObjectAnswered>> addObjectToPdp(@PathVariable Long pdpId, @RequestBody ObjectAnswered objectAnswered, @PathVariable ObjectAnsweredObjects objectType)
+    {
+        return ResponseEntity.ok(new ApiResponse<>(pdpService.addObjectAnswered(pdpId, objectAnswered,objectType), "Object added to pdp successfully"));
+    }
 
-// Function to link an analysis to a PDP
-export const linkAnalyseToPdp = async (analyseId: number, pdpId: number): Promise<ApiResponse<ObjectAnsweredEntreprises>> => {
-    return fetchApi<ObjectAnsweredEntreprises>(
-        `api/pdp/${pdpId}/analyse/${analyseId}`,
-        'POST',
-        null,
-        [
-            {
-                status: 409,
-                message: 'Error pdps already exists',
-            },
-            {
-                status: 404,
-                message: 'Error pdps or api link not found',
-            }
-        ]
-    );
-};
+    @DeleteMapping("/{pdpId}/object-answered/{objectId}/type/{objectType}")
+    public ResponseEntity<ApiResponse<ObjectAnswered>> removeObjectFromPdp(@PathVariable Long pdpId, @PathVariable Long objectId, @PathVariable ObjectAnsweredObjects objectType)
+    {
+        return ResponseEntity.ok(new ApiResponse<>(pdpService.removeObjectAnswered(pdpId, objectId,objectType), "Object removed from pdp successfully"));
+    }
 
-// Function to link a permit to a PDP
-export const linkPermitToPdp = async (permitId: number, pdpId: number): Promise<ApiResponse<ObjectAnswered>> => {
-    return fetchApi<ObjectAnswered>(
-        `api/pdp/${pdpId}/permit/${permitId}`,
-        'POST',
-        null,
-        [
-            {
-                status: 409,
-                message: 'Error pdps already exists',
-            },
-            {
-                status: 404,
-                message: 'Error pdps or api link not found',
-            }
-        ]
-    );
-};
+    @PostMapping("/{pdpId}/object-answered/multiple/type/{objectType}")
+    public ResponseEntity<ApiResponse<List<ObjectAnswered>>> addMultipleObjectsToPdp(@PathVariable Long pdpId, @RequestBody List<ObjectAnswered> objectAnswereds, @PathVariable ObjectAnsweredObjects objectType){
+        return ResponseEntity.ok(new ApiResponse<List<ObjectAnswered>>(pdpService.addMultipleObjectsToPdp(pdpId, objectAnswereds, objectType), "Multiple objects are linked"));
+    }
 
-// Function to unlink a permit from a PDP
-export const unlinkPermitFromPdp = async (permitId: number, pdpId: number): Promise<ApiResponse<ObjectAnswered>> => {
-    return fetchApi<ObjectAnswered>(
-        `api/pdp/${pdpId}/permit/${permitId}`,
-        'DELETE',
-        null,
+
+    //Make a get to get teh risques of a pdp
+    @GetMapping("/{pdpId}/object-answered/{objectType}")
+    public ResponseEntity<ApiResponse<List<ObjectAnswered>>> getObjectAnsweredByPdpId(@PathVariable Long pdpId, @PathVariable ObjectAnsweredObjects objectType) {
+        return ResponseEntity.ok(new ApiResponse<>(pdpService.getObjectAnsweredByPdpId(pdpId, objectType), "items fetched"));
+    }
+
+    @PostMapping("/{pdpId}/object-answered/type/{objectType}")
+    public ResponseEntity<ApiResponse<List<ObjectAnswered>>> removeMultipleObjectsFromPdp(@PathVariable Long pdpId, @RequestBody List<Long> objectIds, @PathVariable ObjectAnsweredObjects objectType)
+    {
+        return ResponseEntity.ok(new ApiResponse<>(pdpService.removeMultipleObjectsFromPdp(pdpId, objectIds,objectType), "feij"));
+    } */
+
+// Function to link an object to a PDP
+export const linkObjectToPdp = async (pdpId: number,objectId: number, type: ObjectAnsweredObjects): Promise<ApiResponse<ObjectAnsweredDTO>> => {
+    return fetchApi<ObjectAnsweredDTO>(
+        `api/pdp/${pdpId}/object-answered/${objectId}/type/${type.toString()}`,
+        'POST',
         [
-            {
-                status: 409,
-                message: 'Error pdps already exists',
-            },
             {
                 status: 404,
                 message: 'Error pdps or api link not found',
+            },
+            {
+                status: -1,
+                message: 'Error while getting pdps',
             }
         ]
     );
 };
 
 // Function to unlink an object from a PDP
-export const unlinkObjectFromPdp = async (objectId: number, pdpId: number, type: ObjectAnsweredObjects): Promise<ApiResponse<ObjectAnswered>> => {
-    console.log('unlinkObjectFromPdp', objectId, pdpId, type);
-    return fetchApi<ObjectAnswered>(
-        `api/pdp/${pdpId}/object/${objectId}/type/${type.toString()}`,
+export const unlinkObjectFromPdp = async (pdpId: number, objectId: number, type: ObjectAnsweredObjects): Promise<ApiResponse<ObjectAnsweredDTO>> => {
+    return fetchApi<ObjectAnsweredDTO>(
+        `api/pdp/${pdpId}/object-answered/${objectId}/type/${type.toString()}`,
         'DELETE',
         null,
         [
-            {
-                status: 409,
-                message: 'Error pdps already exists',
-            },
             {
                 status: 404,
                 message: 'Error pdps or api link not found',
             },
             {
-                status: 400,
+                status: -1,
+                message: 'Error while getting pdps',
+            }
+        ]
+    );
+}
+
+
+// Function to link multiple objects to a PDP
+export const linkMultipleObjectsToPdp = async (pdpId: number, objectAnswereds: ObjectAnsweredDTO[], type: ObjectAnsweredObjects): Promise<ApiResponse<ObjectAnsweredDTO[]>> => {
+    return fetchApi<ObjectAnsweredDTO[]>(
+        `api/pdp/${pdpId}/object-answered/multiple/type/${type.toString()}`,
+        'POST',
+        objectAnswereds,
+        [
+            {
+                status: 404,
                 message: 'Error pdps or api link not found',
+            },
+            {
+                status: -1,
+                message: 'Error while getting pdps',
             }
         ]
     );
 };
 
-// Function to link an object to a PDP
-export const linkObjectToPdp = async (objectId: number, pdpId: number, type: ObjectAnsweredObjects): Promise<ApiResponse<ObjectAnswered>> => {
-    return fetchApi<ObjectAnswered>(
-        `api/pdp/${pdpId}/object/${objectId}/type/${type.toString()}`,
+// Function to unlink multiple objects from a PDP
+export const unlinkMultipleObjectsFromPdp = async (pdpId: number, objectIds: number[], type: ObjectAnsweredObjects): Promise<ApiResponse<ObjectAnsweredDTO[]>> => {
+    return fetchApi<ObjectAnsweredDTO[]>(
+        `api/pdp/${pdpId}/object-answered/mutiple/type/${type.toString()}`,
         'POST',
-        null,
+        objectIds,
         [
-            {
-                status: 409,
-                message: 'Error pdps already exists',
-            },
             {
                 status: 404,
                 message: 'Error pdps or api link not found',
+            },
+            {
+                status: -1,
+                message: 'Error while getting pdps',
             }
         ]
     );
 };
+
+
+
+
+
 
 // Function to check if a PDP exists
 export const existPdp = async (id: number): Promise<ApiResponse<boolean>> => {
@@ -304,29 +280,11 @@ export const existPdp = async (id: number): Promise<ApiResponse<boolean>> => {
     );
 };
 
-// Function to unlink an analysis from a PDP
-export const unlinkAnalyseToPdp = async (analyseId: number, pdpId: number): Promise<ApiResponse<ObjectAnsweredEntreprises>> => {
-    return fetchApi<ObjectAnsweredEntreprises>(
-        `api/pdp/${pdpId}/analyse/${analyseId}`,
-        'DELETE',
-        null,
-        [
-            {
-                status: 409,
-                message: 'Error pdps already exists',
-            },
-            {
-                status: 404,
-                message: 'Error pdps or api link not found',
-            }
-        ]
-    );
-};
 
 
 // Function to get objectAnswered for a pdp with a type
-export const getObjectAnswered = async (pdpId:number, type: ObjectAnsweredObjects): Promise<ApiResponse<ObjectAnswered[]>> => {
-    return fetchApi<ObjectAnswered[]>(
+export const getObjectAnswereds = async (pdpId:number, type: ObjectAnsweredObjects): Promise<ApiResponse<ObjectAnsweredDTO[]>> => {
+    return fetchApi<ObjectAnsweredDTO[]>(
         `api/pdp/${pdpId}/objectAnswered/${type.toString()}`,
         'GET',
         null,
@@ -369,6 +327,7 @@ const usePdp = () => {
                 if (successAction) {
                     successAction(result.data);
                 }
+                console.log("API call successful:", result.data);
                 return result.data;
             }
             throw new Error(result.message || errorMessage);
@@ -440,54 +399,49 @@ const usePdp = () => {
         );
     };
 
-    const linkRisqueToPdpHook = async (risqueId: number, pdpId: number): Promise<ObjectAnswered> => {
-        return executeApiCall(
-            () => linkRisqueToPdp(risqueId, pdpId),
-            "Error while linking risk to PDP"
-        );
-    };
+    // const unlinkObjectFromPdpHook = async (objectId: number, pdpId: number, type: ObjectAnsweredObjects): Promise<ObjectAnswered> => {
+    //     return executeApiCall(
+    //         () => unlinkObjectFromPdp(objectId, pdpId, type),
+    //         "Error while unlinking object from PDP"
+    //     );
+    // };
 
-    const linkDispositifToPdpHook = async (dispositifId: number, pdpId: number): Promise<ObjectAnswered> => {
-        return executeApiCall(
-            () => linkDispositifToPdp(dispositifId, pdpId),
-            "Error while linking device to PDP"
-        );
-    };
+    // const linkObjectToPdpHook = async (objectId: number, pdpId: number, type: ObjectAnsweredObjects): Promise<ObjectAnswered> => {
+    //     return executeApiCall(
+    //         () => linkObjectToPdp(objectId, pdpId, type),
+    //         "Error while linking object to PDP"
+    //     );
+    // };
 
-    const linkAnalyseToPdpHook = async (analyseId: number, pdpId: number): Promise<ObjectAnsweredEntreprises> => {
-        return executeApiCall(
-            () => linkAnalyseToPdp(analyseId, pdpId),
-            "Error while linking analysis to PDP"
-        );
-    };
 
-    const linkPermitToPdpHook = async (permitId: number, pdpId: number): Promise<ObjectAnswered> => {
+    const unlinkObjectFromPdpHook = async (pdpId: number, objectId: number, type: ObjectAnsweredObjects): Promise<ObjectAnsweredDTO> => {
         return executeApiCall(
-            () => linkPermitToPdp(permitId, pdpId),
-            "Error while linking permit to PDP"
-        );
-    };
-
-    const unlinkPermitFromPdpHook = async (permitId: number, pdpId: number): Promise<ObjectAnswered> => {
-        return executeApiCall(
-            () => unlinkPermitFromPdp(permitId, pdpId),
-            "Error while unlinking permit from PDP"
-        );
-    };
-
-    const unlinkObjectFromPdpHook = async (objectId: number, pdpId: number, type: ObjectAnsweredObjects): Promise<ObjectAnswered> => {
-        return executeApiCall(
-            () => unlinkObjectFromPdp(objectId, pdpId, type),
+            () => unlinkObjectFromPdp(pdpId, objectId, type),
             "Error while unlinking object from PDP"
         );
     };
 
-    const linkObjectToPdpHook = async (objectId: number, pdpId: number, type: ObjectAnsweredObjects): Promise<ObjectAnswered> => {
+    const linkObjectToPdpHook = async (pdpId: number, objectId: number, type: ObjectAnsweredObjects): Promise<ObjectAnsweredDTO> => {
         return executeApiCall(
-            () => linkObjectToPdp(objectId, pdpId, type),
+            () => linkObjectToPdp(pdpId, objectId, type),
             "Error while linking object to PDP"
         );
     };
+
+    const linkMultipleObjectsToPdpHook = async (pdpId: number, objectAnswereds: ObjectAnsweredDTO[], type: ObjectAnsweredObjects): Promise<ObjectAnsweredDTO[]> => {
+        return executeApiCall(
+            () => linkMultipleObjectsToPdp(pdpId, objectAnswereds, type),
+            "Error while linking multiple objects to PDP"
+        );
+    }
+
+    const unlinkMultipleObjectsFromPdpHook = async (pdpId: number, objectIds: number[], type: ObjectAnsweredObjects): Promise<ObjectAnsweredDTO[]> => {
+        return executeApiCall(
+            () => unlinkMultipleObjectsFromPdp(pdpId, objectIds, type),
+            "Error while unlinking multiple objects from PDP"
+        );
+    };
+
 
     const existPdpHook = async (id: number): Promise<boolean> => {
         return executeApiCall(
@@ -496,16 +450,12 @@ const usePdp = () => {
         );
     };
 
-    const unlinkAnalyseToPdpHook = async (analyseId: number, pdpId: number): Promise<ObjectAnsweredEntreprises> => {
-        return executeApiCall(
-            () => unlinkAnalyseToPdp(analyseId, pdpId),
-            "Error while unlinking analysis from PDP"
-        );
-    };
+    
 
-    const getObjectAnsweredHook = async (pdpId: number, type: ObjectAnsweredObjects): Promise<ObjectAnswered[]> => {
+
+    const getObjectAnsweredHook = async (pdpId: number, type: ObjectAnsweredObjects): Promise<ObjectAnsweredDTO[]> => {
         return executeApiCall(
-            () => getObjectAnswered(pdpId, type),
+            () => getObjectAnswereds(pdpId, type),
             "Error while getting object answered"
         );
     };
@@ -523,15 +473,13 @@ const usePdp = () => {
         deletePdp: deletePdpHook,
         getLastId: getLastIdHook,
         getRecentPdps: getRecentPdpsHook,
-        linkRisqueToPdp: linkRisqueToPdpHook,
-        linkDispositifToPdp: linkDispositifToPdpHook,
-        linkAnalyseToPdp: linkAnalyseToPdpHook,
-        linkPermitToPdp: linkPermitToPdpHook,
-        unlinkPermitFromPdp: unlinkPermitFromPdpHook,
         unlinkObjectFromPdp: unlinkObjectFromPdpHook,
         linkObjectToPdp: linkObjectToPdpHook,
+
+        linkMultipleObjectsToPdp: linkMultipleObjectsToPdpHook,
+        unlinkMultipleObjectsFromPdp: unlinkMultipleObjectsFromPdpHook,
+        
         existPdp: existPdpHook,
-        unlinkAnalyseToPdp: unlinkAnalyseToPdpHook,
         getObjectAnswered: getObjectAnsweredHook,
     };
 };

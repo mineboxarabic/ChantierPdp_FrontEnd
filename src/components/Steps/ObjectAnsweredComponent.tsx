@@ -7,23 +7,26 @@ import MenuItem from "@mui/material/MenuItem";
 import { useEffect, useState } from "react";
 import { ImageModel } from "../../utils/image/ImageModel.ts";
 import Dispositif from "../../utils/entities/Dispositif.ts";
-import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+import ObjectAnsweredDTO from "../../utils/pdp/ObjectAnswered.ts";
 import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
 import {Pdp} from "../../utils/entities/Pdp.ts";
 import usePdp from "../../hooks/usePdp.ts";
 import { PdpDTO } from "../../utils/entitiesDTO/PdpDTO.ts";
+import { ContentItem, ObjectAnsweredBasedComponentProps, ParentOfRelations } from "../Interfaces.ts";
 
-interface ObjectAnsweredComponentProps {
-    item: ObjectAnswered;
-    type: ObjectAnsweredObjects;
-    saveCurrentPdp: (pdp: PdpDTO) => void;
-    currentPdp: PdpDTO;
-    setIsChanged: (value: boolean) => void;
-    itemData?: any;
-}
 
-const ObjectAnsweredComponent = ({ item, saveCurrentPdp,currentPdp,setIsChanged,type,itemData }: ObjectAnsweredComponentProps) => {
+
+const ObjectAnsweredComponent = <ITEM extends ContentItem, PARENT extends ParentOfRelations>({ 
+    object: object,
+     saveParent ,
+     parent,
+     setIsChanged,
+     itemData,
+     objectType: type }: ObjectAnsweredBasedComponentProps<ITEM,PARENT>) => {
+    
+    
+    
     const [openDialog, setOpenDialog] = useState(false);
     const {linkObjectToPdp, unlinkObjectFromPdp} = usePdp();
 
@@ -42,42 +45,42 @@ const ObjectAnsweredComponent = ({ item, saveCurrentPdp,currentPdp,setIsChanged,
         onDelete();
     };
 
-    function pluralizeType(): string {
-        return lowerCaseType() + "s";
-    }
-
-    function lowerCaseType(): string {
-        return type.toLowerCase();
-    }
-
-
     const onCheckChange = (value:boolean) => {
-       console.log('value',currentPdp[lowerCaseType()], lowerCaseType());
-        saveCurrentPdp({
-            ...currentPdp,
-            [pluralizeType()] : currentPdp[pluralizeType()]?.map((p:ObjectAnswered) => {
-                if(p.id === item.id){
+        
+        const currentArrayofObjects = parent.relations as ObjectAnsweredDTO[];
+        
+        saveParent({
+            ...parent,
+             relations: currentArrayofObjects?.map((p:ObjectAnsweredDTO) => {
+                if (p.id === object.id) {
                     return {
                         ...p,
-                        answer: value
-                    }
+                        answer: value ? 1 : 0,
+                    };
                 }
                 return p;
-            }
-            )
+            }),
         });
         setIsChanged(true);
     }
 
     const onDelete = () => {
-       unlinkObjectFromPdp(item?.id as number,currentPdp?.id as number, type).then(() => {
-            console.log('deleted', pluralizeType());
-            saveCurrentPdp({
-                ...currentPdp,
-                [pluralizeType()]: currentPdp[pluralizeType()]?.filter((p:ObjectAnswered) => p?.id !== item?.id)
-            });
-            setIsChanged(true);
-        })
+
+        const currentArrayofObjects = parent?.relations as ObjectAnsweredDTO[];
+
+        saveParent({
+            ...parent,
+            relations: currentArrayofObjects?.map((p:ObjectAnsweredDTO) => {
+                if (p.id === object.id) {
+                    return {
+                        ...p,
+                        answer: null,
+                    };
+                }
+                return p;
+            })
+        });
+        setIsChanged(true);
     }
 
     return (
@@ -105,7 +108,7 @@ const ObjectAnsweredComponent = ({ item, saveCurrentPdp,currentPdp,setIsChanged,
 
                     <Typography>{itemData?.title}</Typography>
 
-                    <Checkbox checked={item.answer ? true : false} onChange={e => onCheckChange(e.target.checked)} />
+                    <Checkbox checked={object.answer ? true : false} onChange={e => onCheckChange(e.target.checked)} />
 
 
                 </CardContent>

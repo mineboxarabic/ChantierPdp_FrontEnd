@@ -130,7 +130,7 @@ export interface EditGenericProps<T extends BaseEntity> {
     open: boolean;
     onClose: () => void;
     onSubmit: (entity: T) => void;
-    crudOperations: CrudOperations<T>;
+    crudOperations?: CrudOperations<T>;
 }
 
 // Props for the ManagerCrud component

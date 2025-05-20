@@ -31,19 +31,21 @@ import Worker from "../../utils/entities/Worker.ts";
 import useEntreprise from "../../hooks/useEntreprise.ts";
 import { Entreprise} from "../../utils/entities/Entreprise.ts";
 import useWorkerSelection from "../../hooks/useWorkerSelection.ts";
+import { EntrepriseDTO } from '../../utils/entitiesDTO/EntrepriseDTO.ts';
+import { WorkerDTO } from '../../utils/entitiesDTO/WorkerDTO.ts';
 
 interface SelectOrCreateWorkerProps {
     open: boolean;
     onClose: () => void;
-    onSelectWorkers: (workers: Worker[]) => void;
-    initialSelectedWorkers?: Worker[];
+    onSelectWorkers: (workers: WorkerDTO[]) => void;
+    initialSelectedWorkers?: WorkerDTO[];
     title?: string;
     multiple?: boolean;
     entrepriseId?: number;
     pdpId?: number;
     chantierId?: number;
     groupByEntreprise?: boolean;
-    entreprisesGroupes?: Entreprise[];
+    entreprisesGroupes?: EntrepriseDTO[];
 }
 
 const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
@@ -59,18 +61,18 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
                                                                        groupByEntreprise = true,
                                                                        entreprisesGroupes
                                                                    }) => {
-    const [selectedWorkers, setSelectedWorkers] = useState<Worker[]>(Array.isArray(initialSelectedWorkers) ? initialSelectedWorkers : []);
-    const [availableWorkers, setAvailableWorkers] = useState<Worker[]>([]);
+    const [selectedWorkers, setSelectedWorkers] = useState<WorkerDTO[]>(Array.isArray(initialSelectedWorkers) ? initialSelectedWorkers : []);
+    const [availableWorkers, setAvailableWorkers] = useState<WorkerDTO[]>([]);
     const [showCreateForm, setShowCreateForm] = useState(false);
-    const [newWorker, setNewWorker] = useState<Partial<Worker>>({
+    const [newWorker, setNewWorker] = useState<Partial<WorkerDTO>>({
         nom: '',
         prenom: '',
     });
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedEntreprise, setSelectedEntreprise] = useState<number | null>(entrepriseId || null);
-    const [workersByEntreprise, setWorkersByEntreprise] = useState<Map<number, Worker[]>>(new Map());
+    const [workersByEntreprise, setWorkersByEntreprise] = useState<Map<number, WorkerDTO[]>>(new Map());
     const [expandedEntreprise, setExpandedEntreprise] = useState<number | null>(null);
-    const [availableEntreprises, setAvailableEntreprises] = useState<Map<number, Entreprise>>(new Map());
+    const [availableEntreprises, setAvailableEntreprises] = useState<Map<number, EntrepriseDTO>>(new Map());
 
     // Pour gérer l'état de sélection/désélection
     const [pendingSelections, setPendingSelections] = useState<Map<number, boolean>>(new Map());
@@ -99,10 +101,12 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
     const workerSelection = useWorkerSelection();
 
     useEffect(() => {
+
+        console.log("Initial selected workers:", initialSelectedWorkers);
         const fetchData = async () => {
             try {
                 // Initialize available entreprises
-                const entreprisesMap = new Map<number, Entreprise>();
+                const entreprisesMap = new Map<number, EntrepriseDTO>();
 
                 // If entreprisesGroupes is provided, use those
                 if (entreprisesGroupes && entreprisesGroupes.length > 0) {
@@ -129,7 +133,7 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
                 }
 
                 // Fetch workers
-                let workersFetched: Worker[] = [];
+                let workersFetched: WorkerDTO[] = [];
 
                 if (entrepriseId) {
                     workersFetched = await getWorkersByEntreprise(entrepriseId);
@@ -140,6 +144,8 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
                     // Charger tous les travailleurs disponibles
                     workersFetched = await getAllWorkers();
                 }
+
+                console.log("Fetched workers:", workersFetched);
 
                 setAvailableWorkers(workersFetched);
 
@@ -180,7 +186,7 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
 
                 // Group workers by entreprise if needed
                 if (groupByEntreprise) {
-                    const groupedWorkers = new Map<number, Worker[]>();
+                    const groupedWorkers = new Map<number, WorkerDTO[]>();
                     // Initialize empty arrays for all available entreprises
                     Array.from(entreprisesMap.keys()).forEach(id => {
                         groupedWorkers.set(id, []);
@@ -189,7 +195,7 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
                     // Add workers to their respective entreprises
                     for (const worker of workersFetched) {
                         if (worker.entreprise) {
-                            const entrepriseId = worker.entreprise.id as number;
+                            const entrepriseId = worker.entreprise as number;
 
                             if (!groupedWorkers.has(entrepriseId)) {
                                 groupedWorkers.set(entrepriseId, []);
@@ -197,6 +203,7 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
                             groupedWorkers.get(entrepriseId)?.push(worker);
                         }
                     }
+                    console.log("Grouped workers by entreprise:", groupedWorkers);
                     setWorkersByEntreprise(groupedWorkers);
 
                     // Auto-expand the first entreprise or the selected one
@@ -219,7 +226,12 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
         }
     }, [open, entrepriseId, pdpId, chantierId, groupByEntreprise]);
 
-    const handleSelectWorker = (event: React.SyntheticEvent, value: Worker | Worker[] | null) => {
+
+    useEffect(() => {
+        console.log("Selected workers updated:", selectedWorkers);
+    }, [open]);
+
+    const handleSelectWorker = (event: React.SyntheticEvent, value: WorkerDTO | WorkerDTO[] | null) => {
         if (multiple) {
             // S'assurer que value est un tableau
             const workers = Array.isArray(value) ? value : [];
@@ -235,7 +247,7 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
             setPendingSelections(selectionMap);
         } else {
             // Vérifier que value est bien un objet Worker
-            const singleWorker = value as Worker;
+            const singleWorker = value as WorkerDTO;
             const workers = singleWorker ? [singleWorker] : [];
             setSelectedWorkers(workers);
 
@@ -258,13 +270,11 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
             const workerEntrepriseId = selectedEntreprise || entrepriseId;
 
             // Prepare the worker object with the required fields
-            const workerToCreate: Worker = {
+            const workerToCreate: WorkerDTO = {
                 ...newWorker,
-                entreprise: workerEntrepriseId ? { id: workerEntrepriseId } : undefined,
-                pdp: pdpId ? [{ id: pdpId }] : [],
-                signatures: []
-            } as Worker;
-
+                entreprise: workerEntrepriseId ?  workerEntrepriseId : undefined,
+            } as WorkerDTO;
+            console.log("Creating worker with data:", workerToCreate);
             const createdWorker = await createWorker(workerToCreate);
 
             setAvailableWorkers([...availableWorkers, createdWorker]);
@@ -277,6 +287,7 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
                 const currentSelected = Array.isArray(selectedWorkers) ? selectedWorkers : [];
 
                 // Mettre à jour la liste des travailleurs sélectionnés
+                selectWorkerForChantier({worker: createdWorker.id, chantier: chantierId});
                 setSelectedWorkers([...currentSelected, createdWorker]);
 
                 // Mettre à jour les sélections en attente
@@ -287,6 +298,8 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
                 // Comportement standard si pas de chantierId
                 // S'assurer que selectedWorkers est un tableau
                 const currentSelected = Array.isArray(selectedWorkers) ? selectedWorkers : [];
+
+                //Select the newly created worker
                 setSelectedWorkers([...currentSelected, createdWorker]);
             }
 
@@ -321,10 +334,10 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
 
                 if (isSelectedLocally || isPendingSelected) {
                     // This worker should be selected
-                    await selectWorkerForChantier(worker.id, chantierId);
-                } else {
+                    await selectWorkerForChantier({worker: worker.id, chantier: chantierId});
+                }  else if (pendingSelections.get(worker.id) === false) {
                     // This worker should be deselected
-                    await deselectWorkerFromChantier(worker.id, chantierId);
+                    await deselectWorkerFromChantier({worker: worker.id, chantier: chantierId});
                 }
             }
 
@@ -345,7 +358,7 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
         onClose();
     }
 
-    const handleToggleWorkerSelection = async (worker: Worker) => {
+    const handleToggleWorkerSelection = async (worker: WorkerDTO) => {
         if (!worker.id || !chantierId) return;
 
         try {
@@ -358,7 +371,7 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
             if (isSelected) {
                 // Désélectionner le travailleur dans l'API
                 console.log("Désélection du travailleur:", worker.id);
-              //  const success = await deselectWorkerFromChantier(worker.id, chantierId);
+                const success = await deselectWorkerFromChantier({worker: worker.id, chantier: chantierId});
 
 
                     // Mettre à jour l'état local seulement si l'API a réussi
@@ -371,7 +384,7 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
             } else {
                 // Sélectionner le travailleur dans l'API
                 console.log("Sélection du travailleur:", worker.id);
-                //const result = await selectWorkerForChantier(worker.id, chantierId);
+                const result = await selectWorkerForChantier({worker: worker.id, chantier: chantierId});
 
 
                     // Mettre à jour l'état local seulement si l'API a réussi
@@ -390,7 +403,7 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
         }
     };
 
-    const handleRemoveSelected = (worker: Worker) => {
+    const handleRemoveSelected = (worker: WorkerDTO) => {
         if (!worker.id) return;
 
         // Mettre à jour l'état local
@@ -707,7 +720,6 @@ const SelectOrCreateWorker: React.FC<SelectOrCreateWorkerProps> = ({
                     onClick={handleConfirm}
                     variant="contained"
                     color="primary"
-                    disabled={selectedWorkers.length === 0}
                 >
                     Confirm Selection
                 </Button>

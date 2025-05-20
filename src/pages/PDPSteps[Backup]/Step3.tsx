@@ -16,7 +16,7 @@ import useRisque from "../../hooks/useRisque.ts";
 import Risque from "../../utils/entities/Risque.ts";
 import {useEffect, useState} from "react";
 import {Pdp} from "../../utils/entities/Pdp.ts";
-import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+import ObjectAnsweredDTO from "../../utils/pdp/ObjectAnswered.ts";
 import SelectOrCreateRisque from "../../components/Pdp/SelectOrCreateRisque.tsx";
 import useDispositif from "../../hooks/useDispositif.ts";
 import DispositifComponent from "../../components/Steps/DispositifComponent.tsx";
@@ -64,7 +64,7 @@ const [openSelectOrCreateRisque, setOpenSelectOrCreateRisque] = useState(false);
 
             <Grid p={2} justifyContent={'space-between'} container spacing={2} size={{xs:6,md:12}}>
                 <Grid container spacing={2}>
-                    {currentPdp?.risques && currentPdp?.risques.length > 0 ? currentPdp?.risques?.map((risque: ObjectAnswered, index) => (
+                    {currentPdp?.risques && currentPdp?.risques.length > 0 ? currentPdp?.risques?.map((risque: ObjectAnsweredDTO, index) => (
                         <Grid key={index} size={{sm:6,md:6}}>
 
 

@@ -1,20 +1,26 @@
 import SelectOrCreate from "./SelectOrCreate";
-import { useState } from "react";
-import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+import {useState} from "react";
 import InfoDeBase from "../../utils/InfoDeBase.ts";
-import { ImageModel} from "../../utils/image/ImageModel.ts";
+import {ImageModel} from "../../utils/image/ImageModel.ts";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
-
-// Define a generic interface for items that can be part of ObjectAnswered
-export interface Linkable extends InfoDeBase {
-    id?: number;
-    title: string;
-    description: string;
-    logo: ImageModel;
-}
+import {SelectOrCreateObjectAnsweredProps} from "./SelectOrCreaeteInterfaces.ts";
+import usePdp, {getObjectAnswereds} from "../../hooks/usePdp.ts";
+import useDispositif, {createDispositif, getAllDispositifs} from "../../hooks/useDispositif.ts";
+import useRisque, {createRisque, getAllRisques} from "../../hooks/useRisque.ts";
+import usePermit, {createPermit, getAllPermits} from "../../hooks/usePermit.ts";
+import useAuditSecu, {createAuditSecu, getAllAuditSecus} from "../../hooks/useAuditSecu.ts";
+import EditItem, {FieldConfig} from "../EditItem.tsx";
+import {risqueConfig} from "../../pages/Risque/RisqueManager.tsx";
+import {permitConfig} from "../../pages/Permit/PermiManager.tsx";
+import {auditSecuConfig} from "../../pages/AudiSecu/AudiSecuManager.tsx";
+import EditGeneric from "../GenericCRUD/EditGeneirc.tsx";
+import {EntityConfig} from "../GenericCRUD/TypeConfig.ts";
+import { dispositifConfig } from "../../pages/dispositifs/DispositifManager.tsx";
+import ObjectAnsweredDTO from "../../utils/pdp/ObjectAnswered.ts";
+import { ContentItem, ParentOfRelations } from "../Interfaces.ts";
 
 // Interface for hook results that retrieve and manage linkable objects
-export interface LinkableHook<T extends Linkable> {
+export interface LinkableHook<T extends ContentItem> {
     getAllItems: () => Promise<T[]>;
     getItem?: (id: number) => Promise<T>;
     createItem?: (item: T) => Promise<T>;
@@ -22,199 +28,154 @@ export interface LinkableHook<T extends Linkable> {
     deleteItem?: (id: number) => Promise<boolean>;
 }
 
-// Interface for hook results that link objects to a parent entity
-export interface LinkingHook {
-    linkItem: (itemId: number, parentId: number) => Promise<ObjectAnswered>;
-    unlinkItem?: (itemId: number, parentId: number) => Promise<ObjectAnswered>;
-}
-
-interface SelectOrCreateObjectAnsweredProps<T extends Linkable, P> {
-    open: boolean;
-    setOpen: (open: boolean) => void;
-    parentObject: P;
-    saveParentObject: (obj: P) => void;
-    setIsChanged: (isChanged: boolean) => void;
-    objectType: ObjectAnsweredObjects;
-    itemHook: LinkableHook<T>;
-    linkingHook: LinkingHook;
-    // Optional create component for creating new items
-    createComponent?: React.ReactNode;
-    // Optional function to check if an item is already selected
-    isItemAlreadySelected?: (item: T) => boolean;
-    // Optional callback when an item is selected
-    onItemSelected?: (item: T) => void;
-    // Function to get existing items from parent object
-    getExistingItems: (parent: P) => ObjectAnswered[] | undefined;
-}
-
-function SelectOrCreateObjectAnswered<T extends Linkable, P extends { id?: number }>(
-    props: SelectOrCreateObjectAnsweredProps<T, P>
+function SelectOrCreateObjectAnswered<ITEM extends ContentItem, PARENT extends ParentOfRelations>(
+    {
+        open, setOpen, parent, saveParent, setIsChanged, objectType
+    }: SelectOrCreateObjectAnsweredProps<ITEM, PARENT>
 ) {
     const [openCreateItem, setOpenCreateItem] = useState(false);
 
-    // Determine if an item is already selected/linked
-    const alreadySelected = (item: T) => {
-        // If custom function is provided, use it
-        if (props.isItemAlreadySelected) {
-            return props.isItemAlreadySelected(item);
-        }
+        // Determine if an item is already selected/linked
+    const alreadySelected = (item: ITEM):boolean => {
+        //ITEM class, Parent, name of the item in parent (ex: "risques"), and name of the item in child (ex: "risque_id")
+        const existingRelations = parent.relations as ObjectAnsweredDTO[] || [];
+        console.log("existingRelation", parent.relations);
 
-        // Default behavior: check if the item exists in the existing items
-        const existingItems = props.getExistingItems(props.parentObject);
-        if (!existingItems) return false;
-
-        switch (props.objectType) {
-            case ObjectAnsweredObjects.RISQUE:
-                return existingItems.some((obj) => obj.risque_id === item.id);
-            case ObjectAnsweredObjects.DISPOSITIF:
-                return existingItems.some((obj) => obj.dispositif_id === item.id);
-            case ObjectAnsweredObjects.PERMIT:
-                return existingItems.some((obj) => obj.permit_id === item.id);
-            case ObjectAnsweredObjects.AUDIT:
-                return existingItems.some((obj) => obj.auditSecu_id === item.id);
-            default:
-                return false;
-        }
+        return existingRelations.some((existingRelation) => {
+            return existingRelation.objectId === item.id && existingRelation.objectType === objectType;
+        });
     };
 
-    // Handle validation/selection of an item
-    const onValidate = (selectedItem: T) => {
-        if (!selectedItem) return;
-
-        // If custom handler is provided, use it
-        if (props.onItemSelected) {
-            props.onItemSelected(selectedItem);
-            props.setOpen(false);
-            return;
-        }
-
-        // Handle existing parent object with ID (requires API call)
-        if (props.parentObject.id != null) {
-            props.linkingHook.linkItem(selectedItem.id as number, props.parentObject.id)
-                .then((objectAnswered: ObjectAnswered) => {
-                    // Set the appropriate property based on objectType
-                    switch (props.objectType) {
-                        case ObjectAnsweredObjects.RISQUE:
-                            objectAnswered.risque_id = selectedItem as any;
-                            break;
-                        case ObjectAnsweredObjects.DISPOSITIF:
-                            objectAnswered.dispositif_id = selectedItem as any;
-                            break;
-                        case ObjectAnsweredObjects.PERMIT:
-                            objectAnswered.permit_id = selectedItem as any;
-                            break;
-                        case ObjectAnsweredObjects.AUDIT:
-                            objectAnswered.auditSecu_id = selectedItem as any;
-                            break;
-                    }
-
-                    // Update the parent object with the new linked item
-                    const existingItems = props.getExistingItems(props.parentObject) || [];
-
-                    // Create a new object with the updated items
-                    const updatedParentObject = {
-                        ...props.parentObject,
-                    } as P;
-
-                    // Update the appropriate array based on objectType
-                    switch (props.objectType) {
-                        case ObjectAnsweredObjects.RISQUE:
-                            (updatedParentObject as any).risques = [...existingItems, objectAnswered];
-                            break;
-                        case ObjectAnsweredObjects.DISPOSITIF:
-                            (updatedParentObject as any).dispositifs = [...existingItems, objectAnswered];
-                            break;
-                        case ObjectAnsweredObjects.PERMIT:
-                            (updatedParentObject as any).permits = [...existingItems, objectAnswered];
-                            break;
-                        case ObjectAnsweredObjects.AUDIT:
-                            (updatedParentObject as any).auditSecu = [...existingItems, objectAnswered];
-                            break;
-                    }
-
-                    props.saveParentObject(updatedParentObject);
-                    props.setIsChanged(true);
-                });
-        } else {
-            // New parent object being created (no API call needed)
-            const existingItems = props.getExistingItems(props.parentObject) || [];
-
-            // Create a new ObjectAnswered for the selected item
-            const newObjectAnswered: ObjectAnswered = {
-                id: -1, // Temporary ID that will be replaced when saved to server
-                answer: true
-            } as ObjectAnswered;
-
-            // Set the appropriate property based on objectType
-            switch (props.objectType) {
-                case ObjectAnsweredObjects.RISQUE:
-                    newObjectAnswered.risque_id = selectedItem as any;
-                    break;
-                case ObjectAnsweredObjects.DISPOSITIF:
-                    newObjectAnswered.dispositif_id = selectedItem as any;
-                    break;
-                case ObjectAnsweredObjects.PERMIT:
-                    newObjectAnswered.permit_id = selectedItem as any;
-                    break;
-                case ObjectAnsweredObjects.AUDIT:
-                    newObjectAnswered.auditSecu_id = selectedItem as any;
-                    break;
-            }
-
-            // Create a new object with the updated items
-            const updatedParentObject = {
-                ...props.parentObject,
-            } as P;
-
-            // Update the appropriate array based on objectType
-            switch (props.objectType) {
-                case ObjectAnsweredObjects.RISQUE:
-                    (updatedParentObject as any).risques = [...existingItems, newObjectAnswered];
-                    break;
-                case ObjectAnsweredObjects.DISPOSITIF:
-                    (updatedParentObject as any).dispositifs = [...existingItems, newObjectAnswered];
-                    break;
-                case ObjectAnsweredObjects.PERMIT:
-                    (updatedParentObject as any).permits = [...existingItems, newObjectAnswered];
-                    break;
-                case ObjectAnsweredObjects.AUDIT:
-                    (updatedParentObject as any).auditSecu = [...existingItems, newObjectAnswered];
-                    break;
-            }
-
-            props.saveParentObject(updatedParentObject);
-            props.setIsChanged(true);
-        }
-
-        props.setOpen(false);
-    };
-
-    const getItemImage = (item: T) => {
+    const getItemImage = (item: ITEM) => {
         return item?.logo
             ? `data:${item.logo.mimeType};base64,${item.logo.imageData}`
             : '';
     };
 
+    //Fetch a list of all items line all risques,  all dispoisitfs
+    const fetchAllItems = async (): Promise<ITEM[]> => {
+       let response;
+        switch (objectType){
+            case ObjectAnsweredObjects.RISQUE:
+                response = await getAllRisques();
+                break;
+            case ObjectAnsweredObjects.DISPOSITIF:
+                response = await getAllDispositifs();
+                break;
+            case ObjectAnsweredObjects.PERMIT:
+                response = await getAllPermits();
+                break;
+            case ObjectAnsweredObjects.AUDIT:
+                response = await getAllAuditSecus();
+                break;
+            default:
+                throw new Error("Invalid item type");
+        }
+
+        return response.data;
+    }
+    const getItemName = () => {
+        switch (objectType) {
+            case ObjectAnsweredObjects.RISQUE:
+                return "Risque";
+            case ObjectAnsweredObjects.DISPOSITIF:
+                return "Dispositif";
+            case ObjectAnsweredObjects.PERMIT:
+                return "Permis";
+            case ObjectAnsweredObjects.AUDIT:
+                return "Audit de sécurité";
+            default:
+                return "";
+        }
+    }
+
+    const getFieldConfig = (): EntityConfig => {
+        switch (objectType) {
+            case ObjectAnsweredObjects.RISQUE:
+                return risqueConfig;
+            case ObjectAnsweredObjects.DISPOSITIF:
+                return dispositifConfig;
+            case ObjectAnsweredObjects.PERMIT:
+                return permitConfig;
+            case ObjectAnsweredObjects.AUDIT:
+                return auditSecuConfig;
+            default:
+                throw new Error("Invalid item type");
+        }
+    }
+
+
+    const onSumbit = async (item: ITEM) => {
+        // Create the item using the appropriate hook
+        let response;
+
+        switch (objectType) {
+            case ObjectAnsweredObjects.RISQUE:
+                response = await createRisque(item as ITEM) as ITEM;
+                break;
+            case ObjectAnsweredObjects.DISPOSITIF:
+                response = await createDispositif(item as ITEM) as ITEM;
+                break;
+            case ObjectAnsweredObjects.PERMIT:
+                response = await createPermit(item as ITEM) as ITEM;
+                break;
+            case ObjectAnsweredObjects.AUDIT:
+                response = await createAuditSecu(item as ITEM) as ITEM;
+                break;
+            default:
+                throw new Error("Invalid item type");
+        }
+
+        const createdItem = response.data as ITEM;
+
+        // Link the newly created item to the parent
+        let updatedParentObject;
+
+        // Update the parent object with the new linked item
+        const existingItems = parent.relations || [];
+
+        //No id + answer = create new object answered
+        const objectAnswered: ObjectAnsweredDTO = {
+            answer: true,
+            objectId: createdItem.id,
+            objectType: objectType,
+        } as ObjectAnsweredDTO;
+        
+        updatedParentObject = {
+            ...parent,
+           relations: [...existingItems, objectAnswered],
+            
+        } as PARENT;
+     
+        saveParent(updatedParentObject);
+        setIsChanged(true);
+        setOpenCreateItem(false);
+    }
+
+    const createComponent = (): React.ReactNode =>{
+        return (
+            <EditGeneric config={getFieldConfig()} open={openCreateItem} onClose={()=>{setOpenCreateItem(false)}} onSubmit={onSumbit} />
+        )
+    }
+
     return (
         <>
-            <SelectOrCreate<T>
-                open={props.open}
-                setOpen={props.setOpen}
-                currentPdp={props.parentObject as any}
-                savePdp={props.saveParentObject as any}
-                setIsChanged={props.setIsChanged}
-                where={props.objectType.toLowerCase() as any}
-                fetchItems={props.itemHook.getAllItems}
-                linkItem={props.linkingHook.linkItem}
+            <SelectOrCreate<ITEM, PARENT>
+                open={open}
+                objectType={objectType}
+                setOpen={setOpen}
+                parent={parent}
+                saveParent={saveParent}
+                setIsChanged={()=>{}}
+                fetchItems={fetchAllItems}
                 alreadySelected={alreadySelected}
                 getItemId={(item) => item.id as number}
                 getItemTitle={(item) => item.title}
                 getItemDescription={(item) => item.description}
                 getItemImage={getItemImage}
-                onValidate={onValidate}
                 openCreate={openCreateItem}
                 setOpenCreate={setOpenCreateItem}
-                createComponent={props.createComponent}
+                createComponent={createComponent()}
             />
         </>
     );

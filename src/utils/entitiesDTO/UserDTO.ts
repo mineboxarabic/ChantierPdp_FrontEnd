@@ -4,4 +4,5 @@ export type UserDTO = {
     role?: string;
     fonction?: string;
     notel?: string;
+    email?: string;
 }

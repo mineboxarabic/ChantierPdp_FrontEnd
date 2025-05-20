@@ -52,7 +52,7 @@ export type EntityConfig<T> = {
     entityName: string;
     entityNamePlural: string;
     fields: FieldConfig[];
-    fetchData: () => Promise<T[]>;
+    fetchData: () => Promise<T[]>; //This function fetches the data from the server
     createData: (data: T) => Promise<T>;
     updateData: (id: number, data: T) => Promise<T>;
     deleteData: (id: number) => Promise<void>;

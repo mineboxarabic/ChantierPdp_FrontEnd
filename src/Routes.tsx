@@ -12,9 +12,7 @@ import StepsBDT from "./pages/BDT/StepsBDT.tsx";
 import CreateChantier from "./pages/Chantier/createChantier.tsx";
 import ViewChantier from "./pages/Chantier/ViewChantier.tsx";
 import EditCreateChantier from "./pages/Chantier/EditCreateChantier.tsx";
-import EditCreatePdp from "./pages/PDP/EditCreatePdp.tsx";
 import Home from "./pages/Home.tsx";
-import Steps from "./pages/PDPSteps/Steps.tsx";
 import ProfilePage from "./pages/ProfilePage.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
@@ -31,6 +29,12 @@ import EditCreateBdt from "./pages/BDT/EditCreateBDT.tsx";
 import ErrorBoundary from "./pages/ErrorBoundary.tsx";
 import AuditSecuManager from "./pages/AudiSecu/AudiSecuManager.tsx";
 import ViewBdt from "./pages/BDT/ViewBdt.tsx";
+import Dashboard from "./pages/Home/Dashboard.tsx";
+import CreateChantierPage from "./pages/Chantier/CreateChantierPage.tsx";
+import EditChantierPage from "./pages/Chantier/EditChantierPage.tsx";
+import ViewChantierPage from "./pages/Chantier/ViewChantierPage.tsx";
+import CreatePdpPage from "./pages/PDP/CreatePdpPage.tsx";
+import EditCreatePdp from "./pages/PDP/EditCreatePdp.tsx";
 
 
 //Standard naming
@@ -45,21 +49,17 @@ export const ROUTES = {
     // Home route
     HOME: {
         path: "/",
-        element: <Home />
+        element: <Dashboard />
     },
 
-    // PDP routes
-    EDIT_PDP_STEPS: {
-        path: "/create/pdps/:pdpId/:pageNumber",
-        element: <Steps />
-    },
+
     EDIT_PDP: {
         path: "/edit/pdps/:id",
         element: <EditCreatePdp />
     },
     CREATE_PDP: {
         path: "/create/pdps/:chantierId",
-        element: <EditCreatePdp />
+        element: <CreatePdpPage />
     },
     VIEW_PDP:{
         path:"/view/pdps/:id",
@@ -87,15 +87,15 @@ export const ROUTES = {
     // Chantier routes
     CREATE_CHANTIER: {
         path: "/create/chantier",
-        element: <CreateChantier />
+        element: <CreateChantierPage />
     },
     VIEW_CHANTIER: {
         path: "/view/chantier/:id",
-        element: <ViewChantier />
+        element: <ViewChantierPage />
     },
     EDIT_CHANTIER: {
         path: "/edit/chantier/:id",
-        element: <EditCreateChantier />
+        element: <EditChantierPage />
     },
 
     // Profile route
@@ -184,7 +184,6 @@ export const getRouteLists = () => {
     // Protected routes that require login
     const protectedRoutes = [
         ROUTES.HOME,
-        ROUTES.EDIT_PDP_STEPS,
         ROUTES.EDIT_PDP,
         ROUTES.CREATE_PDP,
         ROUTES.BDT_STEPS,

@@ -50,6 +50,7 @@ export const getAllEntreprises = async (): Promise<ApiResponse<EntrepriseDTO[]>>
 
 // Function to update an entreprise
 export const updateEntreprise = async (entreprise: EntrepriseDTO, id: number): Promise<ApiResponse<EntrepriseDTO>> => {
+    console.log('updateEntreprise', entreprise, id);
     return fetchApi<EntrepriseDTO>(
         `api/entreprise/${id}`,
         'PATCH',
@@ -217,8 +218,10 @@ const useEntreprise = () => {
         setLoading(true);
         try {
             const result = await createEntreprise(entreprise);
+            console.log('createEntrepriseHook', result);
             if (result.data) {
                 setResponse(result.data);
+
                 return result.data;
             }
             throw new Error(result.message || "Failed to create entreprise");

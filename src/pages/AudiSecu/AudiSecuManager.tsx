@@ -34,81 +34,81 @@ const theme = createTheme({
         },
     },
 });
-
+// Define the entity configuration
+export const auditSecuConfig: EntityConfig = {
+    entityType: 'auditSecu',
+    displayName: 'Security Audit',
+    pluralName: 'Security Audits',
+    keyField: 'id',
+    displayField: 'title',
+    searchFields: ['title', 'description'],
+    defaultSortField: 'title',
+    fields: [
+        {
+            key: 'id',
+            type: FieldType.Number,
+            label: 'ID',
+            hidden: true,
+        },
+        {
+            key: 'title',
+            type: FieldType.Text,
+            label: 'Title',
+            required: true,
+            order: 1,
+        },
+        {
+            key: 'description',
+            type: FieldType.Text,
+            label: 'Description',
+            multiline: true,
+            rows: 4,
+            order: 2,
+            fullWidth: true,
+        },
+        {
+            key: 'completionStatus',
+            type: FieldType.Boolean,
+            label: 'Completion Status',
+            order: 3,
+        },
+        {
+            key: 'securityLevel',
+            type: FieldType.ArrayOfSimpleValues,
+            label: 'Security Level',
+            options: [
+                { value: 'low', label: 'Low' },
+                { value: 'medium', label: 'Medium' },
+                { value: 'high', label: 'High' },
+                { value: 'critical', label: 'Critical' }
+            ],
+            order: 4,
+        },
+        {
+            key: 'comments',
+            type: FieldType.Text,
+            label: 'Comments',
+            multiline: true,
+            rows: 3,
+            order: 5,
+            fullWidth: true,
+        },
+        {
+            key: 'logo',
+            type: FieldType.Image,
+            label: 'Logo',
+            order: 6,
+            fullWidth: true
+        },
+    ],
+};
 // Component for Audit Security management
 const AuditSecuManager = () => {
     // Get the hook for AuditSecu CRUD operations
     const auditSecuService = useAuditSecu();
 
 
-    // Define the entity configuration
-    const auditSecuConfig: EntityConfig = {
-        entityType: 'auditSecu',
-        displayName: 'Security Audit',
-        pluralName: 'Security Audits',
-        keyField: 'id',
-        displayField: 'title',
-        searchFields: ['title', 'description'],
-        defaultSortField: 'title',
-        fields: [
-            {
-                key: 'id',
-                type: FieldType.Number,
-                label: 'ID',
-                hidden: true,
-            },
-            {
-                key: 'title',
-                type: FieldType.Text,
-                label: 'Title',
-                required: true,
-                order: 1,
-            },
-            {
-                key: 'description',
-                type: FieldType.Text,
-                label: 'Description',
-                multiline: true,
-                rows: 4,
-                order: 2,
-                fullWidth: true,
-            },
-            {
-                key: 'completionStatus',
-                type: FieldType.Boolean,
-                label: 'Completion Status',
-                order: 3,
-            },
-            {
-                key: 'securityLevel',
-                type: FieldType.ArrayOfSimpleValues,
-                label: 'Security Level',
-                options: [
-                    { value: 'low', label: 'Low' },
-                    { value: 'medium', label: 'Medium' },
-                    { value: 'high', label: 'High' },
-                    { value: 'critical', label: 'Critical' }
-                ],
-                order: 4,
-            },
-            {
-                key: 'comments',
-                type: FieldType.Text,
-                label: 'Comments',
-                multiline: true,
-                rows: 3,
-                order: 5,
-                fullWidth: true,
-            },
-            {
-                key: 'logo',
-                type: FieldType.Image,
-                label: 'Logo',
-                order: 6,
-                fullWidth: true
-            },
-        ],
-    };
+
 
     // Create CRUD operations adapter from the audit service
     const crudOperations: CrudOperations<AuditSecu> = {

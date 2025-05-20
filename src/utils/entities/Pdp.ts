@@ -3,7 +3,7 @@ import { PdpDTO } from "../entitiesDTO/PdpDTO.ts";
 import HoraireDeTravaille from "../pdp/HoraireDeTravaille.ts";
 import MiseEnDisposition from "../pdp/MiseEnDisposition.ts";
 import {MedecinDuTravailleEE} from "../pdp/MedecinDuTravailleEE.ts";
-import ObjectAnswered from "../pdp/ObjectAnswered.ts";
+import ObjectAnsweredDTO from "../pdp/ObjectAnswered.ts";
 import Dispositif from "./Dispositif.ts";
 import ObjectAnsweredEntreprises from "../pdp/ObjectAnsweredEntreprises.ts";
 import Localisation from "./Localisation.ts";
@@ -93,14 +93,14 @@ export class Pdp  {
     entrepriseDInspection?: EntityRef
     horaireDeTravail?: HoraireDeTravaille;
     misesEnDisposition?: MiseEnDisposition;
-    risques?: ObjectAnswered[];
-    dispositifs?: ObjectAnswered[];
-    permits?: ObjectAnswered[];
+    risques?: ObjectAnsweredDTO[];
+    dispositifs?: ObjectAnsweredDTO[];
+    permits?: ObjectAnsweredDTO[];
     analyseDeRisques?: ObjectAnsweredEntreprises[];
     signatures?: Worker[];
     datePrevenirCSSCT?: Date;
     datePrev?: Date;
-    constructor(id:number, chantier:number, entrepriseExterieure:EntityRef, dateInspection:Date, icpdate:Date, horairesDetails:string, entrepriseDInspection:EntityRef, horaireDeTravail:HoraireDeTravaille, misesEnDisposition:MiseEnDisposition, risques:ObjectAnswered[], dispositifs:ObjectAnswered[], permits:ObjectAnswered[], analyseDeRisques:ObjectAnsweredEntreprises[], signatures:Worker[], datePrevenirCSSCT:Date, datePrev:Date, entrepiseExterieurEnt:Entreprise) {
+    constructor(id:number, chantier:number, entrepriseExterieure:EntityRef, dateInspection:Date, icpdate:Date, horairesDetails:string, entrepriseDInspection:EntityRef, horaireDeTravail:HoraireDeTravaille, misesEnDisposition:MiseEnDisposition, risques:ObjectAnsweredDTO[], dispositifs:ObjectAnsweredDTO[], permits:ObjectAnsweredDTO[], analyseDeRisques:ObjectAnsweredEntreprises[], signatures:Worker[], datePrevenirCSSCT:Date, datePrev:Date, entrepiseExterieurEnt:Entreprise) {
         this.id = id;
         this.chantier = chantier;
         this.entrepriseExterieure = entrepriseExterieure;

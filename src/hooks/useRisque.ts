@@ -183,7 +183,7 @@ const useRisque = () => {
     const getRisquesByIdsHook = async (ids:number[]): Promise<RisqueDTO[]> => {
         return executeApiCall(
             () => getRisquesByIds(ids),
-            "Error while getting all risques",
+            "Error while getting all risques"/*,
             (data: RisqueDTO[]) => {
                 const updatedRisques = new Map<number, RisqueDTO>();
                 if(!data) return;
@@ -194,7 +194,7 @@ const useRisque = () => {
                     }
                 });
                 setRisques(updatedRisques);
-            }
+            }*/
         );
     }
 

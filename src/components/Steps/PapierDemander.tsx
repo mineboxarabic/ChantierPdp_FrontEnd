@@ -48,13 +48,13 @@ const PapierDemander = ({permit,savePermi}:PapierDemanderProps) => {
 
 export default PapierDemander;*/
 
-import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+import ObjectAnsweredDTO from "../../utils/pdp/ObjectAnswered.ts";
 import ObjectAnsweredComponent from "./ObjectAnsweredComponent.tsx";
 import {Pdp} from "../../utils/entities/Pdp.ts";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
 
 interface PapierDemanderProps {
-    permit: ObjectAnswered;
+    permit: ObjectAnsweredDTO;
     currentPdp:Pdp;
     saveCurrentPdp: (pdp:Pdp) => void;
     setIsChanged: (value:boolean) => void;
@@ -66,7 +66,7 @@ const PapierDemander = ({permit,setIsChanged, currentPdp, saveCurrentPdp}:Papier
 
 
     return (
-        <ObjectAnsweredComponent item={permit} type={ObjectAnsweredObjects.PERMIT} saveCurrentPdp={saveCurrentPdp} currentPdp={currentPdp} setIsChanged={setIsChanged} />
+        <ObjectAnsweredComponent object={permit} objectType={ObjectAnsweredObjects.PERMIT} saveParent={saveCurrentPdp} parent={currentPdp} setIsChanged={setIsChanged} />
     )
 }
 

@@ -2,9 +2,9 @@ import React from 'react';
 import { Box, Container, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import ManagerCRUD from "../../components/GenericCRUD/ManagerCRUD";
 import { EntityConfig, FieldType, CrudOperations } from "../../components/GenericCRUD/TypeConfig";
-import { Entreprise } from "../../utils/entities/Entreprise.ts";
 import useEntreprise from "../../hooks/useEntreprise";
 import useWorker from "../../hooks/useWoker.ts";
+import {EntrepriseDTO} from "../../utils/entitiesDTO/EntrepriseDTO.ts";
 
 // Create a theme instance (reusing the same theme for consistency)
 const theme = createTheme({
@@ -129,6 +129,7 @@ const EntrepriseManager = () => {
                 section: 'Relationships',
                 entityType: 'worker',
                 fullWidth: true,
+                reference:{fieldName:'nom', keyField:'id'},
             },
             {
                 key: 'medecinDuTravailleEE',
@@ -143,7 +144,7 @@ const EntrepriseManager = () => {
     };
 
     // Create CRUD operations adapter from the entreprise service
-    const crudOperations: CrudOperations<Entreprise> = {
+    const crudOperations: CrudOperations<EntrepriseDTO> = {
         getAll: async () => {
             const entreprises = await entrepriseService.getAllEntreprises();
             return entreprises || [];
@@ -152,11 +153,11 @@ const EntrepriseManager = () => {
             const entreprise = await entrepriseService.getEntreprise(id);
             return entreprise;
         },
-        create: async (entity: Entreprise) => {
+        create: async (entity: EntrepriseDTO) => {
             const newEntreprise = await entrepriseService.createEntreprise(entity);
             return newEntreprise;
         },
-        update: async (id: number, entity: Entreprise) => {
+        update: async (id: number, entity: EntrepriseDTO) => {
             const updatedEntreprise = await entrepriseService.updateEntreprise(entity, id);
             return updatedEntreprise;
         },

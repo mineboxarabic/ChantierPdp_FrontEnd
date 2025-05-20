@@ -1,16 +1,15 @@
 // useAnalyseRisque.ts
 import { useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import AnalyseDeRisque from "../utils/entities/AnalyseDeRisque.ts";
 import AnalyseDeRisqueDTO from "../utils/entitiesDTO/AnalyseDeRisqueDTO.ts";
 import ObjectAnsweredEntreprises from "../utils/pdp/ObjectAnsweredEntreprises.ts";
 import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
 
-type AnalyseResponse = AnalyseDeRisque | AnalyseDeRisque[] | boolean | null;
+type AnalyseResponse = AnalyseDeRisqueDTO | AnalyseDeRisqueDTO[] | boolean | null;
 
 // Function to get an analyse de risque by ID
-export const getAnalyseRisqueById = async (id: number): Promise<ApiResponse<AnalyseDeRisque>> => {
-    return fetchApi<AnalyseDeRisque>(
+export const getAnalyseRisqueById = async (id: number): Promise<ApiResponse<AnalyseDeRisqueDTO>> => {
+    return fetchApi<AnalyseDeRisqueDTO>(
         `api/analyseDeRisque/${id}`,
         "GET",
         null,
@@ -22,8 +21,8 @@ export const getAnalyseRisqueById = async (id: number): Promise<ApiResponse<Anal
 };
 
 // Function to get all analyses
-export const getAllAnalyses = async (): Promise<ApiResponse<AnalyseDeRisque[]>> => {
-    return fetchApi<AnalyseDeRisque[]>(
+export const getAllAnalyses = async (): Promise<ApiResponse<AnalyseDeRisqueDTO[]>> => {
+    return fetchApi<AnalyseDeRisqueDTO[]>(
         "api/analyseDeRisque",
         "GET",
         null,
@@ -34,8 +33,8 @@ export const getAllAnalyses = async (): Promise<ApiResponse<AnalyseDeRisque[]>> 
 };
 
 // Function to create an analyse
-export const createAnalyse = async (analyse: AnalyseDeRisque): Promise<ApiResponse<AnalyseDeRisque>> => {
-    return fetchApi<AnalyseDeRisque>(
+export const createAnalyse = async (analyse: AnalyseDeRisqueDTO): Promise<ApiResponse<AnalyseDeRisqueDTO>> => {
+    return fetchApi<AnalyseDeRisqueDTO>(
         "api/analyseDeRisque",
         "POST",
         analyse,
@@ -47,8 +46,8 @@ export const createAnalyse = async (analyse: AnalyseDeRisque): Promise<ApiRespon
 };
 
 // Function to update an analyse
-export const updateAnalyse = async (id: number, analyse: AnalyseDeRisque): Promise<ApiResponse<AnalyseDeRisque>> => {
-    return fetchApi<AnalyseDeRisque>(
+export const updateAnalyse = async (id: number, analyse: AnalyseDeRisqueDTO): Promise<ApiResponse<AnalyseDeRisqueDTO>> => {
+    return fetchApi<AnalyseDeRisqueDTO>(
         `api/analyseDeRisque/${id}`,
         "PATCH",
         analyse,
@@ -87,10 +86,10 @@ export const linkRisqueToAnalyse = async (analyseId: number, risqueId: number): 
 
 // React hook that uses the API functions
 const useAnalyseRisque = () => {
-    const [response, setResponse] = useState<AnalyseResponse>(null);
+    const [response, setResponse] = useState<AnalyseDeRisqueDTO>();
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
-    const [analyses, setAnalyses] = useState<Map<number, AnalyseDeRisque>>(new Map<number, AnalyseDeRisque>());
+    const [analyses, setAnalyses] = useState<Map<number, AnalyseDeRisqueDTO>>(new Map<number, AnalyseDeRisqueDTO>());
 
     const notifications = useNotifications();
 
@@ -105,7 +104,7 @@ const useAnalyseRisque = () => {
         try {
             const result = await apiCall();
             if (result.data !== undefined) {
-                setResponse(result.data as AnalyseResponse);
+                setResponse(result.data as AnalyseDeRisqueDTO);
                 if (successAction) {
                     successAction(result.data);
                 }
@@ -125,23 +124,23 @@ const useAnalyseRisque = () => {
     };
 
     // Hook methods that wrap the API functions
-    const getAnalyseRisqueHook = async (id: number): Promise<AnalyseDeRisque> => {
+    const getAnalyseRisqueHook = async (id: number): Promise<AnalyseDeRisqueDTO> => {
         return executeApiCall(
             () => getAnalyseRisqueById(id),
             "Error while getting analyse de risque"
         );
     };
 
-    const getAllAnalysesHook = async (): Promise<AnalyseDeRisque[]> => {
+    const getAllAnalysesHook = async (): Promise<AnalyseDeRisqueDTO[]> => {
         return executeApiCall(
             () => getAllAnalyses(),
             "Error while getting all analyses",
             undefined,
-            (data: AnalyseDeRisque[]) => {
-                const updatedAnalyses = new Map<number, AnalyseDeRisque>();
+            (data: AnalyseDeRisqueDTO[]) => {
+                const updatedAnalyses = new Map<number, AnalyseDeRisqueDTO>();
                 data.forEach(analyse => {
-                    if (analyse.id !== undefined) {
-                        updatedAnalyses.set(analyse.id, analyse);
+                    if (analyse?.id !== undefined) {
+                        updatedAnalyses.set(analyse?.id, analyse);
                     }
                 });
                 setAnalyses(updatedAnalyses);
@@ -149,7 +148,7 @@ const useAnalyseRisque = () => {
         );
     };
 
-    const createAnalyseHook = async (analyse: AnalyseDeRisque): Promise<AnalyseDeRisque> => {
+    const createAnalyseHook = async (analyse: AnalyseDeRisqueDTO): Promise<AnalyseDeRisqueDTO> => {
         return executeApiCall(
             () => createAnalyse(analyse),
             "Error while creating analyse",
@@ -157,7 +156,7 @@ const useAnalyseRisque = () => {
         );
     };
 
-    const updateAnalyseHook = async (id: number, analyse: AnalyseDeRisque): Promise<AnalyseDeRisque> => {
+    const updateAnalyseHook = async (id: number, analyse: AnalyseDeRisqueDTO): Promise<AnalyseDeRisqueDTO> => {
         return executeApiCall(
             () => updateAnalyse(id, analyse),
             "Error while updating analyse",

@@ -10,7 +10,7 @@ import {Pdp} from "../../utils/entities/Pdp.ts";
 import SelectOrCreatePermit from "../../components/Pdp/SelectOrCreatePermit.tsx";
 import usePdp from "../../hooks/usePdp.ts";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
-import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+import ObjectAnsweredDTO from "../../utils/pdp/ObjectAnswered.ts";
 import Typography from "@mui/material/Typography";
 
 interface StepsProps {

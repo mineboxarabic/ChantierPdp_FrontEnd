@@ -1,9 +1,9 @@
 // useChantier.ts
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
 import Chantier from "../utils/entities/Chantier.ts";
 import fetchApi, { ApiResponse} from "../api/fetchApi.ts";
-import ChantierDTO from "../utils/entitiesDTO/ChantierDTO.ts";
+import {ChantierDTO} from "../utils/entitiesDTO/ChantierDTO.ts";
 import {
     mapChantierDTOToChantier,
     mapChantierToChantierDTO
@@ -175,7 +175,7 @@ const useChantier = () => {
 
     const notifications = useNotifications();
 
-    const saveChantierHook = async (chantierDTO: ChantierDTO, id: number): Promise<ChantierDTO> => {
+    const saveChantierHook = useCallback(async (chantierDTO: ChantierDTO, id: number): Promise<ChantierDTO> => {
         setLoading(true);
         try {
             const result = await saveChantier(chantierDTO, id);
@@ -191,9 +191,9 @@ const useChantier = () => {
         } finally {
             setLoading(false);
         }
-    };
+    } , []);
 
-    const getChantierHook = async (id: number): Promise<ChantierDTO> => {
+    const getChantierHook = useCallback(async (id: number): Promise<ChantierDTO> => {
         setLoading(true);
         try {
             const result = await getChantier(id);
@@ -210,9 +210,9 @@ const useChantier = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const getAllChantiersHook = async (): Promise<ChantierDTO[]> => {
+    const getAllChantiersHook = useCallback( async (): Promise<ChantierDTO[]> => {
         setLoading(true);
         try {
             const result = await getAllChantiers();
@@ -228,9 +228,9 @@ const useChantier = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const createChantierHook = async (chantierDTO: ChantierDTO): Promise<ChantierDTO> => {
+    const createChantierHook = useCallback( async (chantierDTO: ChantierDTO): Promise<ChantierDTO> => {
         setLoading(true);
         try {
             // Convert Chantier to ChantierDTO
@@ -247,10 +247,10 @@ const useChantier = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     // Alternative function that accepts ChantierDTO directly
-    const createChantierDTOHook = async (chantierDTO: ChantierDTO): Promise<ChantierDTO> => {
+    const createChantierDTOHook = useCallback( async (chantierDTO: ChantierDTO): Promise<ChantierDTO> => {
         setLoading(true);
         try {
             const result = await createChantier(chantierDTO);
@@ -266,9 +266,9 @@ const useChantier = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const deleteChantierHook = async (id: number): Promise<void> => {
+    const deleteChantierHook = useCallback( async (id: number): Promise<void> => {
         setLoading(true);
         try {
             await deleteChantier(id);
@@ -279,9 +279,9 @@ const useChantier = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const getLastIdHook = async (): Promise<number> => {
+    const getLastIdHook = useCallback( async (): Promise<number> => {
         setLoading(true);
         try {
             const result = await getLastId();
@@ -296,9 +296,9 @@ const useChantier = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const getRecentChantiersHook = async (): Promise<ChantierDTO[]> => {
+    const getRecentChantiersHook = useCallback( async (): Promise<ChantierDTO[]> => {
         setLoading(true);
         try {
             const result = await getRecentChantiers();
@@ -318,9 +318,9 @@ const useChantier = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const existChantierHook = async (id: number): Promise<boolean> => {
+    const existChantierHook = useCallback(async (id: number): Promise<boolean> => {
         setLoading(true);
         try {
             const result = await existChantier(id);
@@ -336,7 +336,7 @@ const useChantier = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     // Helper functions for converting between DTO and entity
     const toChantier = async (chantierDTO: ChantierDTO): Promise<Chantier> => {

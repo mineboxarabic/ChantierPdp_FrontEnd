@@ -1,31 +1,31 @@
-import {Entreprise} from "../entities/Entreprise.ts";
-import HoraireDeTravaille from "../pdp/HoraireDeTravaille.ts";
-import MiseEnDisposition from "../pdp/MiseEnDisposition.ts";
-import ObjectAnswered from "../pdp/ObjectAnswered.ts";
-import ObjectAnsweredEntreprises from "../pdp/ObjectAnsweredEntreprises.ts";
-
-export type PdpDTO = {
-
-    id?: number;
-    chantier?: number;
-
-    entrepriseExterieure?:number;
-    entrepriseExterieureEnt?:number;
-
-    dateInspection?: Date;
-    icpdate?: Date;
-    horairesDetails?: string;
-    entrepriseDInspection?: number
-    horaireDeTravail?: HoraireDeTravaille;
-    misesEnDisposition?: MiseEnDisposition;
-    risques?: ObjectAnswered[];
-    dispositifs?: ObjectAnswered[];
-    permits?: ObjectAnswered[];
-    analyseDeRisques?: ObjectAnsweredEntreprises[];
-    signatures?: number[];
-    datePrevenirCSSCT?: Date;
-    datePrev?: Date;
+import HoraireDeTravaille from '../pdp/HoraireDeTravaille';
+import MiseEnDisposition from '../pdp/MiseEnDisposition';
+import type { DocumentDTO } from './DocumentDTO'; // CHECK THIS FUCKING PATH
 
 
+export interface PdpDTO 
+extends DocumentDTO 
 
+/*   private Date dateInspection;
+    private Date icpdate;
+    private Date datePrevenirCSSCT; // ✅ Notification date for CSSCT (if required)
+    private Date datePrev; // ✅ Planned date for something (depends on business rules)
+
+    private String horairesDetails;
+    private Long entrepriseDInspection;
+
+    private HoraireDeTravaille horaireDeTravail;
+    private MisesEnDisposition misesEnDisposition; */
+{
+
+  datePrevenirCSSCT?: Date; // ✅ Notification date for CSSCT (if required)
+  datePrev?: Date; // ✅ Planned date for something (depends on business rules)
+
+    horairesDetails?: string; // ✅ Details about working hours
+    entrepriseDInspection?: number; // ✅ ID of the inspection company
+    horaireDeTravail?: HoraireDeTravaille; // ✅ ID of the working hours
+    misesEnDisposition?: MiseEnDisposition; // ✅ ID of the provisions made
+    dateInspection?: Date; // ✅ Date of inspection
+    icpdate?: Date; // ✅ Date of ICP (Intervention Control Plan)
+    
 }

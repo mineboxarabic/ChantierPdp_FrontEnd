@@ -2,13 +2,16 @@ import React, {useEffect, useState} from "react";
 import EditItem, {FieldConfig} from "../EditItem.tsx";
 import Risque from "../../utils/entities/Risque.ts";
 import useRisque from "../../hooks/useRisque.ts";
+import EditGeneric from "../GenericCRUD/EditGeneirc.tsx";
+import RisqueDTO from "../../utils/entitiesDTO/RisqueDTO.ts";
+import { risqueConfig } from "../../pages/Risque/RisqueManager.tsx";
 
 interface EditRisqueProps {
     open: boolean;
     setOpen: (open: boolean) => void;
     isEdit: boolean;
-    risque?: Risque | null;
-    setRisque: (risque: Risque) => void;
+    risque?: RisqueDTO | null;
+    setRisque: (risque: RisqueDTO) => void;
 }
 
 const EditRisque = ({
@@ -18,9 +21,9 @@ const EditRisque = ({
                               risque,
                               setRisque,
                           }: EditRisqueProps) => {
-    const { createRisque, updateRisque, deleteRisque, getRisque } = useRisque();
+    const { createRisque, updateRisque, deleteRisque, getRisque, getAllRisques } = useRisque();
 
-    const [localRisque, setLocalRisque] = useState<Risque>(
+    const [localRisque, setLocalRisque] = useState<RisqueDTO>(
         {
             title: "",
             description: "",
@@ -31,7 +34,7 @@ const EditRisque = ({
     );
 
     useEffect(() => {
-
+        console.log("open", open);
         if (isEdit && risque) {
             setLocalRisque({ ...risque });
         } else {
@@ -46,59 +49,50 @@ const EditRisque = ({
     }, [open]);
 
 
-    const fieldsConfig:FieldConfig<any>[] = [
-        {
-            label: "Logo",
-            type: "image",
-            getter: () => localRisque.logo,
-            setter: (value: { mimeType: string; imageData: string }) =>
-                setLocalRisque((prev) => ({ ...prev, logo: value })),
-        },
-        {
-            label: "Title",
-            type: "text",
-            getter: () => localRisque.title,
-            setter: (value: string) => setLocalRisque((prev) => ({ ...prev, title: value })),
-        },
-        {
-            label: "Description",
-            type: "text",
-            getter: () => localRisque.description,
-            setter: (value: string) => setLocalRisque((prev) => ({ ...prev, description: value })),
-        },
-        {
-            label: "Travaille Dangereux",
-            type: "checkbox",
-            getter: () => localRisque.travailleDangereux,
-            setter: (value: boolean) => setLocalRisque((prev) => ({ ...prev, travailleDangereux: value })),
-        },
-        {
-            label: "Travaille Permit",
-            type: "checkbox",
-            getter: () => localRisque.travaillePermit,
-            setter: (value: boolean) => setLocalRisque((prev) => ({ ...prev, travaillePermit: value })),
-        },
+    const updateRisqueRe = (id:number , risque: RisqueDTO) : Promise<RisqueDTO> => {
+        console.log("updating risque",id,risque);
+        return updateRisque(risque, id).then((response:RisqueDTO) => {
+            setRisque(response);
+            setOpen(false);
+        }) as Promise<RisqueDTO>;
+    }
 
-    ];
+    const deleteRisqueRe = (id: number) : Promise<void> =>  {
+        return deleteRisque(id).then(() => {
+            setOpen(false);
+        });
+    }
 
-
-    const onSave = async() => {
+    /*const onSave = async() => {
         if (isEdit) {
-            console.log("updating risque",localRisque);
-            updateRisque(localRisque, localRisque?.id as number).then((response:Risque) => {
+            updateRisque(localRisque, localRisque?.id as number).then((response:RisqueDTO) => {
                     setRisque(response);
                     setOpen(false);
                 }
             );
         } else {
             console.log("creating risque",localRisque);
-            createRisque(localRisque).then((response:Risque) => {
+            createRisque(localRisque).then((response:RisqueDTO) => {
+                setRisque(response);
+                setOpen(false);
+            });
+        }
+    }*/
+    const onSave = async(localRisque:RisqueDTO) => {
+        if (isEdit) {
+            updateRisque(localRisque, localRisque?.id as number).then((response:RisqueDTO) => {
+                    setRisque(response);
+                    setOpen(false);
+                }
+            );
+        } else {
+            console.log("creating risque",localRisque);
+            createRisque(localRisque).then((response:RisqueDTO) => {
                 setRisque(response);
                 setOpen(false);
             });
         }
     }
-
     const onDelete = async () => {
         console.log("deleting risque",localRisque);
 
@@ -106,18 +100,27 @@ const EditRisque = ({
             setOpen(false);
         });
     }
-
     return (
-        <EditItem <Risque>
-            open={open}
-            setOpen={setOpen}
-            isEdit={isEdit}
-            title="Risque"
-            fieldsConfig={fieldsConfig}
-            initialItem={localRisque}
-            itemId={risque?.id}
-            onSave={onSave}
-            onDelete={onDelete}
+        <EditGeneric<RisqueDTO>
+        entity={localRisque}
+        config={risqueConfig}
+        open={open}
+        onClose={() => setOpen(false)}
+
+        onSubmit={(e:RisqueDTO)=>{
+            setLocalRisque(e);
+            onSave(e);
+        }}
+
+        crudOperations={{
+            create: createRisque,
+            update: updateRisqueRe,
+            delete: deleteRisqueRe,
+            getById: getRisque,
+            getAll: getAllRisques,
+            getReferences: () => Promise.resolve([]),
+        }} 
+        
         />
     );
 };

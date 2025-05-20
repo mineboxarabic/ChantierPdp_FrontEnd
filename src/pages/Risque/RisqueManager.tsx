@@ -2,9 +2,9 @@ import React from 'react';
 import { Box, Container, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import ManagerCRUD from "../../components/GenericCRUD/ManagerCRUD.tsx";
 import {EntityConfig, FieldType, CrudOperations, ImageModel} from "../../components/GenericCRUD/TypeConfig.ts";
-import Risque from "../../utils/entities/Risque.ts";
 import useRisque from "../../hooks/useRisque.ts";
 import defaultImage from "../../assets/wornings/worning.webp"
+import RisqueDTO from '../../utils/entitiesDTO/RisqueDTO.ts';
 
 // Create a theme instance
 const theme = createTheme({
@@ -35,7 +35,60 @@ const theme = createTheme({
         },
     },
 });
-
+    // Define the entity configuration
+export const risqueConfig: EntityConfig = {
+    entityType: 'risque',
+    displayName: 'Risk',
+    pluralName: 'Risks',
+    keyField: 'id',
+    displayField: 'title',
+    searchFields: ['title', 'description'],
+    defaultSortField: 'title',
+    defaultImage: defaultImage,
+    fields: [
+        {
+            key: 'id',
+            type: FieldType.Number,
+            label: 'ID',
+            hidden: true,
+        },
+        {
+            key: 'title',
+            type: FieldType.Text,
+            label: 'Title',
+            required: true,
+            order: 1,
+        },
+        {
+            key: 'description',
+            type: FieldType.Text,
+            label: 'Description',
+            multiline: true,
+            rows: 4,
+            order: 2,
+            fullWidth: true,
+        },
+        {
+            key: 'travailleDangereux',
+            type: FieldType.Boolean,
+            label: 'Dangerous Work',
+            order: 3,
+        },
+        {
+            key: 'travaillePermit',
+            type: FieldType.Boolean,
+            label: 'Requires Permit',
+            order: 4,
+        },
+        {
+            key: 'logo',
+            type: FieldType.Image,
+            label: 'Logo',
+            order: 5,
+            fullWidth: true
+        },
+    ],
+};
 // Example component showing how to use the generic CRUD system
 const RisqueManager = () => {
     // Get the hook for Risque CRUD operations
@@ -52,63 +105,11 @@ const RisqueManager = () => {
         }
     }
 
-    // Define the entity configuration
-    const risqueConfig: EntityConfig = {
-        entityType: 'risque',
-        displayName: 'Risk',
-        pluralName: 'Risks',
-        keyField: 'id',
-        displayField: 'title',
-        searchFields: ['title', 'description'],
-        defaultSortField: 'title',
-        defaultImage: defaultImage,
-        fields: [
-            {
-                key: 'id',
-                type: FieldType.Number,
-                label: 'ID',
-                hidden: true,
-            },
-            {
-                key: 'title',
-                type: FieldType.Text,
-                label: 'Title',
-                required: true,
-                order: 1,
-            },
-            {
-                key: 'description',
-                type: FieldType.Text,
-                label: 'Description',
-                multiline: true,
-                rows: 4,
-                order: 2,
-                fullWidth: true,
-            },
-            {
-                key: 'travailleDangereux',
-                type: FieldType.Boolean,
-                label: 'Dangerous Work',
-                order: 3,
-            },
-            {
-                key: 'travaillePermit',
-                type: FieldType.Boolean,
-                label: 'Requires Permit',
-                order: 4,
-            },
-            {
-                key: 'logo',
-                type: FieldType.Image,
-                label: 'Logo',
-                order: 5,
-                fullWidth: true
-            },
-        ],
-    };
+
+
 
     // Create CRUD operations adapter from the risque service
-    const crudOperations: CrudOperations<Risque> = {
+    const crudOperations: CrudOperations<RisqueDTO> = {
         getAll: async () => {
             const risques = await risqueService.getAllRisques();
             return risques || [];
@@ -117,11 +118,11 @@ const RisqueManager = () => {
             const risque = await risqueService.getRisque(id);
             return risque;
         },
-        create: async (entity: Risque) => {
+        create: async (entity: RisqueDTO) => {
             const newRisque = await risqueService.createRisque(entity);
             return newRisque;
         },
-        update: async (id: number, entity: Risque) => {
+        update: async (id: number, entity: RisqueDTO) => {
             const updatedRisque = await risqueService.updateRisque(entity, id);
             return updatedRisque;
         },

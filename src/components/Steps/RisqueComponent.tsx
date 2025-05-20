@@ -13,7 +13,7 @@ import worning from "../../assets/wornings/worning.webp"
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import MenuItem from "@mui/material/MenuItem";
-import ObjectAnswered from "../../utils/pdp/ObjectAnswered.ts";
+import ObjectAnsweredDTO from "../../utils/pdp/ObjectAnswered.ts";
 import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import {useEffect, useState} from "react";
 import {Pdp} from "../../utils/entities/Pdp.ts";
@@ -22,26 +22,13 @@ import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
 import useBdt from "../../hooks/useBdt.ts";
 import useRisque from "../../hooks/useRisque.ts";
 import RisqueDTO from "../../utils/entitiesDTO/RisqueDTO.ts";
+import { ContentItem, ObjectAnsweredBasedComponentProps, ParentOfRelations } from "../Interfaces.ts";
+import { DocumentDTO } from "../../utils/entitiesDTO/DocumentDTO.ts";
 
 
-//Types are bdt and pdp
-
-
-interface RisqueProps {
-    object:ObjectAnswered
-
-   currentPdp: any;
-    saveCurrentPdp: (pdp: any) => void;
-    setIsChanged: (isChanged: boolean) => void;
-    typeOfObject: "pdp" | "bdt";
-}
-
-const RisqueComponent = ({object,currentPdp, saveCurrentPdp, setIsChanged, typeOfObject}:RisqueProps) => {
+const RisqueComponent = <ITEM extends ContentItem, PARENT extends DocumentDTO ,>({object,parent, saveParent, setIsChanged,itemData}:ObjectAnsweredBasedComponentProps<ITEM,PARENT>) => {
 
    const [openDialog, setOpenDialog] = useState(false);
-
-   const {unlinkObjectFromPdp} = usePdp();
-   const {unlinkRisqueToBDT} = useBdt();
    const risqueHook = useRisque();
 
    const theme = useTheme();
@@ -50,49 +37,37 @@ const RisqueComponent = ({object,currentPdp, saveCurrentPdp, setIsChanged, typeO
 
 
    useEffect(() => {
-
-
-    console.log('Risque object:', object);
-
-            // Fetch the risque data if it exists
             const fetchRiqsue = async () =>{
-                if(object.risque_id){
-                    const r = await risqueHook.getRisque(object.risque_id);
-                    console.log('Risque fetched:', r);
-                    setRisque(r); 
+                if(!itemData){
+                    if(object.objectId){
+                        const r = await risqueHook.getRisque(object.objectId);
+                        setRisque(r); 
+                    }
+                }else{
+                    setRisque(itemData);
                 }
+               
             }
 
             fetchRiqsue();
 
-   },[]);
+   },[,itemData]);
 
     const handleDeleteClick = () => {
          setOpenDialog(true);
     }
-    const handleConfirmDelete = () => {
-       if(typeOfObject === "pdp"){
-           unlinkObjectFromPdp(risque?.id as number,currentPdp?.id as number, ObjectAnsweredObjects.RISQUE).then(() => {
+    const handleConfirmDelete = async () => {
+        saveParent({
+            ...parent,
+            risques: parent.relations?.map((o:ObjectAnsweredDTO) => {
+                if (o.id === object.id) {
+                    o.answer = null;
+                }
+                return o;
+            })
+        } as PARENT);
 
-               saveCurrentPdp({
-                   ...currentPdp,
-                   risques: currentPdp["risques"]?.filter((p:ObjectAnswered) => p?.id !== object?.id)
-               });
-               setIsChanged(true);
-           })
-       }
-        else{
-           unlinkRisqueToBDT( currentPdp?.id as number, risque?.id as number).then(() => {
-                   saveCurrentPdp({
-                       ...currentPdp,
-                       risques: currentPdp["risques"]?.filter((p:ObjectAnswered) => p?.id !== object?.id)
-                   });
-                   setIsChanged(true);
-               }
-           );
-       }
-
-
+        setIsChanged(true);
         setOpenDialog(false);
     }
 
@@ -137,16 +112,17 @@ const RisqueComponent = ({object,currentPdp, saveCurrentPdp, setIsChanged, typeO
 
                                 //onSelectChange(e.target.value === 1);
 
-                                currentPdp?.risques?.map((r: ObjectAnswered) => {
+                                parent?.relations?.map((r: ObjectAnsweredDTO) => {
                                     if (r.id === object.id) {
                                         r.answer = e.target.value === 1;
                                     }
+                                    return r;
                                 });
-
-                                saveCurrentPdp({
-                                    ...currentPdp,
-                                    risques: currentPdp.risques,
-                                } as Pdp);
+                                
+                                saveParent({
+                                    ...parent,
+                                    risques: parent.relations,
+                                } as PARENT);
                                 setIsChanged(true);
 
                             }}

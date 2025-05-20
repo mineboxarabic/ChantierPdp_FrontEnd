@@ -35,84 +35,84 @@ const theme = createTheme({
         },
     },
 });
+// Define the entity configuration for Permit
+export const permitConfig: EntityConfig = {
+    entityType: 'permit',
+    displayName: 'Permit',
+    pluralName: 'Permits',
+    keyField: 'id',
+    displayField: 'title', // Using 'titre' as display field from InfoDeBase
+    searchFields: ['title', 'description'],
+    defaultSortField: 'title',
+    fields: [
+        {
+            key: 'id',
+            type: FieldType.Number,
+            label: 'ID',
+            hidden: true
+
+        },
+        {
+            key: 'title',
+            type: FieldType.Text,
+            label: 'Title',
+            required: true,
+            order: 1,
+            section: 'Basic Information',
+        },
+        {
+            key: 'description',
+            type: FieldType.Text,
+            label: 'Description',
+            multiline: true,
+            rows: 4,
+            order: 2,
+            section: 'Basic Information',
+            fullWidth: true,
+        },
+        /*  {
+              key: 'type',
+              type: FieldType.Enum,
+              label: 'Permit Type',
+              required: true,
+              order: 3,
+              section: 'Permit Details',
+              options: [
+                  { value: PermiTypes.NONE, label: 'None' },
+                  { value: PermiTypes.TYPE1, label: 'Type 1' },
+                  { value: PermiTypes.TYPE2, label: 'Type 2' },
+                  { value: PermiTypes.TYPE3, label: 'Type 3' },
+                  // Add other types as needed based on your PermiTypes enum
+              ],
+          },*/
+        {
+            key: 'pdfData',
+            type: FieldType.Text,
+            label: 'PDF Data',
+            multiline: true,
+            rows: 3,
+            order: 4,
+            section: 'Permit Details',
+            fullWidth: true,
+            helperText: 'Base64 encoded PDF data',
+            hidden: true,
+        },
+        {
+            key: 'image',
+            type: FieldType.Image,
+            label: 'Image',
+            order: 5,
+            section: 'Visual',
+            fullWidth: true,
+        },
+    ],
+};
 
 // PermitManager component using the generic CRUD system
 const PermitManager = () => {
     // Get the hook for Permit CRUD operations
     const permitService = usePermit();
 
-    // Define the entity configuration for Permit
-    const permitConfig: EntityConfig = {
-        entityType: 'permit',
-        displayName: 'Permit',
-        pluralName: 'Permits',
-        keyField: 'id',
-        displayField: 'title', // Using 'titre' as display field from InfoDeBase
-        searchFields: ['title', 'description'],
-        defaultSortField: 'title',
-        fields: [
-            {
-                key: 'id',
-                type: FieldType.Number,
-                label: 'ID',
-                hidden: true
-
-            },
-            {
-                key: 'title',
-                type: FieldType.Text,
-                label: 'Title',
-                required: true,
-                order: 1,
-                section: 'Basic Information',
-            },
-            {
-                key: 'description',
-                type: FieldType.Text,
-                label: 'Description',
-                multiline: true,
-                rows: 4,
-                order: 2,
-                section: 'Basic Information',
-                fullWidth: true,
-            },
-          /*  {
-                key: 'type',
-                type: FieldType.Enum,
-                label: 'Permit Type',
-                required: true,
-                order: 3,
-                section: 'Permit Details',
-                options: [
-                    { value: PermiTypes.NONE, label: 'None' },
-                    { value: PermiTypes.TYPE1, label: 'Type 1' },
-                    { value: PermiTypes.TYPE2, label: 'Type 2' },
-                    { value: PermiTypes.TYPE3, label: 'Type 3' },
-                    // Add other types as needed based on your PermiTypes enum
-                ],
-            },*/
-            {
-                key: 'pdfData',
-                type: FieldType.Text,
-                label: 'PDF Data',
-                multiline: true,
-                rows: 3,
-                order: 4,
-                section: 'Permit Details',
-                fullWidth: true,
-                helperText: 'Base64 encoded PDF data',
-                hidden: true,
-            },
-            {
-                key: 'image',
-                type: FieldType.Image,
-                label: 'Image',
-                order: 5,
-                section: 'Visual',
-                fullWidth: true,
-            },
-        ],
-    };
 
     // Create CRUD operations adapter from the permit service
     const crudOperations: CrudOperations<Permit> = {

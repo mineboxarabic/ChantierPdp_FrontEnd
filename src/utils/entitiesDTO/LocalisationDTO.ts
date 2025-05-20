@@ -1,12 +1,9 @@
-export default class LocalisationDTO {
+export interface LocalisationDTO 
+{
 
-    nom?: string;
-    code?: string;
-    description?: string;
+  id?: number;
+  nom?: string;
+  code?: string;
+  description?: string;
 
-    constructor( nom: string, code: string, description: string) {
-        this.nom = nom;
-        this.code = code;
-        this.description = description;
-    }
 }

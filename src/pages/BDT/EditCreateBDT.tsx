@@ -61,14 +61,12 @@ import { EntityRef } from '../../utils/EntityRef.ts';
 import { getRoute } from '../../Routes.tsx';
 import { useNotifications } from '@toolpad/core/useNotifications';
 import { AuditSecu } from '../../utils/entities/AuditSecu.ts';
-import ObjectAnswered from '../../utils/pdp/ObjectAnswered';
+import ObjectAnsweredDTO from '../../utils/pdp/ObjectAnswered';
 import Worker from '../../utils/entities/Worker.ts';
 import Signature from '../../utils/entities/Signature.ts';
-import SelectOrCreateRisque from "../../components/Pdp/SelectOrCreateRisque.tsx";
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import RisqueComponent from "../../components/Steps/RisqueComponent.tsx";
-import SelectOrCreateAudit from "../../components/Pdp/SelectOrCreateAudit.tsx";
 // Define the interface for URL params
 interface ParamTypes {
     id?: string;

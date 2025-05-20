@@ -1,27 +1,21 @@
 // useWorkerSelection.ts
 import { useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import Worker from "../utils/entities/Worker.ts";
 import Chantier from "../utils/entities/Chantier.ts";
-import WorkerChantierSelection from "../utils/entities/WorkerChantierSelection.ts";
 import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
+import {WorkerDTO} from "../utils/entitiesDTO/WorkerDTO.ts";
+import { WorkerChantierSelectionDTO } from "../utils/entitiesDTO/WorkerChantierSelectionDTO.ts";
 
-type WorkerSelectionResponse = WorkerChantierSelection | WorkerChantierSelection[] | Worker[] | Chantier[] | boolean | null;
+type WorkerSelectionResponse = WorkerChantierSelectionDTO | WorkerChantierSelectionDTO[] | WorkerDTO[] | Chantier[] | boolean | null;
 
 // Function to select a worker for a chantier
 export const selectWorkerForChantier = async (
-    workerId: number,
-    chantierId: number,
-    note?: string
-): Promise<ApiResponse<WorkerChantierSelection>> => {
-    return fetchApi<WorkerChantierSelection>(
+  selection: WorkerChantierSelectionDTO
+): Promise<ApiResponse<WorkerChantierSelectionDTO>> => {
+    return fetchApi<WorkerChantierSelectionDTO>(
         "api/worker-selection/select",
         "POST",
-        {
-            workerId,
-            chantierId,
-            note
-        },
+        selection,
         [
             {
                 status: 404,
@@ -37,16 +31,13 @@ export const selectWorkerForChantier = async (
 
 // Function to deselect a worker from a chantier
 export const deselectWorkerFromChantier = async (
-    workerId: number,
-    chantierId: number
+   selection: WorkerChantierSelectionDTO
 ): Promise<ApiResponse<boolean>> => {
+
     return fetchApi<boolean>(
         "api/worker-selection/deselect",
         "POST",
-        {
-            workerId,
-            chantierId
-        },
+        selection,
         [
             {
                 status: 404,
@@ -61,8 +52,8 @@ export const deselectWorkerFromChantier = async (
 };
 
 // Function to get all workers selected for a chantier
-export const getWorkersForChantier = async (chantierId: number): Promise<ApiResponse<Worker[]>> => {
-    return fetchApi<Worker[]>(
+export const getWorkersForChantier = async (chantierId: number): Promise<ApiResponse<WorkerDTO[]>> => {
+    return fetchApi<WorkerDTO[]>(
         `api/worker-selection/chantier/${chantierId}/workers`,
         "GET",
         null,
@@ -99,8 +90,8 @@ export const getChantiersForWorker = async (workerId: number): Promise<ApiRespon
 };
 
 // Function to get all selections (with details) for a chantier
-export const getSelectionsForChantier = async (chantierId: number): Promise<ApiResponse<WorkerChantierSelection[]>> => {
-    return fetchApi<WorkerChantierSelection[]>(
+export const getSelectionsForChantier = async (chantierId: number): Promise<ApiResponse<WorkerChantierSelectionDTO[]>> => {
+    return fetchApi<WorkerChantierSelectionDTO[]>(
         `api/worker-selection/chantier/${chantierId}/selections`,
         "GET",
         null,
@@ -144,6 +135,7 @@ const useWorkerSelection = () => {
             throw new Error(result.message || errorMessage);
         } catch (e: any) {
             setError(e.message);
+            console.error("API call failed:", e);
             notifications.show(e.message, { severity: "error" });
             throw e;
         } finally {
@@ -153,24 +145,22 @@ const useWorkerSelection = () => {
 
     // Hook methods that wrap the API functions
     const selectWorkerForChantierHook = async (
-        workerId: number,
-        chantierId: number,
-        note?: string
-    ): Promise<WorkerChantierSelection> => {
+selection: WorkerChantierSelectionDTO,
+    ): Promise<WorkerChantierSelectionDTO> => {
         return executeApiCall(
-            () => selectWorkerForChantier(workerId, chantierId, note),
+            () => selectWorkerForChantier(selection),
             "Erreur lors de la sélection du travailleur"
         );
     };
 
     const deselectWorkerFromChantierHook = async (
-        workerId: number,
-        chantierId: number
+        selection: WorkerChantierSelectionDTO,
+
     ): Promise<boolean> => {
         try {
             await executeApiCall(
-                () => deselectWorkerFromChantier(workerId, chantierId),
-                "Erreur lors de la désélection du travailleur"
+                () => deselectWorkerFromChantier(selection),
+                "Erreur lors de la désélection du travailleurxxx"
             );
             return true;
         } catch (e) {
@@ -178,7 +168,7 @@ const useWorkerSelection = () => {
         }
     };
 
-    const getWorkersForChantierHook = async (chantierId: number): Promise<Worker[]> => {
+    const getWorkersForChantierHook = async (chantierId: number): Promise<WorkerDTO[]> => {
         return executeApiCall(
             () => getWorkersForChantier(chantierId),
             "Erreur lors de la récupération des travailleurs du chantier"
@@ -192,7 +182,7 @@ const useWorkerSelection = () => {
         );
     };
 
-    const getSelectionsForChantierHook = async (chantierId: number): Promise<WorkerChantierSelection[]> => {
+    const getSelectionsForChantierHook = async (chantierId: number): Promise<WorkerChantierSelectionDTO[]> => {
         return executeApiCall(
             () => getSelectionsForChantier(chantierId),
             "Erreur lors de la récupération des sélections du chantier"

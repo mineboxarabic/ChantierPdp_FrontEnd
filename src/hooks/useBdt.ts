@@ -1,13 +1,13 @@
 // useBdt.ts
 import { useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import { BDT } from "../utils/entities/BDT.ts";
-import ObjectAnswered from "../utils/pdp/ObjectAnswered.ts";
+import ObjectAnsweredDTO from "../utils/pdp/ObjectAnswered.ts";
 import fetchApi, { ApiResponse} from "../api/fetchApi.ts";
+import { BdtDTO } from "../utils/entitiesDTO/BdtDTO.ts";
 
 // Function to get all BDTs
-export const getAllBDTs = async (): Promise<ApiResponse<BDT[]>> => {
-    return fetchApi<BDT[]>(
+export const getAllBDTs = async (): Promise<ApiResponse<BdtDTO[]>> => {
+    return fetchApi<BdtDTO[]>(
         "api/bdt/all",
         "GET",
         null,
@@ -18,111 +18,111 @@ export const getAllBDTs = async (): Promise<ApiResponse<BDT[]>> => {
     );
 };
 
-// Function to save/update a BDT
-export const saveBDT = async (bdt: BDT, id: number): Promise<ApiResponse<BDT>> => {
-    return fetchApi<BDT>(
+// Function to save/update a BdtDTO
+export const saveBDT = async (bdt: BdtDTO, id: number): Promise<ApiResponse<BdtDTO>> => {
+    return fetchApi<BdtDTO>(
         `api/bdt/${id}`,
         "PATCH",
         bdt,
         [
-            { status: 409, message: "Error BDT already exists" },
-            { status: 404, message: "Error BDT or API link not found" }
+            { status: 409, message: "Error BdtDTO already exists" },
+            { status: 404, message: "Error BdtDTO or API link not found" }
         ]
     );
 };
 
-// Function to get a BDT by ID
-export const getBDTById = async (id: number): Promise<ApiResponse<BDT>> => {
-    return fetchApi<BDT>(
+// Function to get a BdtDTO by ID
+export const getBDTById = async (id: number): Promise<ApiResponse<BdtDTO>> => {
+    return fetchApi<BdtDTO>(
         `api/bdt/${id}`,
         "GET",
         null,
         [
-            { status: 404, message: "Error BDT not found" },
-            { status: -1, message: "Error while getting BDT" }
+            { status: 404, message: "Error BdtDTO not found" },
+            { status: -1, message: "Error while getting BdtDTO" }
         ]
     );
 };
 
-// Function to create a new BDT
-export const createBDT = async (bdtData: BDT): Promise<ApiResponse<BDT>> => {
-    return fetchApi<BDT>(
+// Function to create a new BdtDTO
+export const createBDT = async (bdtData: BdtDTO): Promise<ApiResponse<BdtDTO>> => {
+    return fetchApi<BdtDTO>(
         "api/bdt/",
         "POST",
         bdtData,
         [
-            { status: 409, message: "Error BDT already exists" },
-            { status: 404, message: "Error BDT or API link not found" }
+            { status: 409, message: "Error BdtDTO already exists" },
+            { status: 404, message: "Error BdtDTO or API link not found" }
         ]
     );
 };
 
-// Function to delete a BDT
+// Function to delete a BdtDTO
 export const deleteBDT = async (id: number): Promise<ApiResponse<boolean>> => {
     return fetchApi<boolean>(
         `api/bdt/${id}`,
         "DELETE",
         null,
         [
-            { status: 404, message: "Error BDT not found" }
+            { status: 404, message: "Error BdtDTO not found" }
         ]
     );
 };
 
-// Function to link a risk to a BDT
-export const linkRisqueToBDT = async (risqueId: number, bdtId: number): Promise<ApiResponse<ObjectAnswered>> => {
-    return fetchApi<ObjectAnswered>(
+// Function to link a risk to a BdtDTO
+export const linkRisqueToBDT = async (risqueId: number, bdtId: number): Promise<ApiResponse<ObjectAnsweredDTO>> => {
+    return fetchApi<ObjectAnsweredDTO>(
         `api/bdt/${bdtId}/risque/${risqueId}`,
         "POST",
         null,
         [
-            { status: 404, message: "Error BDT or risque not found" }
+            { status: 404, message: "Error BdtDTO or risque not found" }
         ]
     );
 };
 
-// Function to link an audit to a BDT
-export const linkAuditToBDT = async (bdtId: number, auditId: number): Promise<ApiResponse<ObjectAnswered>> => {
-    return fetchApi<ObjectAnswered>(
+// Function to link an audit to a BdtDTO
+export const linkAuditToBDT = async (bdtId: number, auditId: number): Promise<ApiResponse<ObjectAnsweredDTO>> => {
+    return fetchApi<ObjectAnsweredDTO>(
         `api/bdt/${bdtId}/audit/${auditId}`,
         "POST",
         null,
         [
-            { status: 404, message: "Error BDT or audit not found" }
+            { status: 404, message: "Error BdtDTO or audit not found" }
         ]
     );
 };
 
-// Function to unlink a risk from a BDT
-export const unlinkRisqueToBDT = async (bdtId: number, risqueId: number): Promise<ApiResponse<ObjectAnswered>> => {
-    return fetchApi<ObjectAnswered>(
+// Function to unlink a risk from a BdtDTO
+export const unlinkRisqueToBDT = async (bdtId: number, risqueId: number): Promise<ApiResponse<ObjectAnsweredDTO>> => {
+    return fetchApi<ObjectAnsweredDTO>(
         `api/bdt/${bdtId}/risque/${risqueId}`,
         "DELETE",
         null,
         [
-            { status: 404, message: "Error BDT or risque not found" }
+            { status: 404, message: "Error BdtDTO or risque not found" }
         ]
     );
 };
 
-// Function to unlink an audit from a BDT
-export const unlinkAuditToBDT = async (bdtId: number, auditId: number): Promise<ApiResponse<ObjectAnswered>> => {
-    return fetchApi<ObjectAnswered>(
+// Function to unlink an audit from a BdtDTO
+export const unlinkAuditToBDT = async (bdtId: number, auditId: number): Promise<ApiResponse<ObjectAnsweredDTO>> => {
+    return fetchApi<ObjectAnsweredDTO>(
         `api/bdt/${bdtId}/audit/${auditId}`,
         "DELETE",
         null,
         [
-            { status: 404, message: "Error BDT or audit not found" }
+            { status: 404, message: "Error BdtDTO or audit not found" }
         ]
     );
 };
 
 // React hook that uses the API functions
 const useBdt = () => {
-    const [response, setResponse] = useState<BDT | BDT[] | boolean | null>(null);
+    const [response, setResponse] = useState<BdtDTO | BdtDTO[] | boolean | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
-    const [bdts, setBdts] = useState<Map<number, BDT>>(new Map<number, BDT>());
+    const [bdts, setBdts] = useState<Map<number, BdtDTO>>(new Map<number, BdtDTO>());
 
     const notifications = useNotifications();
 
@@ -152,14 +152,14 @@ const useBdt = () => {
     };
 
     // Hook methods that wrap the API functions
-    const getAllBDTsHook = async (): Promise<BDT[]> => {
+    const getAllBDTsHook = async (): Promise<BdtDTO[]> => {
         return executeApiCall(
             () => getAllBDTs(),
             "Error while getting BDTs",
-            (data: BDT[]) => {
+            (data: BdtDTO[]) => {
                 setResponse(data);
-                const updatedBdts = new Map<number, BDT>();
-                data.forEach((bdt: BDT) => {
+                const updatedBdts = new Map<number, BdtDTO>();
+                data.forEach((bdt: BdtDTO) => {
                     if (bdt.id !== undefined) {
                         updatedBdts.set(bdt.id, bdt);
                     }
@@ -169,31 +169,31 @@ const useBdt = () => {
         );
     };
 
-    const saveBDTHook = async (bdt: BDT, id: number): Promise<BDT> => {
+    const saveBDTHook = async (bdt: BdtDTO, id: number): Promise<BdtDTO> => {
         return executeApiCall(
             () => saveBDT(bdt, id),
-            "Error while saving BDT",
-            (data: BDT) => {
+            "Error while saving BdtDTO",
+            (data: BdtDTO) => {
                 setResponse(data);
             }
         );
     };
 
-    const getBDTHook = async (id: number): Promise<BDT> => {
+    const getBDTHook = async (id: number): Promise<BdtDTO> => {
         return executeApiCall(
             () => getBDTById(id),
-            "Error while getting BDT",
-            (data: BDT) => {
+            "Error while getting BdtDTO",
+            (data: BdtDTO) => {
                 setResponse(data);
             }
         );
     };
 
-    const createBDTHook = async (bdtData: BDT): Promise<BDT> => {
+    const createBDTHook = async (bdtData: BdtDTO): Promise<BdtDTO> => {
         return executeApiCall(
             () => createBDT(bdtData),
-            "Error while creating BDT",
-            (data: BDT) => {
+            "Error while creating BdtDTO",
+            (data: BdtDTO) => {
                 setResponse(data);
             }
         );
@@ -202,7 +202,7 @@ const useBdt = () => {
     const deleteBDTHook = async (id: number): Promise<boolean> => {
         return executeApiCall(
             () => deleteBDT(id),
-            "Error while deleting BDT",
+            "Error while deleting BdtDTO",
             () => {
                 // Remove from local state if needed
                 if (bdts.has(id)) {
@@ -215,31 +215,31 @@ const useBdt = () => {
         );
     };
 
-    const linkRisqueToBDTHook = async (risqueId: number, bdtId: number): Promise<ObjectAnswered> => {
+    const linkRisqueToBDTHook = async (risqueId: number, bdtId: number): Promise<ObjectAnsweredDTO> => {
         return executeApiCall(
             () => linkRisqueToBDT(risqueId, bdtId),
-            "Error while linking risk to BDT"
+            "Error while linking risk to BdtDTO"
         );
     };
 
-    const linkAuditToBDTHook = async (bdtId: number, auditId: number): Promise<ObjectAnswered> => {
+    const linkAuditToBDTHook = async (bdtId: number, auditId: number): Promise<ObjectAnsweredDTO> => {
         return executeApiCall(
             () => linkAuditToBDT(bdtId, auditId),
-            "Error while linking audit to BDT"
+            "Error while linking audit to BdtDTO"
         );
     };
 
-    const unlinkRisqueToBDTHook = async (bdtId: number, risqueId: number): Promise<ObjectAnswered> => {
+    const unlinkRisqueToBDTHook = async (bdtId: number, risqueId: number): Promise<ObjectAnsweredDTO> => {
         return executeApiCall(
             () => unlinkRisqueToBDT(bdtId, risqueId),
-            "Error while unlinking risk from BDT"
+            "Error while unlinking risk from BdtDTO"
         );
     };
 
-    const unlinkAuditToBDTHook = async (bdtId: number, auditId: number): Promise<ObjectAnswered> => {
+    const unlinkAuditToBDTHook = async (bdtId: number, auditId: number): Promise<ObjectAnsweredDTO> => {
         return executeApiCall(
             () => unlinkAuditToBDT(bdtId, auditId),
-            "Error while unlinking audit from BDT"
+            "Error while unlinking audit from BdtDTO"
         );
     };
 

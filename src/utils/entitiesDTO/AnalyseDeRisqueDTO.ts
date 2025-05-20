@@ -1,25 +1,28 @@
-import Risque from "../entities/Risque.ts";
+// TODO: import type { Risque } from '???'; // UNKNOWN IMPORT PATH FOR THIS BAD BOY
 
-class AnalyseDeRisqueDTO {
-    deroulementDesTaches: string;
-    moyensUtilises: string;
-    risque: Risque; // Assuming you have a Risque class
-    mesuresDePrevention: string;
+import Risque from "../entities/Risque";
+import RisqueDTO from "./RisqueDTO";
 
 
-    constructor(
-        deroulementDesTaches: string,
-        moyensUtilises: string,
-        risque: Risque,
-        mesuresDePrevention: string,
-        entrepriseExterieure: boolean,
-        entrepriseUtilisatrice: boolean
-    ) {
-        this.deroulementDesTaches = deroulementDesTaches;
-        this.moyensUtilises = moyensUtilises;
-        this.risque = risque;
-        this.mesuresDePrevention = mesuresDePrevention;
-    }
+export class AnalyseDeRisqueDTO 
+{
+
+  id?: number;
+  deroulementDesTaches?: string;
+  moyensUtilises?: string;
+  risque?: RisqueDTO;
+  mesuresDePrevention?: string;
+
+  constructor(
+    deroulementDesTaches?: string,
+    moyensUtilises?: string,
+    risque?: RisqueDTO,
+    mesuresDePrevention?: string
+  ) {
+    this.deroulementDesTaches = deroulementDesTaches;
+    this.moyensUtilises = moyensUtilises;
+    this.risque = risque;
+    this.mesuresDePrevention = mesuresDePrevention;
+  }
+
 }
-
-export default AnalyseDeRisqueDTO;

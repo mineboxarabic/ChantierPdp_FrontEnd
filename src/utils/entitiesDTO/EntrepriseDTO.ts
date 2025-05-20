@@ -1,21 +1,16 @@
-import {ImageModel} from "../image/ImageModel.ts";
-import {MedecinDuTravailleEE} from "../pdp/MedecinDuTravailleEE.ts";
-import {EntityRef} from "../EntityRef.ts";
+import type { EntrepriseType } from '../enums/EntrepriseType.ts'; // CHECK THIS FUCKING PATH
+import type { ImageModel } from '../image/ImageModel'; // CHECK THIS FUCKING PATH
 
-enum EntrepriseType {
-    EE= "EE", // ✅ Defines if it's EU or
-    EU = "EU"
-}
-export class EntrepriseDTO {
-    id?: number;
-    type?: EntrepriseType = EntrepriseType.EE;
-    nom?: string;
-    description?: string;
-    numTel?: string;
-   /* chantiers?: Chantier[];*/
-    raisonSociale?: string;
-    image?: ImageModel;
-    medecinDuTravailleEE?: MedecinDuTravailleEE;
-    pdps?: number[];
-    workers?: number[];
+
+export interface EntrepriseDTO 
+{
+  id?: number; // ✅ Unique identifier for the entreprise
+  type?: EntrepriseType; // ✅ Defines if it's EU or EE
+  nom?: string; // ✅ Name of the company
+  image?: ImageModel; // ✅ For storing binary data (e.g., logos)
+  pdps?: number[]; // ✅ If this entreprise is an EE, it has PDPs
+  bdts?: number[]; // ✅ If this entreprise is an EE, it has BDTs
+  workers?: number[]; // ✅ Workers employed by this entreprise
+  raisonSociale?: string; // ✅ Legal name of the company
+  numTel?: string; // ✅ SIRET number for identification
 }
