@@ -1,4 +1,4 @@
-import { Box, Card, Checkbox, Select, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
+import { Box, Card, Checkbox, Select, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import worning from "../../assets/wornings/worning.webp";
 import CardContent from "@mui/material/CardContent";
@@ -30,8 +30,8 @@ const ObjectAnsweredComponent = <ITEM extends ContentItem, PARENT extends Parent
     const [openDialog, setOpenDialog] = useState(false);
     const {linkObjectToPdp, unlinkObjectFromPdp} = usePdp();
 
-    
-
+    const [checked, setChecked] = useState(object.answer ? true : false);
+        
   
 
 
@@ -44,25 +44,32 @@ const ObjectAnsweredComponent = <ITEM extends ContentItem, PARENT extends Parent
         setOpenDialog(false);
         onDelete();
     };
+const onCheckChange = (value: boolean) => {
+    setChecked(value); // update local state so Checkbox rerenders
+    console.log("value", parent);
+    const currentArrayofObjects = parent.relations as ObjectAnsweredDTO[];
 
-    const onCheckChange = (value:boolean) => {
-        
-        const currentArrayofObjects = parent.relations as ObjectAnsweredDTO[];
-        
-        saveParent({
-            ...parent,
-             relations: currentArrayofObjects?.map((p:ObjectAnsweredDTO) => {
-                if (p.id === object.id) {
-                    return {
-                        ...p,
-                        answer: value ? 1 : 0,
-                    };
-                }
-                return p;
-            }),
-        });
-        setIsChanged(true);
-    }
+    const newArrayofObjects = currentArrayofObjects?.map((p: ObjectAnsweredDTO) => {
+        if (p.id === object.id) {
+            return {
+                ...p,
+                answer: value,
+            };
+        }
+        return p;
+    });
+
+    console.log("currentArrayofObjects", currentArrayofObjects);
+    console.log("newArrayofObjects", newArrayofObjects);
+
+
+    saveParent({
+        ...parent,
+        relations: newArrayofObjects,
+    });
+
+    setIsChanged(true);
+};
 
     const onDelete = () => {
 
@@ -108,8 +115,8 @@ const ObjectAnsweredComponent = <ITEM extends ContentItem, PARENT extends Parent
 
                     <Typography>{itemData?.title}</Typography>
 
-                    <Checkbox checked={object.answer ? true : false} onChange={e => onCheckChange(e.target.checked)} />
 
+<Checkbox checked={checked} onChange={e => onCheckChange(e.target.checked)} />
 
                 </CardContent>
             </Card>

@@ -37,10 +37,7 @@ function SelectOrCreateObjectAnswered<ITEM extends ContentItem, PARENT extends P
 
         // Determine if an item is already selected/linked
     const alreadySelected = (item: ITEM):boolean => {
-        //ITEM class, Parent, name of the item in parent (ex: "risques"), and name of the item in child (ex: "risque_id")
         const existingRelations = parent.relations as ObjectAnsweredDTO[] || [];
-        console.log("existingRelation", parent.relations);
-
         return existingRelations.some((existingRelation) => {
             return existingRelation.objectId === item.id && existingRelation.objectType === objectType;
         });
@@ -108,6 +105,7 @@ function SelectOrCreateObjectAnswered<ITEM extends ContentItem, PARENT extends P
     const onSumbit = async (item: ITEM) => {
         // Create the item using the appropriate hook
         let response;
+        console.log("updatedParentObject");
 
         switch (objectType) {
             case ObjectAnsweredObjects.RISQUE:
@@ -146,7 +144,7 @@ function SelectOrCreateObjectAnswered<ITEM extends ContentItem, PARENT extends P
            relations: [...existingItems, objectAnswered],
             
         } as PARENT;
-     
+
         saveParent(updatedParentObject);
         setIsChanged(true);
         setOpenCreateItem(false);

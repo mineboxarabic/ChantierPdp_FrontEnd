@@ -16,8 +16,8 @@ import WarningIcon from '@mui/icons-material/Warning'; // For Risques
 import SecurityIcon from '@mui/icons-material/Security'; // For Dispositifs
 
 import { PdpDTO } from '../../../utils/entitiesDTO/PdpDTO';
-import { RisqueDTO } from '../../../utils/entitiesDTO/RisqueDTO';
-import { DispositifDTO } from '../../../utils/entitiesDTO/DispositifDTO';
+import  RisqueDTO  from '../../../utils/entitiesDTO/RisqueDTO';
+import  DispositifDTO  from '../../../utils/entitiesDTO/DispositifDTO';
 import ObjectAnsweredDTO from '../../../utils/pdp/ObjectAnswered';
 import ObjectAnsweredObjects from '../../../utils/ObjectAnsweredObjects';
 import { SectionTitle } from '../../../pages/Home/styles';
@@ -40,10 +40,12 @@ interface PdpTabRisquesDispositifsProps {
     onUpdateRelationField: (relationUniqueKey: string | number, field: keyof ObjectAnsweredDTO, value: any) => void;
     onNavigateBack: () => void;
     onNavigateNext: () => void;
+    saveParent: (updatedPdpData: PdpDTO) => void; // Function to save parent data
 }
 
 const PdpTabRisquesDispositifs: FC<PdpTabRisquesDispositifsProps> = ({
     formData,
+    saveParent,
     errors,
     allRisquesMap,
     allDispositifsMap,
@@ -54,10 +56,12 @@ const PdpTabRisquesDispositifs: FC<PdpTabRisquesDispositifsProps> = ({
     onNavigateNext,
 }) => {
     const getActiveRelations = (type: ObjectAnsweredObjects): ObjectAnsweredDTO[] => {
-        return formData.relations?.filter(r => r.objectType === type && r.answer !== null) ?? [];
+       // return formData.relations?.filter(r => r.objectType === type && r.answer !== null) ?? [];
+            return formData.relations?.filter(r => r.objectType === type && r.answer !== null) ?? [];
+
     };
 
-    const risquesRelations = useMemo(() => getActiveRelations(ObjectAnsweredObjects.RISQUE), [formData.relations]);
+    const risquesRelations = getActiveRelations(ObjectAnsweredObjects.RISQUE);
     const dispositifsRelations = useMemo(() => getActiveRelations(ObjectAnsweredObjects.DISPOSITIF), [formData.relations]);
 
     // Helper to render items in two columns
@@ -71,24 +75,19 @@ const PdpTabRisquesDispositifs: FC<PdpTabRisquesDispositifsProps> = ({
 
         const col1Items: React.ReactNode[] = [];
         const col2Items: React.ReactNode[] = [];
-
         relations.forEach((relation, index) => {
             const itemData = itemMap.get(relation.objectId as number);
+
+            console.log('itemData',relation.objectId)
+
             if (relation.answer !== null && itemData) { // Ensure itemData is found
                 const component = (
                     <ItemComponent
-                        key={relation.id ?? `${objectType}-${relation.objectId}`} // Use real ID if available
+                        key={`${objectType}-${relation.objectId}`} // Use real ID if available
                         object={relation}
                         parent={formData} // Pass PdpDTO as parent
                         itemData={itemData} // Pass actual RisqueDTO or DispositifDTO
-                        saveParent={(updatedPdpData: PdpDTO) => {
-                            // This is tricky. RisqueComponent might try to update the whole PdpDTO.
-                            // It's better if RisqueComponent calls specific update handlers for its relation.
-                            // For now, let's assume onUpdateRelationField is used from within RisqueComponent/ObjectAnsweredComponent
-                            // or these components directly modify the passed 'object' (relation) and a re-render of parent handles it.
-                            // For simplicity, we assume `RisqueComponent` and `ObjectAnsweredComponent`
-                            // directly call `onUpdateRelationField` using the `relation.id` or a composite key.
-                        }}
+                        saveParent={saveParent} // Function to save parent data
                         setIsChanged={() => {}} // Or handle changes if needed
                         objectType={objectType}
                         // Pass onDelete for individual item deletion directly from the component
@@ -105,6 +104,7 @@ const PdpTabRisquesDispositifs: FC<PdpTabRisquesDispositifsProps> = ({
             }
         });
 
+        console.log('col1Items',col1Items)
         return (
             <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>

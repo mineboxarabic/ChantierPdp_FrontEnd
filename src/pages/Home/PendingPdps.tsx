@@ -27,6 +27,8 @@ import usePdp from '../../hooks/usePdp';
 import useEntreprise from '../../hooks/useEntreprise';
 import { PdpDTO } from '../../utils/entitiesDTO/PdpDTO';
 import { getRoute } from '../../Routes';
+import { GridColumnHeaderFilterIconButton } from '@mui/x-data-grid';
+import { hashQueryKeyByOptions } from 'react-query/types/core/utils';
 
 // Interfaces
 interface PendingPdpsProps {
@@ -211,7 +213,7 @@ const PendingPdps: React.FC<PendingPdpsProps> = ({
     };
 
     fetchPdps();
-  }, [providedPdps, providedLoading, providedError, maxItems, getRecentPdps, getAllEntreprises]);
+  }, []);
 
   // Navigation handler
   const handleViewAll = () => {
@@ -227,7 +229,7 @@ const PendingPdps: React.FC<PendingPdpsProps> = ({
   return (
     <CardWrapper>
       <CardHeader>
-        <CardTitle variant="h6" component="h2">
+        <CardTitle variant="h6">
           <AssignmentLateIcon fontSize="small" />
           PDPs en Attente
         </CardTitle>

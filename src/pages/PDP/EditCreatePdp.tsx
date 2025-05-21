@@ -177,6 +177,7 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
 
                 if (isEditMode && currentPdpId) {
                     const pdpData = await getPlanDePrevention(currentPdpId);
+                    console.log("PDP Data:", pdpData);
                     if (pdpData) {
                         setFormData(prev => ({
                             ...initialFormData, ...pdpData,
@@ -276,9 +277,6 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
     }, [tabIndex]);
 
 
-    // --- Dialog & Relation Handlers (Keep your existing logic here) ---
-    // handleOpenDialog, handleCloseDialog, handleCloseNestedModal, addRelation, deleteRelation
-    // These will be passed to PdpTabRisquesDispositifs, PdpTabPermits, PdpTabAnalysesRisques
     const handleOpenDialog = useCallback((type: DialogTypes, dataToEdit: DialogData = null) => { /* ... */
         setDialogType(type);
         setDialogData(null);
@@ -293,9 +291,11 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
     const handleCloseDialog = useCallback(() => { /* ... */
         setOpenDialog(false); setDialogType(''); setDialogData(null); setEditItemData(null);
     }, []);
+
     const handleCloseNestedModal = useCallback(() => { /* ... */
         setOpenNestedModal(false); setEditItemData(null);
     }, []);
+
     const addRelation = useCallback((objectType: ObjectAnsweredObjects, selectedItem: { id?: number }) => { /* ... */
         if (!selectedItem || selectedItem.id === undefined) return;
         setFormData(prev => {
@@ -315,11 +315,6 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
     }, [handleCloseDialog, notifications]);
 
     const deleteRelation = useCallback((relationObjectId: number, relationObjectType: ObjectAnsweredObjects) => {
-    // This function should find the relation by objectId and objectType and mark its answer as null or remove it.
-    // Your original deleteRelation took `relationId` which might be the DB id of the ObjectAnsweredDTO.
-    // If you are filtering by a temporary display ID or by combination of objectId & objectType before save, adapt this.
-    // For simplicity, assuming you identify the relation uniquely to mark for deletion.
-    // This example finds the specific relation to "nullify" its answer.
         setFormData(prev => ({
             ...prev,
             relations: prev.relations?.map(rel =>
@@ -444,6 +439,7 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
                             onUpdateRelationField={updateRelationField}
                             onNavigateBack={handleBack}
                             onNavigateNext={handleNext}
+                                saveParent={setFormData} // Pass saveParent to update formData
                         />
                     </TabPanel>
                     <TabPanel value={tabIndex} index={3}>
@@ -496,20 +492,29 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
                         <DialogContent dividers>
                             {dialogType === 'risques' && (
                                 <SelectOrCreateObjectAnswered<RisqueDTO, PdpDTO>
-                                    open={openDialog} setOpen={setOpenDialog} parent={formData} saveParent={setFormData} setIsChanged={()=>{}}
-                                    objectType={ObjectAnsweredObjects.RISQUE} onAddRelation={addRelation}
+                                    open={openDialog} setOpen={setOpenDialog} parent={formData} saveParent={async(r)=>{
+                                        setFormData(r);
+                                        await getAllRisques();
+                                    
+                                    }} setIsChanged={()=>{}}
+                                    objectType={ObjectAnsweredObjects.RISQUE}
                                 />
                             )}
                             {dialogType === 'dispositifs' && (
                                 <SelectOrCreateObjectAnswered<DispositifDTO, PdpDTO>
-                                    open={openDialog} setOpen={setOpenDialog} parent={formData} saveParent={setFormData} setIsChanged={()=>{}}
-                                    objectType={ObjectAnsweredObjects.DISPOSITIF} onAddRelation={addRelation}
+                                    open={openDialog} setOpen={setOpenDialog} parent={formData} saveParent={async(e)=>{
+                                        
+                                        setFormData(e);
+                                        await getAllDispositifs();
+                                    
+                                    }} setIsChanged={()=>{}}
+                                    objectType={ObjectAnsweredObjects.DISPOSITIF}
                                 />
                             )}
                             {dialogType === 'permits' && (
                                 <SelectOrCreateObjectAnswered<PermitDTO, PdpDTO>
                                      open={openDialog} setOpen={setOpenDialog} parent={formData} saveParent={setFormData} setIsChanged={()=>{}}
-                                     objectType={ObjectAnsweredObjects.PERMIT} onAddRelation={addRelation}
+                                     objectType={ObjectAnsweredObjects.PERMIT}
                                  />
                             )}
                         </DialogContent>

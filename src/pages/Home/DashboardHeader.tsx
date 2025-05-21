@@ -25,6 +25,8 @@ import {
   DateRange as DateRangeIcon,
   PersonOutline as UserIcon
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { getRoute } from '../../Routes';
 
 // Styled components
 const HeaderContainer = styled(Box)(({ theme }) => ({
@@ -87,9 +89,11 @@ const DashboardHeader = () => {
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   
   const [tabValue, setTabValue] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQeuery] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
   
+  const naviate = useNavigate();
+
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
@@ -101,7 +105,11 @@ const DashboardHeader = () => {
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
-  
+  const handleCreateChantier = () => {
+    //Go to create chantier page
+    naviate(getRoute('CREATE_CHANTIER'));
+  }
+
   return (
     <HeaderContainer>
       {/* Title and User Row */}
@@ -204,6 +212,7 @@ const DashboardHeader = () => {
             color="primary"
             startIcon={<AddIcon />}
             disableElevation
+            onClick={handleCreateChantier}
           >
             Créer Chantier
           </ActionButton>

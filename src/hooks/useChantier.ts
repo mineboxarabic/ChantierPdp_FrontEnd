@@ -93,7 +93,7 @@ export const createChantier = async (chantierDTO: ChantierDTO): Promise<ApiRespo
 
 // Function to delete a chantier
 export const deleteChantier = async (id: number): Promise<ApiResponse<boolean>> => {
-    return fetchApi<boolean>(
+    return fetchApi<void>(
         `api/chantier/${id}`,
         "DELETE",
         null,
@@ -173,6 +173,8 @@ const useChantier = () => {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
 
+    const [chantiers, setChantiers] = useState<Map<number, ChantierDTO>>(new Map<number, ChantierDTO>());
+
     const notifications = useNotifications();
 
     const saveChantierHook = useCallback(async (chantierDTO: ChantierDTO, id: number): Promise<ChantierDTO> => {
@@ -218,6 +220,13 @@ const useChantier = () => {
             const result = await getAllChantiers();
             if (result.data) {
                 setResponse(result.data);
+                setChantiers(
+                    new Map<number, ChantierDTO>(
+                        result.data
+                            .filter((chantier) => chantier.id !== undefined)
+                            .map((chantier) => [chantier.id as number, chantier])
+                    )
+                );
                 return result.data;
             }
             throw new Error(result.message || "Failed to get all chantiers");
@@ -369,7 +378,7 @@ const useChantier = () => {
         getLastId: getLastIdHook,
         getRecentChantiers: getRecentChantiersHook,
         existChantier: existChantierHook,
-
+        chantiers,
         toChantier, // Helper for converting from DTO to entity
         toChantierDTO // Helper for converting from entity to DTO
     };

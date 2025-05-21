@@ -34,8 +34,9 @@ import { useNavigate } from 'react-router-dom';
 import useChantier from '../../hooks/useChantier';
 import useLocalisation from '../../hooks/useLocalisation';
 import useEntreprise from '../../hooks/useEntreprise';
-import ChantierDTO from '../../utils/entitiesDTO/ChantierDTO';
+import {ChantierDTO} from '../../utils/entitiesDTO/ChantierDTO';
 import { getRoute } from '../../Routes';
+import { ChantierStatus } from '../../utils/enums/ChantierStatus';
 
 // Interfaces
 interface RecentChantiersProps {
@@ -89,23 +90,33 @@ const ChantierItem = styled(Box)(({ theme }) => ({
   },
 }));
 
-const StatusChip = styled(Chip)<{ status?: string }>(({ theme, status }) => {
-  const statusColors: Record<string, { bg: string, color: string }> = {
-    'Actif': {
+const StatusChip = styled(Chip)<{ status?: ChantierStatus }>(({ theme, status }) => {
+
+
+  const statusColors: Record<ChantierStatus, { bg: string, color: string }> = {
+    'ACTIVE': {
       bg: alpha(theme.palette.success.main, 0.12),
       color: theme.palette.success.dark,
     },
-    'En cours': {
+    'PENDING_BDT': {
       bg: alpha(theme.palette.info.main, 0.12),
       color: theme.palette.info.dark,
     },
-    'Planifié': {
+    'PENDING_PDP': {
       bg: alpha(theme.palette.warning.main, 0.12),
       color: theme.palette.warning.dark,
     },
-    'Terminé': {
-      bg: alpha(theme.palette.grey[500], 0.12),
-      color: theme.palette.text.secondary,
+    'INACTIVE_TODAY': {
+      bg: alpha(theme.palette.error.main, 0.12),
+      color: theme.palette.error.dark,
+    },
+    'COMPLETED': {
+      bg: alpha(theme.palette.primary.main, 0.12),
+      color: theme.palette.primary.dark,
+    },
+    'CANCELED': {
+      bg: alpha(theme.palette.grey[400], 0.12),
+      color: theme.palette.grey[700],
     },
   };
 
@@ -160,39 +171,8 @@ const formatDate = (date: Date | string | undefined): string => {
 };
 
 // Helper function to determine chantier status based on dates
-const getChantierStatus = (chantier: ChantierDTO): string => {
-  const now = new Date();
-  const dateDebut = chantier.dateDebut ? new Date(chantier.dateDebut) : undefined;
-  const dateFin = chantier.dateFin ? new Date(chantier.dateFin) : undefined;
-  
-  if (!dateDebut || !dateFin) return 'Planifié';
-  
-  if (now < dateDebut) return 'Planifié';
-  if (now > dateFin) return 'Terminé';
-  if (now >= dateDebut && now <= dateFin) return 'Actif';
-  
-  return 'En cours';
-};
-
-// Helper function to calculate progress percentage based on dates
-const calculateProgress = (chantier: ChantierDTO): number => {
-  const now = new Date();
-  const dateDebut = chantier.dateDebut ? new Date(chantier.dateDebut) : undefined;
-  const dateFin = chantier.dateFin ? new Date(chantier.dateFin) : undefined;
-  
-  if (!dateDebut || !dateFin) return 0;
-  
-  // If not started yet
-  if (now < dateDebut) return 0;
-  
-  // If already completed
-  if (now > dateFin) return 100;
-  
-  // Calculate progress percentage
-  const totalDuration = dateFin.getTime() - dateDebut.getTime();
-  const elapsedDuration = now.getTime() - dateDebut.getTime();
-  
-  return Math.round((elapsedDuration / totalDuration) * 100);
+const getChantierStatus = (chantier: ChantierDTO): ChantierStatus => {
+  return chantier.status || ChantierStatus.INACTIVE_TODAY;
 };
 
 const RecentChantiers: React.FC<RecentChantiersProps> = ({ 
@@ -215,7 +195,7 @@ const RecentChantiers: React.FC<RecentChantiersProps> = ({
   const [error, setError] = useState<string | null>(providedError || null);
 
   // Hooks
-  const { getRecentChantiers } = useChantier();
+  const { getRecentChantiers,deleteChantier } = useChantier();
   const { localisations, getAllLocalisations } = useLocalisation();
   const { entreprises, getAllEntreprises } = useEntreprise();
 
@@ -258,7 +238,7 @@ const RecentChantiers: React.FC<RecentChantiersProps> = ({
     };
 
     fetchChantiers();
-  }, [providedChantiers, providedLoading, providedError, maxItems, getRecentChantiers, getAllLocalisations, getAllEntreprises]);
+  }, []);
 
   // Menu handlers
   const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>, chantierId: number | undefined) => {
@@ -289,9 +269,14 @@ const RecentChantiers: React.FC<RecentChantiersProps> = ({
     handleMenuClose();
   };
 
-  const handleDeleteChantier = (chantierId: number | undefined) => {
+  const handleDeleteChantier =async (chantierId: number | undefined) => {
     // Implement delete logic or confirmation dialog
     console.log('Delete chantier:', chantierId);
+   
+    await deleteChantier(chantierId as number);
+   
+    setChantiers((prevChantiers) => prevChantiers.filter((chantier) => chantier.id !== chantierId));
+    
     handleMenuClose();
   };
   
@@ -309,7 +294,7 @@ const RecentChantiers: React.FC<RecentChantiersProps> = ({
   return (
     <CardWrapper>
       <CardHeader>
-        <CardTitle variant="h6" component="h2">
+        <CardTitle variant="h6" as="h2">
           <ConstructionIcon fontSize="small" />
           Chantiers Récents
         </CardTitle>
@@ -339,7 +324,6 @@ const RecentChantiers: React.FC<RecentChantiersProps> = ({
           chantiers.map((chantier) => {
             // Calculate status and progress
             const status = getChantierStatus(chantier);
-            const progress = calculateProgress(chantier);
             
             // Get location and enterprise details
             const location = chantier.localisation ? localisations.get(chantier.localisation) : undefined;
@@ -371,21 +355,6 @@ const RecentChantiers: React.FC<RecentChantiersProps> = ({
                         </InfoItem>
                       )}
                     </Box>
-                    
-                    <ProgressWrapper>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={progress} 
-                        sx={{ 
-                          '& .MuiLinearProgress-bar': {
-                            backgroundColor: getProgressColor(progress)
-                          }
-                        }}
-                      />
-                      <Typography variant="caption" fontWeight={600}>
-                        {progress}%
-                      </Typography>
-                    </ProgressWrapper>
                   </Box>
                   
                   <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>

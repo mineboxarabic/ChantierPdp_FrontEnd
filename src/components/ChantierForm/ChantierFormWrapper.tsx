@@ -302,10 +302,8 @@ const ChantierFormWrapper: FC = () => {
         }
     };
     
-    const tabLabels = ['Informations générales', 'Entreprises', 'Équipe', 'Localisation'];
-    if (showDocumentsTab) {
-        tabLabels.push('Documents');
-    }
+    const tabLabels = ['Informations générales', 'Entreprises', 'Équipe', 'Localisation', 'Documents'];
+
 
 
     if (isLoading || loadingChantierHook) {
@@ -388,7 +386,6 @@ const ChantierFormWrapper: FC = () => {
                         allLocalisations={Array.from(localisations.values())} // Pass as array
                     />
                 </TabPanel>
-                {showDocumentsTab && (
                     <TabPanel value={activeTab} index={4}>
                         <ChantierDocumentsManager
                             chantierId={formData.id}
@@ -403,7 +400,7 @@ const ChantierFormWrapper: FC = () => {
                             onTriggerSave={handleSubmit} // Allow document manager to trigger save if needed before navigation
                         />
                     </TabPanel>
-                )}
+                
 
 
                 {errors.submit && <Alert severity="error" sx={{ mt: 2 }}>{errors.submit}</Alert>}

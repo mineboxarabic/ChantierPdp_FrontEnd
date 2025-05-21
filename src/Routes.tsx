@@ -66,6 +66,11 @@ export const ROUTES = {
         element:<ViewPdp />
     }
 ,
+PDP_LIST:{
+    path:"/list/pdps",
+    element: <h1>List Pdps MAKE IT </h1>
+}
+,
     // BDT routes
     BDT_STEPS: {
         path: "/create/bdt/:bdtId/:pageNumber",
@@ -97,7 +102,11 @@ export const ROUTES = {
         path: "/edit/chantier/:id",
         element: <EditChantierPage />
     },
-
+    CHANTIER_LIST: {
+        path: "/list/chantier",
+        element: <h1>Chantier List MAKE IT </h1>
+    }
+,
     // Profile route
     PROFILE: {
         path: "/profile",

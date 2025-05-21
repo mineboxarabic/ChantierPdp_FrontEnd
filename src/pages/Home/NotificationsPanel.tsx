@@ -256,7 +256,6 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
             <NotificationItem 
               key={notification.id}
               priority={notification.priority}
-              component="button"
             >
               <ListItemIcon sx={{ minWidth: 'auto', mr: 2 }}>
                 <NotificationIcon type={notification.type}>

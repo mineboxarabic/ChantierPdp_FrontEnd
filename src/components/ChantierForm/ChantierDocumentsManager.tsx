@@ -49,6 +49,7 @@ interface ChantierDocumentsManagerProps {
     allEntreprisesMap: Map<number, EntrepriseDTO>; // For PDP details
     navigate: (path: string) => void;
     onTriggerSave?: () => Promise<any>; // Optional: To save chantier before navigating
+needPdp?: boolean; // Optional: To indicate if PDP is needed
 }
 
 const ChantierDocumentsManager: FC<ChantierDocumentsManagerProps> = ({
@@ -62,6 +63,7 @@ const ChantierDocumentsManager: FC<ChantierDocumentsManagerProps> = ({
     allEntreprisesMap,
     navigate,
     onTriggerSave,
+    needPdp
 }) => {
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     const [actionToConfirm, setActionToConfirm] = useState<(() => void) | null>(null);
@@ -220,7 +222,7 @@ const ChantierDocumentsManager: FC<ChantierDocumentsManagerProps> = ({
             </Grid>
 
             {/* Plans de Prévention (PDP) Section */}
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={6} display={needPdp ? 'block' : 'none'}>
                 <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                         <Typography variant="subtitle1" component="div" sx={{ display: 'flex', alignItems: 'center' }}>

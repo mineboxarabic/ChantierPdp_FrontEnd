@@ -1,27 +1,30 @@
-// ChantierPdp_FrontEnd/src/hooks/useDashboardActivity.ts
+// Suggested ChantierPdp_FrontEnd/src/hooks/useDashboardActivity.ts
 import { useState, useCallback } from 'react';
 import { useNotifications as useSnackbar } from '@toolpad/core/useNotifications';
-import fetchApi, { ApiResponse } from '../api/fetchApi';
+import fetchApi from '../api/fetchApi'; // Assuming ApiResponse is exported
 import {
   ActivityChartDataPoint,
   BackendMonthlyActivityStatsDTO,
-} from '../utils/entitiesDTO/DashboardDataDTO';
+} from '../utils/entitiesDTO/DashboardDataDTO'; //
 
-// Helper to transform backend DTO to chart data point
 const transformToActivityChartDataPoint = (dto: BackendMonthlyActivityStatsDTO): ActivityChartDataPoint => {
   let monthDisplay = dto.month; // Default to YYYY-MM
   try {
-      monthDisplay = new Date(dto.month + '-02').toLocaleDateString('fr-FR', { month: 'short' });
+    // Ensures the date is treated as UTC to avoid off-by-one day issues with timezones
+    const year = parseInt(dto.month.substring(0, 4), 10);
+    const month = parseInt(dto.month.substring(5, 7), 10);
+    monthDisplay = new Date(Date.UTC(year, month - 1, 2)).toLocaleDateString('fr-FR', { month: 'short' });
   } catch (e) {
     console.warn(`Could not parse month: ${dto.month}`, e);
   }
 
   return {
     month: monthDisplay,
-    chantiers: dto.chantiersActiveDuringMonth || dto.chantiersCreated || 0,
-    pdps: dto.chantiersWithPdpPending || 0,
-    risques: 0, // Placeholder: MonthlyActivityStatsDTO doesn't directly provide this.
-                // Consider enhancing backend DTO or using another data source.
+    // Using chantiersActiveDuringMonth as primary source for active chantiers
+    chantiers: dto.chantiersActiveDuringMonth || 0, //
+    pdps: dto.chantiersWithPdpPending || 0, //
+    // Risques: This needs clarification. Assuming 0 for now or backend enhancement.
+    risques: 0, // Placeholder - Requires backend DTO enhancement or alternative data source
   };
 };
 
@@ -29,9 +32,7 @@ interface UseDashboardActivityReturn {
   activityData: ActivityChartDataPoint[];
   isLoading: boolean;
   error: string | null;
-  fetchActivityForMonths: (
-    months: string[] // Expects "YYYY-MM" format
-  ) => Promise<ActivityChartDataPoint[] | undefined>;
+  fetchActivityForMonths: (months: string[]) => Promise<ActivityChartDataPoint[] | undefined>; // Expects "YYYY-MM"
 }
 
 const useDashboardActivity = (): UseDashboardActivityReturn => {
@@ -49,49 +50,50 @@ const useDashboardActivity = (): UseDashboardActivityReturn => {
       setIsLoading(true);
       setError(null);
       try {
-        // Fetch data for each month in parallel
         const monthPromises = months.map(monthStr =>
-          fetchApi<BackendMonthlyActivityStatsDTO>(
-            `/api/dashboard/monthly-stats?month=${monthStr}`,
+          fetchApi<BackendMonthlyActivityStatsDTO>( // Ensure fetchApi is correctly typed or expect 'any'
+            `/api/dashboard/monthly-stats?month=${monthStr}`, // Endpoint from DashboardController.java
             'GET'
           )
         );
         const responses = await Promise.all(monthPromises);
 
-        const transformed = responses
+        const transformedData = responses
           .map((response, index) => {
             if (response.data) {
               return transformToActivityChartDataPoint(response.data);
             }
-            // If a specific month fetch fails or returns no data, create a default point
-            // This ensures the chart still has an entry for each requested month.
-            console.warn(`No data for month: ${months[index]}`, response);
+            // Fallback for failed requests or no data, to maintain chart structure
+            console.warn(`No data or error for month: ${months[index]}`, response);
             return transformToActivityChartDataPoint({
-                month: months[index], // Use the input month string directly
-                chantiersCreated: 0, chantiersCompleted: 0, chantiersWithPdpPending: 0,
-                chantiersWithBdtPending: 0, documentsSigned: 0, actionsRequiredOnDocuments: 0,
-                chantiersActiveDuringMonth: 0, documentsCurrentlyNeedingAction: 0,
+              month: months[index], // Use the input month string
+              chantiersCreated: 0,
+              chantiersCompleted: 0,
+              chantiersWithPdpPending: 0,
+              chantiersWithBdtPending: 0,
+              documentsSigned: 0,
+              actionsRequiredOnDocuments: 0,
+              chantiersActiveDuringMonth: 0,
+              documentsCurrentlyNeedingAction: 0,
             } as BackendMonthlyActivityStatsDTO);
           })
-          .filter(point => point !== null) as ActivityChartDataPoint[]; // Filter out nulls if any transform fails badly
+          .filter(point => point !== null) as ActivityChartDataPoint[];
 
-        // Sort data by month before setting state, as Promise.all doesn't guarantee order of resolution
-        // though the mapping from 'months' array should maintain it if responses are processed sequentially.
-        // Explicit sort is safer.
-        transformed.sort((a, b) => {
-            // Find original "YYYY-MM" to sort correctly
-            const originalMonthA = months.find(m => new Date(m + '-02').toLocaleDateString('fr-FR', { month: 'short' }) === a.month || m === a.month);
-            const originalMonthB = months.find(m => new Date(m + '-02').toLocaleDateString('fr-FR', { month: 'short' }) === b.month || m === b.month);
-            if (originalMonthA && originalMonthB) {
-                return new Date(originalMonthA + '-02').getTime() - new Date(originalMonthB + '-02').getTime();
-            }
-            return 0;
+        // Sort data by the original YYYY-MM string to ensure correct chronological order
+        transformedData.sort((a, b) => {
+            // Find original "YYYY-MM" to sort correctly by finding the original month string
+            // This is a bit convoluted due to the transformation of 'month' to 'short' name.
+            // A more robust way would be to sort based on the original 'YYYY-MM' before transformation,
+            // or to convert back to a comparable date object.
+            const originalMonthA = months.find(m => transformToActivityChartDataPoint({month: m} as BackendMonthlyActivityStatsDTO).month === a.month || m === a.month ) || a.month;
+            const originalMonthB = months.find(m => transformToActivityChartDataPoint({month: m} as BackendMonthlyActivityStatsDTO).month === b.month || m === b.month) || b.month;
+            return new Date(originalMonthA + '-02').getTime() - new Date(originalMonthB + '-02').getTime();
         });
 
-        setActivityData(transformed);
-        return transformed;
+        setActivityData(transformedData);
+        return transformedData;
       } catch (err: any) {
-        const errorMessage = err.message || "Erreur de chargement des données d'activité.";
+        const errorMessage = err?.response?.data?.message || err.message || "Erreur de chargement des données d'activité.";
         setError(errorMessage);
         snackbar.show(errorMessage, { severity: 'error' });
         return undefined;
@@ -99,7 +101,7 @@ const useDashboardActivity = (): UseDashboardActivityReturn => {
         setIsLoading(false);
       }
     },
-    [snackbar] // useCallback dependency
+    [snackbar]
   );
 
   return {

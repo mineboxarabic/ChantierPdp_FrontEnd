@@ -1,257 +1,262 @@
-// src/components/dashboard/Dashboard.tsx
-import React, { useEffect, useState } from 'react';
-import { Container, Grid, Box, Typography, CircularProgress, useMediaQuery } from '@mui/material';
-import { styled, useTheme } from '@mui/material/styles';
+// src/pages/Home/Dashboard.tsx
+import React, { useEffect, useState, useCallback } from 'react'; // Added useCallback
+import { Container, Grid, Box, Typography, CircularProgress, Alert } from '@mui/material'; // Removed useMediaQuery, useTheme from here as theme is used below
+import { styled, useTheme } from '@mui/material/styles'; // useTheme is here
 
 // Import dashboard components
 import DashboardHeader from './DashboardHeader';
 import StatCards from './StatCards';
 import RecentChantiers from './RecentChantiers';
 import PendingPdps from './PendingPdps';
-import RiskOverview from './RiskOverview';
-import NotificationsPanel from './NotificationsPanel';
+// import NotificationsPanel from './NotificationsPanel';
 import ActivityChart from './ActivityChart';
-import WorkerDistribution from './WorkerDistribution';
 
-// Import hooks for data fetching
+// --- NEW: Import our shiny hooks ---
+import useDashboardActivity from '../../hooks/useDashboardActivity';
+import useDashboardNotifications from '../../hooks/useDashboardNotifications';
+
+// --- NEW: Import NotificationSidebar (We'll create this component next) ---
+// import NotificationSidebar from './NotificationSidebar'; // Placeholder for now
+
+// Import other hooks for data
 import useChantier from '../../hooks/useChantier';
 import usePdp from '../../hooks/usePdp';
 import useRisque from '../../hooks/useRisque';
-import useWoker from '../../hooks/useWoker';
+import useWoker from '../../hooks/useWoker'; // Typo: should be useWorker
 
 // Type definitions
-import {ChantierDTO} from '../../utils/entitiesDTO/ChantierDTO.ts';
+import { ChantierDTO } from '../../utils/entitiesDTO/ChantierDTO';
 import { PdpDTO } from '../../utils/entitiesDTO/PdpDTO';
 import RisqueDTO from '../../utils/entitiesDTO/RisqueDTO';
-import {WorkerDTO} from '../../utils/entitiesDTO/WorkerDTO';
+import { DocumentStatus } from '../../utils/enums/DocumentStatus';
+import { ChantierStatus } from '../../utils/enums/ChantierStatus';
+import DashboardNotificationCenter from './DashboardNotificationCenter';
+// import { WorkerDTO } from '../../utils/entitiesDTO/WorkerDTO'; // Not directly used in this component's state
+// import { ActivityChartDataPoint } from '../../utils/entitiesDTO/DashboardDataDTO'; // Handled by useDashboardActivity
+// import { DashboardNotification } from '../../utils/entitiesDTO/NotificationDTO'; // Handled by useDashboardNotifications
 
-// Interfaces for component props and state
-interface DashboardData {
-  stats: {
-    activeChantiersCount: number;
-    pendingPdpsCount: number;
-    highRisksCount: number;
-    assignedWorkersCount: number;
-  };
-  recentChantiers: ChantierDTO[];
-  pendingPdps: PdpDTO[];
-  keyRisks: {
-    id: number;
-    title: string;
-    level: 'Élevé' | 'Moyen' | 'Faible';
-    chantier: string;
-    impacts: string[];
-    progress: number;
-  }[];
-  notifications: {
-    id: number;
-    type: 'inspection' | 'worker' | 'risk' | 'event' | 'task';
-    message: string;
-    date: string;
-    priority: 'high' | 'medium' | 'low';
-  }[];
-  activityData: {
-    month: string;
-    chantiers: number;
-    pdps: number;
-    risques: number;
-  }[];
-  workerDistribution: {
-    name: string;
-    workers: number;
-  }[];
-}
 
 // Styled container for the dashboard
 const DashboardContainer = styled(Container)(({ theme }) => ({
   padding: theme.spacing(4),
-  backgroundColor: theme.palette.mode === 'light' 
-    ? theme.palette.grey[50] 
+  backgroundColor: theme.palette.mode === 'light'
+    ? theme.palette.grey[50]
     : theme.palette.background.default,
   borderRadius: theme.shape.borderRadius * 2,
   minHeight: '90vh',
+  position: 'relative',
 }));
+
+interface DashboardStats {
+  activeChantiersCount: number;
+  pendingPdpsCount: number;
+  highRisksCount: number;
+  assignedWorkersCount: number;
+}
 
 const Dashboard: React.FC = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-  
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
 
-  // Get hooks for data fetching
+  const [statsData, setStatsData] = useState<DashboardStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState<boolean>(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
+
+  const [recentChantiersData, setRecentChantiersData] = useState<ChantierDTO[]>([]);
+  const [recentChantiersLoading, setRecentChantiersLoading] = useState<boolean>(true);
+  const [recentChantiersError, setRecentChantiersError] = useState<string | null>(null);
+
+  const [pendingPdpsData, setPendingPdpsData] = useState<PdpDTO[]>([]);
+  const [pendingPdpsLoading, setPendingPdpsLoading] = useState<boolean>(true);
+  const [pendingPdpsError, setPendingPdpsError] = useState<string | null>(null);
+
+
+  const [workerDistributionData, setWorkerDistributionData] = useState<any[]>([]); // Define proper type later
+  const [workerDistributionLoading, setWorkerDistributionLoading] = useState<boolean>(true);
+  const [workerDistributionError, setWorkerDistributionError] = useState<string | null>(null);
+
+  const {
+    activityData,
+    isLoading: activityLoading,
+    error: activityError,
+    fetchActivityForMonths,
+  } = useDashboardActivity();
+
+  const {
+    notifications,
+    unreadCount,
+    isLoading: notificationsLoading,
+    error: notificationsError,
+    fetchNotifications,
+    refreshUnreadCount,
+  } = useDashboardNotifications();
+
   const { getRecentChantiers, getAllChantiers } = useChantier();
   const { getRecentPdps, getAllPDPs } = usePdp();
-  const { getAllRisques, risques } = useRisque();
-  const { getAllWorkers, getSelectedWorkersForChantier } = useWoker();
+  const { getAllRisques, risques: risquesMap } = useRisque(); // Assuming risquesMap is exposed for direct use after fetch
+  const { getAllWorkers } = useWoker(); // Typo: useWorker
 
-  // Load data
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      setLoading(true);
+    const fetchAllDashboardData = async () => {
+      const lastSixMonths = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      }).reverse();
+      fetchActivityForMonths(lastSixMonths);
+      fetchNotifications('unread', 0, 10);
+      refreshUnreadCount();
+
       try {
-        // Fetch all data in parallel
-        const [chantiers, pdps, risquesData, workers] = await Promise.all([
-          getRecentChantiers(),
-          getRecentPdps(),
-          getAllRisques(),
+        setStatsLoading(true);
+        const [chantiersList, pdpsList, fetchedRisquesForStats, workersList] = await Promise.all([
+          getAllChantiers(),
+          getAllPDPs(),
+          getAllRisques(), // Assuming this returns RisqueDTO[] or populates a map accessible via the hook
           getAllWorkers()
         ]);
+        
 
-        // Process the data
-        // 1. Get active chantiers count (those not yet finished)
-        const activeChantiers = chantiers.filter(chantier => {
-          const dateFin = chantier.dateFin ? new Date(chantier.dateFin) : null;
-          return dateFin && dateFin > new Date();
+        const allRisksArrayForStats: RisqueDTO[] = fetchedRisquesForStats;
+
+
+        const activeChantiers = chantiersList.filter(c => c.status !== 'COMPLETED' && c.status !== ChantierStatus.ACTIVE);
+        
+        // Corrected highRisksCount calculation
+        const highRiskItemsCount = allRisksArrayForStats.filter(r => r.travailleDangereux).length;
+
+        setStatsData({
+          activeChantiersCount: activeChantiers.length,
+          pendingPdpsCount: pdpsList.filter(p => p.status === DocumentStatus.NEEDS_ACTION).length,
+          highRisksCount: highRiskItemsCount, // Use the corrected count
+          assignedWorkersCount: workersList.length,
         });
 
-        // 2. Get pending PDPs (simplified - in real world, you'd check status)
-        const pendingPdps = pdps.slice(0, 5); // Just take first 5 for demo
-
-        // 3. Get high risk items - here we assume items with travailleDangereux=true are high risk
-        const highRiskItems = Array.from(risques.values())
-          .filter(risque => risque.travailleDangereux)
-          .slice(0, 3);  // Limit to 3 for demo
-
-        // Create formatted risk items
-        const keyRisks = highRiskItems.map((risque, index) => {
-          // Randomly assign to a chantier for demo
-          const randomChantier = chantiers[Math.floor(Math.random() * chantiers.length)];
-          return {
-            id: risque.id || index,
-            title: risque.title || `Risque ${index + 1}`,
-            level: 'Élevé' as const,  // All are high risk in this example
-            chantier: randomChantier?.nom || 'Chantier inconnu',
-            impacts: ['Chute', 'Blessure grave'], // Example impacts
-            progress: Math.floor(Math.random() * 100)  // Random progress for demo
-          };
-        });
-
-        // 4. Create activity data (in a real app, this would be from actual analytics)
-        const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai'];
-        const activityData = months.map(month => ({
-          month,
-          chantiers: Math.floor(Math.random() * 7) + 2,
-          pdps: Math.floor(Math.random() * 6) + 1,
-          risques: Math.floor(Math.random() * 8) + 1
-        }));
-
-        // 5. Worker distribution
-        const workerDistribution = chantiers.slice(0, 3).map(chantier => ({
-          name: chantier.nom || `Chantier ${chantier.id}`,
-          workers: chantier.workers?.length || Math.floor(Math.random() * 10) + 1  // Use real data if available, else mock
-        }));
-
-        // 6. Mock notifications (in a real app, these would come from your notification system)
-        const notifications = [
-          {
-            id: 401,
-            type: 'inspection' as const,
-            message: 'Inspection requise pour Chantier Alpha',
-            date: 'Demain',
-            priority: 'high' as const
-          },
-          {
-            id: 402,
-            type: 'worker' as const,
-            message: 'Nouveau travailleur ajouté: J. Dupont',
-            date: 'Aujourd\'hui',
-            priority: 'medium' as const
-          },
-          {
-            id: 403,
-            type: 'risk' as const,
-            message: 'Nouveau risque identifié sur Site Bêta',
-            date: 'Hier',
-            priority: 'high' as const
-          }
-        ];
-
-        // Set all the dashboard data
-        setDashboardData({
-          stats: {
-            activeChantiersCount: activeChantiers.length,
-            pendingPdpsCount: pendingPdps.length,
-            highRisksCount: highRiskItems.length,
-            assignedWorkersCount: workers.length
-          },
-          recentChantiers: chantiers.slice(0, 5),
-          pendingPdps,
-          keyRisks,
-          notifications,
-          activityData,
-          workerDistribution
-        });
-
-        setError(null);
+        setStatsError(null);
       } catch (err) {
-        console.error("Error fetching dashboard data:", err);
-        setError("Une erreur est survenue lors du chargement des données");
+        console.error("Error fetching stats data:", err);
+        setStatsError("Erreur chargement stats");
       } finally {
-        setLoading(false);
+        setStatsLoading(false);
+      }
+
+      try {
+        setRecentChantiersLoading(true);
+        const recentChantiers = await getRecentChantiers();
+        setRecentChantiersData(recentChantiers);
+        setRecentChantiersError(null);
+      } catch (err) {
+        console.error("Error fetching recent chantiers:", err);
+        setRecentChantiersError("Erreur chargement chantiers récents");
+      } finally {
+        setRecentChantiersLoading(false);
+      }
+
+      try {
+        setPendingPdpsLoading(true);
+        const pending = await getRecentPdps();
+        setPendingPdpsData(pending);
+        setPendingPdpsError(null);
+      } catch (err) {
+        console.error("Error fetching pending PDPs:", err);
+        setPendingPdpsError("Erreur chargement PDPs en attente");
+      } finally {
+        setPendingPdpsLoading(false);
+      }
+
+
+
+      try {
+        setWorkerDistributionLoading(true);
+        const chantiersForDist = await getRecentChantiers(); // Use already fetched chantiers if possible
+        setWorkerDistributionData(chantiersForDist.map(chantier => ({
+          name: chantier.nom || `Chantier ${chantier.id}`,
+        })));
+        setWorkerDistributionError(null);
+      } catch (err) {
+        console.error("Error fetching worker distribution:", err);
+        setWorkerDistributionError("Erreur chargement distribution employés");
+      } finally {
+        setWorkerDistributionLoading(false);
       }
     };
-    
-    fetchDashboardData();
-  }, []);
 
-  if (loading) {
+    fetchAllDashboardData();
+  }, [ 
+    ]);
+
+  const pageLoading = statsLoading || recentChantiersLoading || pendingPdpsLoading || activityLoading || notificationsLoading || workerDistributionLoading;
+  const overallError = statsError || recentChantiersError || pendingPdpsError || activityError || notificationsError || workerDistributionError;
+
+  if (pageLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
         <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Chargement du tableau de bord...</Typography>
       </Box>
     );
   }
 
-  if (error) {
+  if (overallError && !pageLoading) {
     return (
-      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-        <Typography color="error">Erreur de chargement: {error}</Typography>
-      </Container>
+      <DashboardContainer maxWidth="xl" sx={{ textAlign: 'center', mt: 4 }}>
+        <Alert severity="error" sx={{ mb: 2, textAlign: 'left' }}>
+          Une ou plusieurs erreurs sont survenues lors du chargement des données du tableau de bord:
+          {statsError && <Typography variant="body2">- Stats: {statsError}</Typography>}
+          {recentChantiersError && <Typography variant="body2">- Chantiers Récents: {recentChantiersError}</Typography>}
+          {pendingPdpsError && <Typography variant="body2">- PDPs en Attente: {pendingPdpsError}</Typography>}
+          {activityError && <Typography variant="body2">- Activité: {activityError}</Typography>}
+          {notificationsError && <Typography variant="body2">- Notifications: {notificationsError}</Typography>}
+          {workerDistributionError && <Typography variant="body2">- Distribution Employés: {workerDistributionError}</Typography>}
+        </Alert>
+        <Typography>Veuillez réessayer plus tard ou contacter le support.</Typography>
+      </DashboardContainer>
     );
   }
 
   return (
     <DashboardContainer maxWidth="xl">
       <DashboardHeader />
-      
       <Grid container spacing={3}>
-        {/* Statistics Cards */}
         <Grid item xs={12}>
-          <StatCards stats={dashboardData?.stats} />
+          {statsData && !statsLoading ? <StatCards stats={statsData} /> : statsLoading ? <CircularProgress size={20} /> : null }
         </Grid>
-        
-        {/* Main Content - Left Column */}
+
         <Grid item xs={12} lg={8}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
-              <RecentChantiers chantiers={dashboardData?.recentChantiers} />
+              { !recentChantiersLoading ? (
+                <RecentChantiers chantiers={recentChantiersData} isLoading={recentChantiersLoading} error={recentChantiersError} />
+              ) : <CircularProgress size={20} />}
             </Grid>
             <Grid item xs={12}>
-              <ActivityChart data={dashboardData?.activityData} />
+              { !activityLoading ? (
+                <ActivityChart data={activityData} isLoading={activityLoading} error={activityError} />
+              ) : <CircularProgress size={20} />}
+            </Grid>
+            <Grid item xs={12}>
+              { !pendingPdpsLoading ? (
+                <PendingPdps pdps={pendingPdpsData} isLoading={pendingPdpsLoading} error={pendingPdpsError} />
+              ) : <CircularProgress size={20} />}
             </Grid>
           </Grid>
         </Grid>
-        
-        {/* Right Column - Sidebar */}
-        <Grid item xs={12} lg={4}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <PendingPdps pdps={dashboardData?.pendingPdps} />
-            </Grid>
-            <Grid item xs={12}>
-              <RiskOverview risks={dashboardData?.keyRisks} />
-            </Grid>
-            <Grid item xs={12}>
-              <NotificationsPanel notifications={dashboardData?.notifications} />
-            </Grid>
-            <Grid item xs={12}>
-              <WorkerDistribution data={dashboardData?.workerDistribution} />
-            </Grid>
-          </Grid>
-        </Grid>
+
+
+
+      <Grid item xs={12} lg={4}>
+  <Grid container spacing={3} direction="column">
+    <Grid item xs={12} sx={{ height: '100%' /* Ensure grid item can grow */ }}>
+       {/* You might not need the notificationsLoading check from Dashboard.tsx here anymore,
+           as DashboardNotificationCenter handles its own loading state */}
+      <DashboardNotificationCenter />
+    </Grid>
+    {/* You might want to add other panels for this column below the Notification Center */}
+    {/* For example, if NotificationsPanel.tsx also had Quick Actions,
+        you could create a separate QuickActionsPanel component and place it here */}
+  </Grid>
+</Grid>
+
+
       </Grid>
     </DashboardContainer>
   );

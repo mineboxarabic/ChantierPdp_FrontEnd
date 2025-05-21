@@ -37,10 +37,7 @@ const CreatePdpPage: React.FC = () => {
                 Ce PDP sera associé au chantier ID: {numericChantierId}.
             </Typography>
             
-            {/* Pass chantierId as a prop to EditCreatePdp.
-                EditCreatePdp should use this prop when it's in "create" mode.
-                It should also handle its own internal state, steps, and API calls for creation.
-            */}
+            
             <EditCreatePdp chantierIdForCreation={numericChantierId} />
         </Container>
     );
