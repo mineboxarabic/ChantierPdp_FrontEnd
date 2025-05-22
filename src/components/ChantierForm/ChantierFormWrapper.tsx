@@ -398,6 +398,7 @@ const ChantierFormWrapper: FC = () => {
                             allEntreprisesMap={entreprises}
                             navigate={navigate}
                             onTriggerSave={handleSubmit} // Allow document manager to trigger save if needed before navigation
+                            needPdp={showDocumentsTab}
                         />
                     </TabPanel>
                 

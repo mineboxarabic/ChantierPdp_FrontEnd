@@ -301,6 +301,28 @@ export const getObjectAnswereds = async (pdpId:number, type: ObjectAnsweredObjec
     );
 };
 
+export const getRisqueswithoutPermits = async (pdpId:number): Promise<ApiResponse<ObjectAnsweredDTO[]>> => {
+    return fetchApi<ObjectAnsweredDTO[]>(
+        `api/pdp/${pdpId}/risques-without-permits`,
+        'GET',
+        null,
+        [
+            {
+                status: 404,
+                message: 'Error pdps not found',
+            }
+
+            ,
+            
+            {
+                status: -1,
+                message: 'Error while getting pdps',
+            }
+        ]
+    );
+}
+
+
 // React hook that uses the API functions
 const usePdp = () => {
     const [response, setResponse] = useState<PdpResponse | null>(null);
@@ -399,19 +421,12 @@ const usePdp = () => {
         );
     };
 
-    // const unlinkObjectFromPdpHook = async (objectId: number, pdpId: number, type: ObjectAnsweredObjects): Promise<ObjectAnswered> => {
-    //     return executeApiCall(
-    //         () => unlinkObjectFromPdp(objectId, pdpId, type),
-    //         "Error while unlinking object from PDP"
-    //     );
-    // };
-
-    // const linkObjectToPdpHook = async (objectId: number, pdpId: number, type: ObjectAnsweredObjects): Promise<ObjectAnswered> => {
-    //     return executeApiCall(
-    //         () => linkObjectToPdp(objectId, pdpId, type),
-    //         "Error while linking object to PDP"
-    //     );
-    // };
+    const getRisqueswithoutPermitsHook = async (pdpId:number): Promise<ObjectAnsweredDTO[]> => {
+        return executeApiCall(
+            () => getRisqueswithoutPermits(pdpId),
+            "Error while getting risques without permits"
+        );
+    }
 
 
     const unlinkObjectFromPdpHook = async (pdpId: number, objectId: number, type: ObjectAnsweredObjects): Promise<ObjectAnsweredDTO> => {
@@ -481,6 +496,7 @@ const usePdp = () => {
         
         existPdp: existPdpHook,
         getObjectAnswered: getObjectAnsweredHook,
+        getRisqueswithoutPermits: getRisqueswithoutPermitsHook,
     };
 };
 

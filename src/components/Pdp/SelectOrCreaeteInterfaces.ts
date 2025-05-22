@@ -15,4 +15,6 @@ export interface SelectOrCreateObjectAnsweredProps<ITEM,PARENT extends ParentOfR
 
     setIsChanged: (isChanged: boolean) => void;
     objectType: ObjectAnsweredObjects;
+
+    addRelation?: (objectType: ObjectAnsweredObjects, selectedItem: ITEM) => void;
 }

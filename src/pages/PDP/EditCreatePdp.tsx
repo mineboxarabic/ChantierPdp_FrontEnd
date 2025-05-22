@@ -9,7 +9,7 @@ import {
     Dialog, // Keep Dialogs here if they are complex and shared across tabs
     DialogActions,
     DialogContent,
-    DialogTitle,
+    DialogTitle, IconButton,
     Modal, // Keep Modal for AnalyseDeRisqueForm here
     Paper,
     Tab,
@@ -62,6 +62,10 @@ import CreateEditAnalyseDeRisqueForm from "../../components/CreateAnalyseDeRisqu
 import { DashboardCard, CardHeader } from '../../pages/Home/styles';
 import { AccessTime, Shield, Verified, Warning } from '@mui/icons-material';
 import { DocumentStatus } from '../../utils/enums/DocumentStatus.ts';
+import CloseIcon from "@mui/icons-material/Close";
+import PermiTypes from "../../utils/PermiTypes.ts";
+import { set } from 'date-fns';
+import RequiredPermitModal from './tabs/RequiredPermitModal.tsx';
 
 
 dayjs.locale('fr'); // Set dayjs locale globally here or in your main App.tsx
@@ -133,6 +137,11 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
     const [editItemData, setEditItemData] = useState<AnalyseDeRisqueDTO | null>(null);
     const [openNestedModal, setOpenNestedModal] = useState<boolean>(false);
 
+    const [showPermitPdfModal, setShowPermitPdfModal] = useState(false);
+    const [permitPdfData, setPermitPdfData] = useState<string | null>(null);
+    const [permitTitle, setPermitTitle] = useState<string>('');
+
+
     const initialFormData: PdpDTO = useMemo(() => ({
         // ... same as your existing initialFormData, ensuring `chantier` is set ...
         id: undefined,
@@ -157,12 +166,12 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     // --- Custom Hooks for Data ---
-    const { getPlanDePrevention, createPdp, savePdp } = usePdp();
+    const { getPlanDePrevention, createPdp, savePdp,getRisqueswithoutPermits } = usePdp();
     const { getAllEntreprises, entreprises } = useEntreprise(); // Map of entreprises
     const { getAllRisques, risques: allRisquesMap } = useRisque(); // Map of risques
     const { getAllPermits, permits: allPermitsMap } = usePermit(); // Map of permits
     const { getAllDispositifs, dispositifs: allDispositifsMap } = useDispositif(); // Map of dispositifs
-    const { getAllAnalyses, analyses: allAnalysesMap, createAnalyseDeRisque, saveAnalyseDeRisque } = useAnalyseRisque(); // Map of analyses
+    const { getAllAnalyses, analyses: allAnalysesMap, createAnalyse, updateAnalyse } = useAnalyseRisque(); // Map of analyses
 
     // --- Data Fetching (Simplified, original logic was good) ---
     useEffect(() => {
@@ -296,24 +305,54 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
         setOpenNestedModal(false); setEditItemData(null);
     }, []);
 
-    const addRelation = useCallback((objectType: ObjectAnsweredObjects, selectedItem: { id?: number }) => { /* ... */
-        if (!selectedItem || selectedItem.id === undefined) return;
-        setFormData(prev => {
-            const exists = prev.relations?.some(rel => rel.objectId === selectedItem.id && rel.objectType === objectType);
-            if (exists) {
-                notifications.show("Cet élément est déjà ajouté.", { severity: "info" }); return prev;
-            }
-            const newRelation: ObjectAnsweredDTO = {
-                objectId: selectedItem.id as number, objectType: objectType, answer: true,
-                ee: objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE ? false : undefined,
-                eu: objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE ? false : undefined,
-            };
-            return { ...prev, relations: [...(prev.relations || []), newRelation] };
-        });
-        handleCloseDialog();
-        notifications.show("Élément ajouté.", { severity: "success", autoHideDuration: 1500 });
-    }, [handleCloseDialog, notifications]);
 
+
+    const addRelation = async (objectType: ObjectAnsweredObjects, selectedItem: { id?: number; travailleDangereux?: boolean; title?: string; }) => {
+        if (!selectedItem || selectedItem.id === undefined) return;
+        console.log("Adding relation:", objectType, selectedItem);
+
+
+        const newRelation:ObjectAnsweredDTO = {
+            objectId: selectedItem.id,
+            objectType: objectType,
+            answer: true, 
+            }
+
+            const existingRelations = formData.relations || [];
+
+        setFormData(prev => ({
+            ...prev,
+            relations: [...existingRelations, newRelation]
+        }));
+
+        notifications.show("Élément ajouté.", { severity: "success", autoHideDuration: 1500 });
+        handleCloseDialog(); // Close the selection dialog
+
+
+
+        if (objectType === ObjectAnsweredObjects.RISQUE) {
+            const risqueDetails = allRisquesMap.get(selectedItem.id); // Get full details from the map
+            if (risqueDetails && risqueDetails.travailleDangereux) {
+                notifications.show(`Le risque "${risqueDetails.title}" est un travail dangereux. Un permis est requis.`, { severity: 'warning', autoHideDuration: 5000 });
+
+                const typeDePermisRequis = risqueDetails.permitType;
+                
+                let targetPermit: PermitDTO | undefined = Array.from(allPermitsMap.values()).find(p => p.type === typeDePermisRequis);
+
+                if (!targetPermit) {
+                    targetPermit = Array.from(allPermitsMap.values()).find(p => p.title?.toLowerCase().includes("travail dangereux"));
+                }
+
+                if (targetPermit && targetPermit.pdfData) {
+                    setPermitPdfData(targetPermit.pdfData);
+                    setPermitTitle(targetPermit.title || "Permis de Travail Dangereux");
+                    setShowPermitPdfModal(true);
+                } else {
+                    notifications.show("Le PDF du permis pour travail dangereux n'a pas été trouvé.", { severity: 'error' });
+                }
+            }
+        }
+    }
     const deleteRelation = useCallback((relationObjectId: number, relationObjectType: ObjectAnsweredObjects) => {
         setFormData(prev => ({
             ...prev,
@@ -493,11 +532,11 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
                             {dialogType === 'risques' && (
                                 <SelectOrCreateObjectAnswered<RisqueDTO, PdpDTO>
                                     open={openDialog} setOpen={setOpenDialog} parent={formData} saveParent={async(r)=>{
-                                        setFormData(r);
+                                      //  setFormData(r);
                                         await getAllRisques();
-                                    
                                     }} setIsChanged={()=>{}}
                                     objectType={ObjectAnsweredObjects.RISQUE}
+                                    addRelation={addRelation} // Pass addRelation
                                 />
                             )}
                             {dialogType === 'dispositifs' && (
@@ -572,6 +611,20 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
                      </Modal>
                 </DashboardCard>
             </Box>
+
+                                  <RequiredPermitModal
+    open={showRequiredPermitModal}
+    onClose={() => setShowRequiredPermitModal(false)}
+    permitData={requiredPermitData}
+    risque={currentRisque}
+    neededPermits={neededPermits}
+    showPdfPreview={true}
+    onDownload={() => {
+        // Optional custom download logic if needed
+        // For example, you might want to log or track downloads
+        notifications.show("Téléchargement du permis en cours...", { severity: "info" });
+    }}
+/>
         </LocalizationProvider>
     );
 };

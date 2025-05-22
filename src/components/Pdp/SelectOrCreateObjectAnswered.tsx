@@ -30,7 +30,7 @@ export interface LinkableHook<T extends ContentItem> {
 
 function SelectOrCreateObjectAnswered<ITEM extends ContentItem, PARENT extends ParentOfRelations>(
     {
-        open, setOpen, parent, saveParent, setIsChanged, objectType
+        open, setOpen, parent, saveParent, setIsChanged, objectType, addRelation
     }: SelectOrCreateObjectAnsweredProps<ITEM, PARENT>
 ) {
     const [openCreateItem, setOpenCreateItem] = useState(false);
@@ -145,7 +145,11 @@ function SelectOrCreateObjectAnswered<ITEM extends ContentItem, PARENT extends P
             
         } as PARENT;
 
-        saveParent(updatedParentObject);
+        if(addRelation){
+            addRelation(objectType, createdItem);
+        }else{
+            saveParent(updatedParentObject);
+        }
         setIsChanged(true);
         setOpenCreateItem(false);
     }
@@ -174,6 +178,7 @@ function SelectOrCreateObjectAnswered<ITEM extends ContentItem, PARENT extends P
                 openCreate={openCreateItem}
                 setOpenCreate={setOpenCreateItem}
                 createComponent={createComponent()}
+                addRelation={addRelation}
             />
         </>
     );

@@ -48,6 +48,8 @@ interface SelectOrCreateProps<ITEM extends {id?: number}, PARENT extends ParentO
     setOpenCreate: (openCreate: boolean) => void;
 
     onValidate?: (item: ITEM) => void;
+
+    addRelation?: (objectType: ObjectAnsweredObjects, selectedItem: ITEM) => void;
 }
 
 const SelectOrCreate = <ITEM extends {id?: number},PARENT extends  ParentOfRelations>({
@@ -66,7 +68,8 @@ const SelectOrCreate = <ITEM extends {id?: number},PARENT extends  ParentOfRelat
                                                                              openCreate,
                                                                              setOpenCreate,
                                                                              onValidate,
-                                                                             objectType
+                                                                             objectType,
+                                                                             addRelation
                                                                          }: SelectOrCreateProps<ITEM, PARENT>) => {
     const [items, setItems] = useState<ITEM[]>([]);
     const [selectedItem, setSelectedItem] = useState<ITEM | null>(null);
@@ -102,8 +105,13 @@ const SelectOrCreate = <ITEM extends {id?: number},PARENT extends  ParentOfRelat
                 ...parent,
                 relations: [...currentArray, {answer:false,objectId: getItemId(selectedItem), objectType: objectType} as ObjectAnsweredDTO]
             };
-
+            if(addRelation){
+                addRelation(objectType, selectedItem);
+            }
+            else{
             saveParent(updatedParent);
+                
+            }
             setIsChanged(true);
 
         setOpen(false);
