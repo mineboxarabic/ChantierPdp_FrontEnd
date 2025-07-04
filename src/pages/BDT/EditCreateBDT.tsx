@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -37,6 +37,7 @@ import dayjs from 'dayjs';
 import useBdt from '../../hooks/useBdt';
 import useEntreprise from '../../hooks/useEntreprise';
 import useRisque from '../../hooks/useRisque';
+import useAuditSecu from '../../hooks/useAuditSecu';
 import useChantier from '../../hooks/useChantier';
 import useWoker from '../../hooks/useWoker';
 import SaveIcon from '@mui/icons-material/Save';
@@ -52,6 +53,13 @@ import AddIcon from '@mui/icons-material/Add';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import EditIcon from '@mui/icons-material/Edit';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import type { BdtDTO } from '../../utils/entitiesDTO/BdtDTO';
+import type { ChantierDTO } from '../../utils/entitiesDTO/ChantierDTO';
+import type { UserDTO } from '../../utils/entitiesDTO/UserDTO';
+import type { ObjectAnsweredDTO } from '../../utils/entitiesDTO/ObjectAnsweredDTO';
+import RisqueDTO from '../../utils/entitiesDTO/RisqueDTO';
+import { DocumentStatus } from '../../utils/enums/DocumentStatus';
+import { ActionType } from '../../utils/enums/ActionType';
 
 import { BDT } from '../../utils/entities/BDT.ts';
 import { Entreprise } from '../../utils/entities/Entreprise.ts';
@@ -61,14 +69,17 @@ import { EntityRef } from '../../utils/EntityRef.ts';
 import { getRoute } from '../../Routes.tsx';
 import { useNotifications } from '@toolpad/core/useNotifications';
 import { AuditSecu } from '../../utils/entities/AuditSecu.ts';
-import ObjectAnsweredDTO from '../../utils/pdp/ObjectAnswered';
+import ObjectAnsweredObjects from '../../utils/ObjectAnsweredObjects';
 import Worker from '../../utils/entities/Worker.ts';
 import Signature from '../../utils/entities/Signature.ts';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import RisqueComponent from "../../components/Steps/RisqueComponent.tsx";
+import { WorkerDTO } from '../../utils/entitiesDTO/WorkerDTO.ts';
+import SelectOrCreateObjectAnswered from "../../components/Pdp/SelectOrCreateObjectAnswered";
+
 // Define the interface for URL params
-interface ParamTypes {
+interface ParamTypes extends Record<string, string | undefined> {
     id?: string;
     chantierId?: string;
 }
@@ -137,16 +148,12 @@ const EditCreateBdt: React.FC = () => {
     });
 
     // Form state
-    const [formData, setFormData] = useState<BDT>({
+    const [formData, setFormData] = useState<BdtDTO>({
         id: undefined,
         nom: undefined,
-        risques: [],
-        auditSecu: [],
         complementOuRappels: [],
-        chantier: undefined,
-        entrepriseExterieure: undefined,
-        signatureChargeDeTravail: undefined,
-        signatureDonneurDOrdre: undefined,
+        date: undefined,
+        relations: [] // Add relations for handling risques
     });
 
     // Loading state
@@ -159,22 +166,209 @@ const EditCreateBdt: React.FC = () => {
     const notifications = useNotifications();
     const {getAllEntreprises, entreprises} = useEntreprise();
     const {getAllRisques, risques} = useRisque();
+    const {getAllAuditSecus, auditSecus} = useAuditSecu();
     const {getChantier, getAllChantiers} = useChantier();
     const {getAllWorkers} = useWoker();
 
     // Data states
-    const [audits, setAudits] = useState<AuditSecu[]>([]);
-    const [chantiers, setChantiers] = useState<Chantier[]>([]);
-    const [workers, setWorkers] = useState<Worker[]>([]);
+    const [chantiers, setChantiers] = useState<ChantierDTO[]>([]);
+    const [workers, setWorkers] = useState<WorkerDTO[]>([]);
 
     // Error states
     const [errors, setErrors] = useState<Record<string, string>>({});
 
+    // Utility functions for handling risques via relations
+    const handleAddRisque = (risqueId: number) => {
+        const existingRelations = formData.relations || [];
+        const alreadyExists = existingRelations.some(
+            rel => rel.objectId === risqueId && rel.objectType === ObjectAnsweredObjects.RISQUE
+        );
+
+        if (alreadyExists) {
+            notifications.show("Ce risque est déjà lié.", { severity: "info" });
+            return;
+        }
+
+        const newRelation: ObjectAnsweredDTO = {
+            objectId: risqueId,
+            objectType: ObjectAnsweredObjects.RISQUE,
+            answer: true,
+        };
+
+        setFormData(prev => ({
+            ...prev,
+            relations: [...existingRelations, newRelation]
+        }));
+
+        notifications.show("Risque ajouté avec succès.", { severity: "success" });
+    };
+
+    const handleRemoveRisque = (risqueId: number) => {
+        setFormData(prev => ({
+            ...prev,
+            relations: prev.relations?.filter(rel => 
+                !(rel.objectId === risqueId && rel.objectType === ObjectAnsweredObjects.RISQUE)
+            ) || []
+        }));
+        notifications.show("Risque supprimé.", { severity: "info" });
+    };
+
+    const handleToggleRisqueAnswer = (risqueId: number) => {
+        setFormData(prev => ({
+            ...prev,
+            relations: prev.relations?.map(rel => 
+                (rel.objectId === risqueId && rel.objectType === ObjectAnsweredObjects.RISQUE)
+                    ? { ...rel, answer: !rel.answer }
+                    : rel
+            ) || []
+        }));
+    };
+
+    const getRisquesFromRelations = useCallback((): { relation: ObjectAnsweredDTO; risque: RisqueDTO }[] => {
+        if (!formData.relations) return [];
+        
+        return formData.relations
+            .filter(rel => rel.objectType === ObjectAnsweredObjects.RISQUE)
+            .map(rel => {
+                const existingRisque = Array.from(risques.values()).find(r => r.id === rel.objectId);
+                // If risque not found in local map, create a temporary one for display
+                const risque = existingRisque || {
+                    id: rel.objectId,
+                    title: `Risque #${rel.objectId}`,
+                    description: "Risque récemment créé"
+                } as RisqueDTO;
+                
+                return {
+                    relation: rel,
+                    risque: risque
+                };
+            })
+            .filter(item => item.risque); // Filter out any undefined risques
+    }, [formData.relations, risques]);
+
+    // Utility functions for handling audit secus via relations
+    const handleAddAuditSecu = (auditSecuId: number) => {
+        const existingRelations = formData.relations || [];
+        const alreadyExists = existingRelations.some(
+            rel => rel.objectId === auditSecuId && rel.objectType === ObjectAnsweredObjects.AUDIT
+        );
+
+        if (alreadyExists) {
+            notifications.show("Cet audit de sécurité est déjà lié.", { severity: "info" });
+            return;
+        }
+
+        const newRelation: ObjectAnsweredDTO = {
+            objectId: auditSecuId,
+            objectType: ObjectAnsweredObjects.AUDIT,
+            answer: true,
+        };
+
+        setFormData(prev => ({
+            ...prev,
+            relations: [...existingRelations, newRelation]
+        }));
+
+        notifications.show("Audit de sécurité ajouté avec succès.", { severity: "success" });
+    };
+
+    const handleRemoveAuditSecu = (auditSecuId: number) => {
+        setFormData(prev => ({
+            ...prev,
+            relations: prev.relations?.filter(rel => 
+                !(rel.objectId === auditSecuId && rel.objectType === ObjectAnsweredObjects.AUDIT)
+            ) || []
+        }));
+        notifications.show("Audit de sécurité supprimé.", { severity: "info" });
+    };
+
+    const handleToggleAuditSecuAnswer = (auditSecuId: number) => {
+        setFormData(prev => ({
+            ...prev,
+            relations: prev.relations?.map(rel => 
+                (rel.objectId === auditSecuId && rel.objectType === ObjectAnsweredObjects.AUDIT)
+                    ? { ...rel, answer: !rel.answer }
+                    : rel
+            ) || []
+        }));
+    };
+
+    const getAuditSecusFromRelations = useCallback((): { relation: ObjectAnsweredDTO; auditSecu: AuditSecu }[] => {
+        if (!formData.relations) return [];
+        
+        return formData.relations
+            .filter(rel => rel.objectType === ObjectAnsweredObjects.AUDIT)
+            .map(rel => {
+                const existingAuditSecu = Array.from(auditSecus.values()).find(a => a.id === rel.objectId);
+                // If audit secu not found in local map, create a temporary one for display
+                const auditSecu = existingAuditSecu || {
+                    id: rel.objectId,
+                    title: `Audit de sécurité #${rel.objectId}`,
+                    description: "Audit de sécurité récemment créé"
+                } as AuditSecu;
+                
+                return {
+                    relation: rel,
+                    auditSecu: auditSecu
+                };
+            })
+            .filter(item => item.auditSecu); // Filter out any undefined audit secus
+    }, [formData.relations, auditSecus]);
+
+    // Add relation function for SelectOrCreateObjectAnswered
+    const addRelation = useCallback(async (objectType: ObjectAnsweredObjects, selectedItem: { id?: number; title?: string }) => {
+        if (!selectedItem || selectedItem.id === undefined) return;
+
+        const newRelation: ObjectAnsweredDTO = {
+            objectId: selectedItem.id,
+            objectType: objectType,
+            answer: true,
+        };
+        
+        const existingRelations = formData.relations || [];
+        const alreadyExists = existingRelations.some(
+            rel => rel.objectId === newRelation.objectId && rel.objectType === newRelation.objectType
+        );
+
+        if (alreadyExists) {
+            notifications.show("Cet élément est déjà lié.", { severity: "info" });
+            handleCloseDialog(); // Close dialog even if item already exists
+            return;
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            relations: [...existingRelations, newRelation]
+        }));
+
+        // Refresh the appropriate data in background to ensure consistency
+        try {
+            if (objectType === ObjectAnsweredObjects.RISQUE) {
+                await getAllRisques();
+            } else if (objectType === ObjectAnsweredObjects.AUDIT) {
+                await getAllAuditSecus();
+            }
+        } catch (error) {
+            console.error(`Error refreshing ${objectType} data after adding relation:`, error);
+        }
+
+        notifications.show("Élément ajouté au BDT.", { severity: "success", autoHideDuration: 1500 });
+        handleCloseDialog(); // Close dialog after successful addition
+    }, [formData.relations, notifications, getAllRisques, getAllAuditSecus]);
 
     useEffect(() => {
         console.log('formdifjas', formData);
     }, [formData]);
 
+    // Force re-render when risques map changes to show newly created risques
+    useEffect(() => {
+        console.log('Risques map updated, size:', risques.size);
+    }, [risques]);
+
+    // Force re-render when audit secus map changes to show newly created audit secus
+    useEffect(() => {
+        console.log('Audit secus map updated, size:', auditSecus.size);
+    }, [auditSecus]);
 
     // Load data on component mount
     useEffect(() => {
@@ -184,15 +378,20 @@ const EditCreateBdt: React.FC = () => {
                 // Load dropdown data
                 await getAllEntreprises();
                 const risquesList = await getAllRisques();
-                // In a real app, you would have a useAudit hook with getAllAudits
-                // const auditsList = await getAllAudits();
+                const auditsList = await getAllAuditSecus();
                 const chantiersList = await getAllChantiers();
                 const workersList = await getAllWorkers();
 
                // setRisques(risquesList || []);
                 // setAudits(auditsList || []);
-                setChantiers(chantiersList || []);
-                setWorkers(workersList || []);
+                setChantiers(chantiersList.map(dto => ({
+                    ...dto,
+                    localisation: dto.localisation, // No transformation needed, keep as number
+                    entrepriseUtilisatrice: dto.entrepriseUtilisatrice, // No transformation needed, keep as number
+                    entrepriseExterieurs: dto.entrepriseExterieurs // No transformation needed, keep as numbers
+                })));
+                setWorkers(workersList);
+
 
                 // If editing, load BDT data
                 if (isEditMode && id) {
@@ -200,11 +399,10 @@ const EditCreateBdt: React.FC = () => {
                     if (bdtData) {
                         setFormData({
                             ...bdtData,
-                            // Ensure all required objects are present
-                            risques: bdtData.risques || [],
-                            auditSecu: bdtData.auditSecu || [],
+                            // Only set properties that exist in BdtDTO
                             complementOuRappels: bdtData.complementOuRappels || [],
-                            entrepriseExterieure: bdtData.entrepriseExterieure && {id: bdtData.entrepriseExterieure.id}
+                            entrepriseExterieure: bdtData.entrepriseExterieure,
+                            relations: bdtData.relations || [] // Set relations for risques
                         });
                     }
                 }
@@ -216,7 +414,7 @@ const EditCreateBdt: React.FC = () => {
                     if (chantier) {
                         setFormData(prev => ({
                             ...prev,
-                            chantier: { id: chantier.id as number } as EntityRef
+                            chantier: chantier.id as number
                         }));
                     }
                 }else{
@@ -256,7 +454,7 @@ const EditCreateBdt: React.FC = () => {
     };
 
     // Handle dropdown changes
-    const handleAutocompleteChange = (name: keyof BDT, value: any | null) => {
+    const handleAutocompleteChange = (name: keyof BdtDTO, value: any | null) => {
         setFormData(prev => ({
             ...prev,
             [name]: value
@@ -287,66 +485,15 @@ const EditCreateBdt: React.FC = () => {
 
     // Handle adding a new item to a list
     const handleAddItem = async (type: DialogTypes, item: any) => {
-  /*      if (type === 'risques') {
-      /!*      if (!formData.id) {
-                // If BDT doesn't exist yet, add to local state only
-                setFormData(prev => ({
-                    ...prev,
-                    risques: [...(prev.risques || []), {risque: item, answer: false}]
-                }));
-            } else {
-                // Otherwise, link to backend
-                try {
-                    const response = await linkRisqueToBDT(formData.id, item.id);
-                    if (response) {
-                        setFormData(prev => ({
-                            ...prev,
-                            risques: [...(prev.risques || []), response]
-                        }));
-                    }
-                } catch (error) {
-                    console.error("Error adding risque:", error);
-                    notifications.show("Erreur lors de l'ajout du risque", {severity: "error"});
-                }
-            }*!/
-        } else if (type === 'audits') {
-            if (!formData.id) {
-                setFormData(prev => ({
-                    ...prev,
-                    auditSecu: [...(prev.auditSecu || []), {audit: item, answer: false}]
-                }));
-            } else {
-                try {
-                    const response = await linkAuditToBDT(formData.id, item.id);
-                    if (response) {
-                        setFormData(prev => ({
-                            ...prev,
-                            auditSecu: [...(prev.auditSecu || []), response]
-                        }));
-                    }
-                } catch (error) {
-                    console.error("Error adding audit:", error);
-                    notifications.show("Erreur lors de l'ajout de l'audit", {severity: "error"});
-                }
+        if (type === 'risques') {
+            if (item && item.id) {
+                handleAddRisque(item.id);
             }
-        } */
-
-    /* else if (type === 'chargeDeTravail' || type === 'donneurDOrdre') {
-            // Create a signature with the selected worker
-            const signature = {
-                worker: item,
-                date: new Date()
-            };
-
-            setFormData(prev => ({
-                ...prev,
-                [type === 'chargeDeTravail' ? 'signatureChargeDeTravail' : 'signatureDonneurDOrdre']: signature
-            }));
-        }
-
-*/
-
-        if (type === 'complement') {
+        } else if (type === 'audits') {
+            if (item && item.id) {
+                handleAddAuditSecu(item.id);
+            }
+        } else if (type === 'complement') {
             // Add complement to local state
             setFormData(prev => ({
                 ...prev,
@@ -359,61 +506,26 @@ const EditCreateBdt: React.FC = () => {
     // Handle removing an item from a list
     const handleRemoveItem = async (type: string, index: number, itemId?: number) => {
         if (type === 'risques') {
-            if (!formData.id || !itemId) {
-                // If BDT doesn't exist yet, remove from local state only
-                setFormData(prev => ({
-                    ...prev,
-                    risques: prev?.risques?.filter((_, i) => i !== index)
-                }));
-            } else {
-                // Otherwise, unlink from backend
-                try {
-                    await unlinkRisqueToBDT(formData.id, itemId);
-                    setFormData(prev => ({
-                        ...prev,
-                        risques: prev?.risques?.filter((_, i) => i !== index)
-                    }));
-                } catch (error) {
-                    console.error("Error removing risque:", error);
-                    notifications.show("Erreur lors de la suppression du risque", {severity: "error"});
-                }
+            if (itemId) {
+                handleRemoveRisque(itemId);
             }
-        } else if (type === 'auditSecu') {
-            if (!formData.id || !itemId) {
-                setFormData(prev => ({
-                    ...prev,
-                    auditSecu: prev?.auditSecu?.filter((_, i) => i !== index)
-                }));
-            } else {
-                try {
-                    await unlinkAuditToBDT(formData.id, itemId);
-                    setFormData(prev => ({
-                        ...prev,
-                        auditSecu: prev?.auditSecu?.filter((_, i) => i !== index)
-                    }));
-                } catch (error) {
-                    console.error("Error removing audit:", error);
-                    notifications.show("Erreur lors de la suppression de l'audit", {severity: "error"});
-                }
+        } else if (type === 'audits') {
+            if (itemId) {
+                handleRemoveAuditSecu(itemId);
             }
         } else if (type === 'complementOuRappels') {
             // Remove complement from local state only (no backend endpoint needed)
-
             setFormData(prev => ({
                 ...prev,
                 complementOuRappels: prev?.complementOuRappels?.filter((_, i) => i !== index)
-            }));
-        } else if (type === 'signatureChargeDeTravail' || type === 'signatureDonneurDOrdre') {
-            // Remove the signature
-            setFormData(prev => ({
-                ...prev,
-                [type]: undefined
             }));
         }
     };
 
     // Toggle the answer status of an item (applicable/non-applicable)
     const handleToggleAnswer = (type: string, index: number) => {
+        /*
+        // Commented out since risques and auditSecu don't exist in BdtDTO
         if (type === 'risques') {
             const updatedRisques = [ ...formData?.risques || []];
             updatedRisques[index] = {
@@ -428,7 +540,9 @@ const EditCreateBdt: React.FC = () => {
                 answer: !updatedAudits[index].answer
             };
             setFormData(prev => ({...prev, auditSecu: updatedAudits}));
-        } else if (type === 'complementOuRappels') {
+        } else 
+        */
+        if (type === 'complementOuRappels') {
             const updatedComplements = [...formData?.complementOuRappels || []];
             updatedComplements[index] = {
                 ...updatedComplements[index],
@@ -451,6 +565,9 @@ const EditCreateBdt: React.FC = () => {
             errors.entrepriseExterieure = "L'entreprise extérieure est requise";
         }
 
+        if (!formData.chantier) {
+            errors.chantier = "Le chantier est requis";
+        }
 
         setErrors(errors);
         return Object.keys(errors).length === 0;
@@ -470,16 +587,29 @@ const EditCreateBdt: React.FC = () => {
 
         try {
             let savedBdt;
+            
+            // Prepare form data with required fields
+            const bdtData = {
+                ...formData,
+                date: formData.date || new Date(), // Add current date if not set
+                status: formData.status || DocumentStatus.DRAFT, // Add default status if not set
+                actionType: formData.actionType || ActionType.NONE // Add default action type
+            };
+            
+            // Debug: Log the form data being sent
+            console.log('Form data being sent:', JSON.stringify(bdtData, null, 2));
 
             if (isEditMode && formData.id) {
                 // Update existing BDT
-                savedBdt = await saveBDT(formData, formData.id);
+                savedBdt = await saveBDT(bdtData, formData.id);
             } else {
                 // Create new BDT
-                savedBdt = await createBDT(formData);
+                savedBdt = await createBDT(bdtData);
 
                 // If we have local state items, link them to the new BDT
                 if (savedBdt && savedBdt.id) {
+                    /*
+                    // Commented out since risques and auditSecu don't exist in BdtDTO
                     // Link risques
                    for (const risque of formData.risques || []) {
                         if (risque.risque_id) {
@@ -493,11 +623,12 @@ const EditCreateBdt: React.FC = () => {
                             await linkAuditToBDT(savedBdt.id, audit.auditSecu.id);
                         }
                     }
+                    */
 
                     // For complementOuRappels, we need to update the whole BDT
                     savedBdt = await saveBDT({
                         ...savedBdt,
-                        complementOuRappels: null
+                        complementOuRappels: formData.complementOuRappels
                     }, savedBdt.id);
                 }
             }
@@ -515,6 +646,21 @@ const EditCreateBdt: React.FC = () => {
             }
         } catch (error) {
             console.error("Error saving BDT:", error);
+            
+            // More detailed error logging
+            if (error instanceof Error) {
+                console.error("Error message:", error.message);
+                console.error("Error stack:", error.stack);
+            }
+            
+            // Check if it's an HTTP error with more details
+            if (error && typeof error === 'object' && 'response' in error) {
+                const httpError = error as any;
+                console.error("HTTP Error Status:", httpError.response?.status);
+                console.error("HTTP Error Data:", httpError.response?.data);
+                console.error("HTTP Error Headers:", httpError.response?.headers);
+            }
+            
             setSaveError("Erreur lors de l'enregistrement du Bon de Travail");
             notifications.show("Erreur lors de l'enregistrement du Bon de Travail", {
                 severity: "error",
@@ -601,8 +747,8 @@ const EditCreateBdt: React.FC = () => {
                                     <Autocomplete
                                         options={Array.from(entreprises.values())}
                                         getOptionLabel={(option) => option.nom || ''}
-                                        value={formData.entrepriseExterieure?.id ? entreprises.get(formData.entrepriseExterieure.id) || null : null}
-                                        onChange={(_, newValue) => handleAutocompleteChange('entrepriseExterieure', newValue ? {id: newValue.id} as EntityRef : null)}
+                                        value={formData.entrepriseExterieure ? entreprises.get(formData.entrepriseExterieure) || null : null}
+                                        onChange={(_, newValue) => handleAutocompleteChange('entrepriseExterieure', newValue ? newValue.id : null)}
                                         renderInput={(params) => (
                                             <TextField
                                                 {...params}
@@ -612,6 +758,26 @@ const EditCreateBdt: React.FC = () => {
                                                 required
                                                 error={!!errors.entrepriseExterieure}
                                                 helperText={errors.entrepriseExterieure}
+                                            />
+                                        )}
+                                    />
+                                </Grid>
+
+                                <Grid item xs={12} md={6}>
+                                    <Autocomplete
+                                        options={chantiers}
+                                        getOptionLabel={(option) => option.nom || `Chantier #${option.id}`}
+                                        value={formData.chantier ? chantiers.find(c => c.id === formData.chantier) || null : null}
+                                        onChange={(_, newValue) => handleAutocompleteChange('chantier', newValue ? newValue.id : null)}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Chantier"
+                                                variant="outlined"
+                                                fullWidth
+                                                required
+                                                error={!!errors.chantier}
+                                                helperText={errors.chantier}
                                             />
                                         )}
                                     />
@@ -633,13 +799,59 @@ const EditCreateBdt: React.FC = () => {
                                 </Button>
                             </Box>
 
-                            {formData.risques && formData.risques.length > 0 ? (
+                            {getRisquesFromRelations().length > 0 ? (
                                 <Grid container spacing={2}>
-                                    {formData.risques.map((risque, index) => (
-                                        <Grid item xs={12} md={6} key={`risque-${index}`}>
-                                            <RisqueComponent typeOfObject={'bdt'} risque={risque} currentPdp={formData} saveCurrentPdp={setFormData} setIsChanged={()=>{}} />
-                                        </Grid>
-                                    ))}
+                                    {getRisquesFromRelations().map((item, index) => {
+                                        const { relation, risque } = item;
+                                        return (
+                                            <Grid item xs={12} md={6} key={`risque-${relation.objectId}`}>
+                                                <Card variant="outlined">
+                                                    <CardContent>
+                                                        <Box sx={{
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            alignItems: 'center'
+                                                        }}>
+                                                            <Box sx={{display: 'flex', alignItems: 'center'}}>
+                                                                <Avatar sx={{
+                                                                    bgcolor: relation.answer ? 'success.main' : 'grey.500',
+                                                                    mr: 2
+                                                                }}>
+                                                                    <WarningIcon/>
+                                                                </Avatar>
+                                                                <Typography variant="subtitle1">
+                                                                    {risque?.title || `Risque #${index + 1}`}
+                                                                </Typography>
+                                                            </Box>
+                                                            <Box>
+                                                                <FormControlLabel
+                                                                    control={
+                                                                        <Switch
+                                                                            checked={relation.answer || false}
+                                                                            onChange={() => handleToggleRisqueAnswer(relation.objectId)}
+                                                                            color="primary"
+                                                                        />
+                                                                    }
+                                                                    label="Applicable"
+                                                                />
+                                                                <IconButton
+                                                                    color="error"
+                                                                    onClick={() => handleRemoveRisque(relation.objectId)}
+                                                                >
+                                                                    <DeleteIcon/>
+                                                                </IconButton>
+                                                            </Box>
+                                                        </Box>
+                                                        {risque?.description && (
+                                                            <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
+                                                                {risque.description}
+                                                            </Typography>
+                                                        )}
+                                                    </CardContent>
+                                                </Card>
+                                            </Grid>
+                                        );
+                                    })}
                                 </Grid>
                             ) : (
                                 <Alert severity="info">
@@ -648,7 +860,7 @@ const EditCreateBdt: React.FC = () => {
                             )}
                         </TabPanel>
 
-                         Tab 3: Audit Sécurité
+                         {/* Tab 3: Audit Sécurité */}
                         <TabPanel value={tabValue} index={2}>
                             <Box sx={{mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                                 <Typography variant="h6">Audits de sécurité</Typography>
@@ -658,65 +870,67 @@ const EditCreateBdt: React.FC = () => {
                                     startIcon={<AddIcon/>}
                                     onClick={() => handleOpenDialog('audits')}
                                 >
-                                    Ajouter un audit
+                                    Ajouter un audit de sécurité
                                 </Button>
                             </Box>
 
-                            {formData.auditSecu && formData.auditSecu.length > 0 ? (
+                            {getAuditSecusFromRelations().length > 0 ? (
                                 <Grid container spacing={2}>
-                                    {formData.auditSecu.map((audit, index) => (
-                                        <Grid item xs={12} md={6} key={`audit-${index}`}>
-                                            <Card variant="outlined">
-                                                <CardContent>
-                                                    <Box sx={{
-                                                        display: 'flex',
-                                                        justifyContent: 'space-between',
-                                                        alignItems: 'center'
-                                                    }}>
-                                                        <Box sx={{display: 'flex', alignItems: 'center'}}>
-                                                            <Avatar sx={{
-                                                                bgcolor: audit.answer ? 'success.main' : 'grey.500',
-                                                                mr: 2
-                                                            }}>
-                                                                <ShieldIcon/>
-                                                            </Avatar>
-                                                            <Typography variant="subtitle1">
-                                                                {audit.auditSecu?.title || `Audit #${index + 1}`}
+                                    {getAuditSecusFromRelations().map((item, index) => {
+                                        const { relation, auditSecu } = item;
+                                        return (
+                                            <Grid item xs={12} md={6} key={`audit-${relation.objectId}`}>
+                                                <Card variant="outlined">
+                                                    <CardContent>
+                                                        <Box sx={{
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            alignItems: 'center'
+                                                        }}>
+                                                            <Box sx={{display: 'flex', alignItems: 'center'}}>
+                                                                <Avatar sx={{
+                                                                    bgcolor: relation.answer ? 'success.main' : 'grey.500',
+                                                                    mr: 2
+                                                                }}>
+                                                                    <ShieldIcon/>
+                                                                </Avatar>
+                                                                <Typography variant="subtitle1">
+                                                                    {auditSecu?.title || `Audit #${index + 1}`}
+                                                                </Typography>
+                                                            </Box>
+                                                            <Box>
+                                                                <FormControlLabel
+                                                                    control={
+                                                                        <Switch
+                                                                            checked={relation.answer || false}
+                                                                            onChange={() => handleToggleAuditSecuAnswer(relation.objectId)}
+                                                                            color="primary"
+                                                                        />
+                                                                    }
+                                                                    label="Applicable"
+                                                                />
+                                                                <IconButton
+                                                                    color="error"
+                                                                    onClick={() => handleRemoveAuditSecu(relation.objectId)}
+                                                                >
+                                                                    <DeleteIcon/>
+                                                                </IconButton>
+                                                            </Box>
+                                                        </Box>
+                                                        {auditSecu?.description && (
+                                                            <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
+                                                                {auditSecu.description}
                                                             </Typography>
-                                                        </Box>
-                                                        <Box>
-                                                            <FormControlLabel
-                                                                control={
-                                                                    <Switch
-                                                                        checked={audit.answer || false}
-                                                                        onChange={() => handleToggleAnswer('auditSecu', index)}
-                                                                        color="primary"
-                                                                    />
-                                                                }
-                                                                label="Validé"
-                                                            />
-                                                            <IconButton
-                                                                color="error"
-                                                                onClick={() => handleRemoveItem('auditSecu', index, audit.id)}
-                                                            >
-                                                                <DeleteIcon/>
-                                                            </IconButton>
-                                                        </Box>
-                                                    </Box>
-                                                    {audit.auditSecu?.description && (
-                                                        <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
-                                                            {audit.auditSecu.description}
-                                                        </Typography>
-                                                    )}
-                                                </CardContent>
-                                            </Card>
-                                        </Grid>
-                                    ))}
+                                                        )}
+                                                    </CardContent>
+                                                </Card>
+                                            </Grid>
+                                        );
+                                    })}
                                 </Grid>
                             ) : (
                                 <Alert severity="info">
-                                    Aucun audit de sécurité n'a été ajouté. Utilisez le bouton "Ajouter un audit" pour
-                                    en ajouter.
+                                    Aucun audit de sécurité n'a été ajouté. Utilisez le bouton "Ajouter un audit de sécurité" pour en ajouter.
                                 </Alert>
                             )}
                         </TabPanel>
@@ -793,135 +1007,11 @@ const EditCreateBdt: React.FC = () => {
                         </TabPanel>
 
 
-                         Tab 5: Signatures
+                         {/* Tab 5: Signatures - Commented out since signatures don't exist in BdtDTO */}
                         <TabPanel value={tabValue} index={4}>
-                            <Grid container spacing={3}>
-                                <Grid item xs={12} md={6}>
-                                    <Card variant="outlined" sx={{height: '100%'}}>
-                                        <CardContent>
-                                            <Box sx={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
-                                                mb: 2
-                                            }}>
-                                                <Typography variant="h6">Chargé de travail</Typography>
-                                                {!formData.signatureChargeDeTravail && (
-                                                    <Button
-                                                        variant="contained"
-                                                        color="primary"
-                                                        startIcon={<AddIcon/>}
-                                                        onClick={() => handleOpenDialog('chargeDeTravail')}
-                                                        size="small"
-                                                    >
-                                                        Ajouter
-                                                    </Button>
-                                                )}
-                                            </Box>
-                                            <Divider sx={{mb: 2}}/>
-
-                                            {formData.signatureChargeDeTravail ? (
-                                                <Box>
-                                                    <Box sx={{display: 'flex', alignItems: 'center', mb: 2}}>
-                                                        <Avatar sx={{mr: 2, bgcolor: 'primary.main'}}>
-                                                            <EngineeringIcon/>
-                                                        </Avatar>
-                                                        <Box>
-                                                            <Typography variant="subtitle1">
-                                                                {formData.signatureChargeDeTravail.worker?.prenom} {formData.signatureChargeDeTravail.worker?.nom}
-                                                            </Typography>
-                                                            {formData.signatureChargeDeTravail.date && (
-                                                                <Typography variant="caption" color="text.secondary">
-                                                                    Signé
-                                                                    le {dayjs(formData.signatureChargeDeTravail.date).format('DD/MM/YYYY HH:mm')}
-                                                                </Typography>
-                                                            )}
-                                                        </Box>
-                                                    </Box>
-                                                    <Box sx={{display: 'flex', justifyContent: 'flex-end'}}>
-                                                        <Button
-                                                            variant="outlined"
-                                                            color="error"
-                                                            startIcon={<DeleteIcon/>}
-                                                            onClick={() => handleRemoveItem('signatureChargeDeTravail', 0)}
-                                                            size="small"
-                                                        >
-                                                            Supprimer
-                                                        </Button>
-                                                    </Box>
-                                                </Box>
-                                            ) : (
-                                                <Typography color="text.secondary" sx={{textAlign: 'center', py: 2}}>
-                                                    Aucune signature
-                                                </Typography>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-                                </Grid>
-
-                                <Grid item xs={12} md={6}>
-                                    <Card variant="outlined" sx={{height: '100%'}}>
-                                        <CardContent>
-                                            <Box sx={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
-                                                mb: 2
-                                            }}>
-                                                <Typography variant="h6">Donneur d'ordre</Typography>
-                                                {!formData.signatureDonneurDOrdre && (
-                                                    <Button
-                                                        variant="contained"
-                                                        color="primary"
-                                                        startIcon={<AddIcon/>}
-                                                        onClick={() => handleOpenDialog('donneurDOrdre')}
-                                                        size="small"
-                                                    >
-                                                        Ajouter
-                                                    </Button>
-                                                )}
-                                            </Box>
-                                            <Divider sx={{mb: 2}}/>
-
-                                            {formData.signatureDonneurDOrdre ? (
-                                                <Box>
-                                                    <Box sx={{display: 'flex', alignItems: 'center', mb: 2}}>
-                                                        <Avatar sx={{mr: 2, bgcolor: 'secondary.main'}}>
-                                                            <BusinessIcon/>
-                                                        </Avatar>
-                                                        <Box>
-                                                            <Typography variant="subtitle1">
-                                                                {formData.signatureDonneurDOrdre.worker?.prenom} {formData.signatureDonneurDOrdre.worker?.nom}
-                                                            </Typography>
-                                                            {formData.signatureDonneurDOrdre.date && (
-                                                                <Typography variant="caption" color="text.secondary">
-                                                                    Signé
-                                                                    le {dayjs(formData.signatureDonneurDOrdre.date).format('DD/MM/YYYY HH:mm')}
-                                                                </Typography>
-                                                            )}
-                                                        </Box>
-                                                    </Box>
-                                                    <Box sx={{display: 'flex', justifyContent: 'flex-end'}}>
-                                                        <Button
-                                                            variant="outlined"
-                                                            color="error"
-                                                            startIcon={<DeleteIcon/>}
-                                                            onClick={() => handleRemoveItem('signatureDonneurDOrdre', 0)}
-                                                            size="small"
-                                                        >
-                                                            Supprimer
-                                                        </Button>
-                                                    </Box>
-                                                </Box>
-                                            ) : (
-                                                <Typography color="text.secondary" sx={{textAlign: 'center', py: 2}}>
-                                                    Aucune signature
-                                                </Typography>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-                                </Grid>
-                            </Grid>
+                            <Alert severity="info">
+                                Les signatures ne sont pas disponibles dans cette version DTO.
+                            </Alert>
                         </TabPanel>
                     </div>
                     <Box sx={{display: 'flex', justifyContent: 'flex-end', mt: 3}}>
@@ -951,67 +1041,83 @@ const EditCreateBdt: React.FC = () => {
                     </DialogTitle>
                     <DialogContent>
                         {dialogType === 'risques' && (
-                            <SelectOrCreateRisque<BDT> open={openDialog}
-                                                       setOpen={setOpenDialog}
-                                                       currentObject={formData}
-                                                       saveObject={setFormData}
-                                                       linkRisqueToObject={linkRisqueToBDT}
-                                                       setIsChanged={()=>{}}
-                                                       getRisques={(p)=>{return p.risques}}
-                            />
-
-                        )}
-                        {dialogType === 'audits' && (
-                            <SelectOrCreateAudit<BDT>
+                            <SelectOrCreateObjectAnswered<RisqueDTO, BdtDTO>
                                 open={openDialog}
                                 setOpen={setOpenDialog}
-                                currentObject={formData}
-                                saveObject={setFormData}
-                                setIsChanged={()=>{}}
-                                linkAuditToObject={linkAuditToBDT}
-                                getAudits={(p)=>{return p.auditSecu}}
-                                 />
+                                parent={formData}
+                                saveParent={async (updatedBdt) => {
+                                    // First update the form data
+                                    setFormData(updatedBdt);
+                                    // Then refresh risques list to ensure new ones are loaded
+                                    try {
+                                        await getAllRisques();
+                                        console.log('Risques refreshed after saveParent');
+                                    } catch (error) {
+                                        console.error("Error refreshing risques in saveParent:", error);
+                                    }
+                                }}
+                                setIsChanged={() => {}}
+                                objectType={ObjectAnsweredObjects.RISQUE}
+                                addRelation={addRelation}
+                            />
+                        )}
+                        {dialogType === 'audits' && (
+                            <SelectOrCreateObjectAnswered<AuditSecu, BdtDTO>
+                                open={openDialog}
+                                setOpen={setOpenDialog}
+                                parent={formData}
+                                saveParent={async (updatedBdt) => {
+                                    // First update the form data
+                                    setFormData(updatedBdt);
+                                    // Then refresh audit secus list to ensure new ones are loaded
+                                    try {
+                                        await getAllAuditSecus();
+                                        console.log('Audit secus refreshed after saveParent');
+                                    } catch (error) {
+                                        console.error("Error refreshing audit secus in saveParent:", error);
+                                    }
+                                }}
+                                setIsChanged={() => {}}
+                                objectType={ObjectAnsweredObjects.AUDIT}
+                                addRelation={addRelation}
+                            />
                         )}
                         {dialogType === 'complement' && (
                             <TextField
                                 label="Complément ou rappel"
                                 name="complement"
-/*
                                 value={newComplement.complement}
-*/
                                 onChange={handleComplementChange}
                                 variant="outlined"
                                 fullWidth
                             />
                         )}
                         {(dialogType === 'chargeDeTravail' || dialogType === 'donneurDOrdre') && (
-                            <Autocomplete
-                                options={workers}
-                                getOptionLabel={(option) => `${option.prenom} ${option.nom}`}
-                                onChange={(_, newValue) => setDialogData(newValue)}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label={`Sélectionner le ${dialogType === 'chargeDeTravail' ? "chargé de travail" : "donneur d'ordre"}`}
-                                        variant="outlined"
-                                        fullWidth
-                                    />
-                                )}
-                            />
+                            <Alert severity="info">
+                                La sélection de signatures n'est pas disponible dans cette version DTO.
+                            </Alert>
                         )}
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={handleCloseDialog} color="primary">
-                            Annuler
-                        </Button>
-                        <Button
-                            onClick={() => handleAddItem(dialogType, dialogData)}
-                            color="primary"
-                            disabled={!dialogData}
-                        >
-                            Ajouter
-
-                        </Button>
+                        {dialogType !== 'risques' && dialogType !== 'audits' && (
+                            <>
+                                <Button onClick={handleCloseDialog} color="primary">
+                                    Annuler
+                                </Button>
+                                <Button
+                                    onClick={() => dialogType && handleAddItem(dialogType as DialogTypes, dialogData)}
+                                    color="primary"
+                                    disabled={!dialogData || !dialogType}
+                                >
+                                    Ajouter
+                                </Button>
+                            </>
+                        )}
+                        {(dialogType === 'risques' || dialogType === 'audits') && (
+                            <Button onClick={handleCloseDialog} color="primary">
+                                Fermer
+                            </Button>
+                        )}
                     </DialogActions>
                 </Dialog>
             </Box>

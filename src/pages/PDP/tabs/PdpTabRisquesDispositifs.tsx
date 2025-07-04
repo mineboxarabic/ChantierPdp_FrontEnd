@@ -80,13 +80,20 @@ const PdpTabRisquesDispositifs: FC<PdpTabRisquesDispositifsProps> = ({
 
             console.log('itemData',relation.objectId)
 
-            if (relation.answer !== null && itemData) { // Ensure itemData is found
+            if (relation.answer !== null) { // Remove dependency on itemData being found
+                // If itemData is not found, create a placeholder for recently created items
+                const displayItemData = itemData || {
+                    id: relation.objectId,
+                    title: objectType === ObjectAnsweredObjects.RISQUE ? `Risque #${relation.objectId}` : `Dispositif #${relation.objectId}`,
+                    description: "Élément récemment créé, rechargez la page pour voir les détails complets"
+                };
+
                 const component = (
                     <ItemComponent
                         key={`${objectType}-${relation.objectId}`} // Use real ID if available
                         object={relation}
                         parent={formData} // Pass PdpDTO as parent
-                        itemData={itemData} // Pass actual RisqueDTO or DispositifDTO
+                        itemData={displayItemData} // Pass actual or placeholder data
                         saveParent={saveParent} // Function to save parent data
                         setIsChanged={() => {}} // Or handle changes if needed
                         objectType={objectType}

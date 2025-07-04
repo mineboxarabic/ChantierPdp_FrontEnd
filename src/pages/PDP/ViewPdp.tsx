@@ -43,7 +43,7 @@ import { styled } from "@mui/material/styles";
 import dayjs from "dayjs";
 import usePdp from "../../hooks/usePdp";
 import { Pdp } from "../../utils/entities/Pdp.ts";
-import { getRoute } from "../../Routes";
+// Removed circular dependency import
 import useEntreprise from "../../hooks/useEntreprise.ts";
 import { PdpDTO } from "../../utils/entitiesDTO/PdpDTO.ts";
 import Risque from "../../utils/entities/Risque.ts";
@@ -150,85 +150,137 @@ const ViewPdp: FC = () => {
     const [entreprises, setEntreprises] = useState<Map<number, EntrepriseDTO>> (new Map<number, EntrepriseDTO>());
     const [dispositifs, setDispositifs] = useState<Map<number, DispositifDTO>> (new Map<number, DispositifDTO>());
     const [permits, setPermits] = useState<Map<number, any>> (new Map<number, any>());
+
+    // Utility functions to get relations by type
+    const getRisquesRelations = () => {
+        if (!pdpData?.relations) return [];
+        return pdpData.relations.filter(rel => rel.objectType === ObjectAnsweredObjects.RISQUE);
+    };
+
+    const getDispositifsRelations = () => {
+        if (!pdpData?.relations) return [];
+        return pdpData.relations.filter(rel => rel.objectType === ObjectAnsweredObjects.DISPOSITIF);
+    };
+
+    const getPermitsRelations = () => {
+        if (!pdpData?.relations) return [];
+        return pdpData.relations.filter(rel => rel.objectType === ObjectAnsweredObjects.PERMIT);
+    };
+
+    const getAnalysesRelations = () => {
+        if (!pdpData?.relations) return [];
+        return pdpData.relations.filter(rel => rel.objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE);
+    };
+
     useEffect(() => {
         const fetchPdp = async () => {
             if (id) {
-                const data = await getPlanDePrevention(parseInt(id));
-                setPdpData(data);
+                try {
+                    const data = await getPlanDePrevention(parseInt(id));
+                    setPdpData(data);
+                } catch (error) {
+                    console.error('Error fetching PDP:', error);
+                    setPdpData(null);
+                }
             }
         };
 
-        const fetchEntreprises = async () => {
-            
-            let entrepriseExterieure;// = await entrepriseHook.getEntreprise(pdpData?.entrepriseExterieure);
-            let entrepriseDInspection;// = await entrepriseHook.getEntreprise(pdpData?.entrepriseDInspection);
-            
-            if(pdpData?.entrepriseExterieure) {
-                entrepriseExterieure = await entrepriseHook.getEntreprise(pdpData?.entrepriseExterieure);
-            }
-            if(pdpData?.entrepriseDInspection) {
-                entrepriseDInspection = await entrepriseHook.getEntreprise(pdpData?.entrepriseDInspection);
-            }
-
-
-            setEntreprises(new Map<number, EntrepriseDTO>([
-                [pdpData?.entrepriseExterieure as number, entrepriseExterieure],
-                [pdpData?.entrepriseDInspection as number, entrepriseDInspection]
-            ]));
-        }
-
-        const fetchRisques = async () => {
-            if(!id) return;
-            const risquesIds = await getObjectAnswered(parseInt(id), ObjectAnsweredObjects.RISQUE);
-            if(risquesIds.length === 0) return;
-            const risques = await risquesHook.getRisquesByIds(risquesIds.map(risque => risque.risque_id) as number[]);
-            const risquesMap = new Map<number, RisqueDTO>();
-            risques.forEach(risque => {
-                if (risque) {
-                    risquesMap.set(risque?.id as number, risque);
-                }
-            });
-            
-            setRisques(risquesMap);
-        }
-
-
-        const fetchDispositifs = async () => {
-            if(!id) return;
-            const dispositifsIds = await getObjectAnswered(parseInt(id), ObjectAnsweredObjects.DISPOSITIF);
-            if(dispositifsIds.length === 0) return;
-            const dispositifs = await dispositifHook.getDispositifsByIds(dispositifsIds.map(dispositif => dispositif.dispositif_id) as number[]);
-            const dispositifsMap = new Map<number, DispositifDTO>();
-            dispositifs.forEach(dispositif => {
-                if (dispositif) {
-                    dispositifsMap.set(dispositif?.id as number, dispositif);
-                }
-            });
-            
-            setDispositifs(dispositifsMap);
-        }
-
-        const fetchPermits = async () => {
-            if(!id) return;
-            const permitsIds = await getObjectAnswered(parseInt(id), ObjectAnsweredObjects.PERMIT);
-            if(permitsIds.length === 0) return;
-            const permits = await permitHook.getPermitsByIds(permitsIds.map(permit => permit.permit_id) as number[]);
-            const permitsMap = new Map<number, any>();
-            permits.forEach(permit => {
-                if (permit) {
-                    permitsMap.set(permit?.id as number, permit);
-                }
-            });
-            
-            setPermits(permitsMap);
-        }
-
         fetchPdp();
+    }, [id]);
+
+    useEffect(() => {
+        const fetchEntreprises = async () => {
+            if (!pdpData) return;
+            
+            const entrepriseMap = new Map<number, EntrepriseDTO>();
+            
+            if (pdpData.entrepriseExterieure) {
+                const entrepriseExterieure = await entrepriseHook.getEntreprise(pdpData.entrepriseExterieure);
+                if (entrepriseExterieure) {
+                    entrepriseMap.set(pdpData.entrepriseExterieure, entrepriseExterieure);
+                }
+            }
+            
+            if (pdpData.entrepriseDInspection) {
+                const entrepriseDInspection = await entrepriseHook.getEntreprise(pdpData.entrepriseDInspection);
+                if (entrepriseDInspection) {
+                    entrepriseMap.set(pdpData.entrepriseDInspection, entrepriseDInspection);
+                }
+            }
+            
+            setEntreprises(entrepriseMap);
+        }
+
         fetchEntreprises();
-        fetchRisques();
-        fetchDispositifs();
-        fetchPermits();
-        }, [id]);
+    }, [pdpData?.entrepriseExterieure, pdpData?.entrepriseDInspection]);
+
+    useEffect(() => {
+        const fetchAllData = async () => {
+            if (!pdpData?.relations) return;
+            
+            try {
+                // Extract IDs from relations for each type
+                const risqueIds = pdpData.relations
+                    .filter(rel => rel.objectType === ObjectAnsweredObjects.RISQUE)
+                    .map(rel => rel.objectId as number);
+                
+                const dispositifIds = pdpData.relations
+                    .filter(rel => rel.objectType === ObjectAnsweredObjects.DISPOSITIF)
+                    .map(rel => rel.objectId as number);
+                
+                const permitIds = pdpData.relations
+                    .filter(rel => rel.objectType === ObjectAnsweredObjects.PERMIT)
+                    .map(rel => rel.objectId as number);
+
+                // Fetch data in parallel with error handling
+                const [risquesData, dispositifsData, permitsData] = await Promise.allSettled([
+                    risqueIds.length > 0 ? risquesHook.getRisquesByIds(risqueIds) : Promise.resolve([]),
+                    dispositifIds.length > 0 ? dispositifHook.getDispositifsByIds(dispositifIds) : Promise.resolve([]),
+                    permitIds.length > 0 ? permitHook.getPermitsByIds(permitIds) : Promise.resolve([])
+                ]);
+
+                // Create maps with error handling
+                const risquesMap = new Map<number, RisqueDTO>();
+                if (risquesData.status === 'fulfilled' && risquesData.value) {
+                    risquesData.value.forEach(risque => {
+                        if (risque) {
+                            risquesMap.set(risque.id as number, risque);
+                        }
+                    });
+                }
+                
+                const dispositifsMap = new Map<number, DispositifDTO>();
+                if (dispositifsData.status === 'fulfilled' && dispositifsData.value) {
+                    dispositifsData.value.forEach(dispositif => {
+                        if (dispositif) {
+                            dispositifsMap.set(dispositif.id as number, dispositif);
+                        }
+                    });
+                }
+                
+                const permitsMap = new Map<number, any>();
+                if (permitsData.status === 'fulfilled' && permitsData.value) {
+                    permitsData.value.forEach(permit => {
+                        if (permit) {
+                            permitsMap.set(permit.id as number, permit);
+                        }
+                    });
+                }
+
+                setRisques(risquesMap);
+                setDispositifs(dispositifsMap);
+                setPermits(permitsMap);
+            } catch (error) {
+                console.error('Error fetching related data:', error);
+                // Set empty maps to avoid display issues
+                setRisques(new Map<number, RisqueDTO>());
+                setDispositifs(new Map<number, DispositifDTO>());
+                setPermits(new Map<number, any>());
+            }
+        }
+
+        fetchAllData();
+    }, [pdpData]);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);
@@ -279,7 +331,7 @@ const ViewPdp: FC = () => {
                         </Typography>
                         <Typography variant="h6" sx={{mt: 1, opacity: 0.9}}>
                             {pdpData.entrepriseExterieure ?
-                                `Entreprise extérieure: ${entreprises.get(pdpData?.entrepriseExterieure)?.nom || "N/A"}` :
+                                `Entreprise extérieure: ${entreprises.get(pdpData?.entrepriseExterieure)?.nom || `ID: ${pdpData.entrepriseExterieure}`}` :
                                 "Aucune entreprise extérieure spécifiée"}
                         </Typography>
                         <Box sx={{display: "flex", flexWrap: "wrap", gap: 1, mt: 2}}>
@@ -314,7 +366,7 @@ const ViewPdp: FC = () => {
                             variant="contained"
                             color="primary"
                             startIcon={<Edit/>}
-                            onClick={() => navigate(getRoute('EDIT_PDP', {id: pdpData.id}))}
+                            onClick={() => navigate(`/edit/pdps/${pdpData.id}`)}
                         >
                             Modifier
                         </Button>
@@ -342,10 +394,10 @@ const ViewPdp: FC = () => {
                             {pdpData.entrepriseExterieure ? (
                                 <>
                                     <Typography variant="body1" fontWeight="bold">
-                                        {entreprises.get(pdpData?.entrepriseExterieure)?.nom || "N/A"}
+                                        {entreprises.get(pdpData?.entrepriseExterieure)?.nom || `Entreprise ID: ${pdpData.entrepriseExterieure}`}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
-                                        {entreprises.get(pdpData?.entrepriseExterieure)?.raisonSociale || "N/A"}
+                                        {entreprises.get(pdpData?.entrepriseExterieure)?.raisonSociale || "Raison sociale non disponible"}
                                     </Typography>
                                 </>
                             ) : (
@@ -368,10 +420,10 @@ const ViewPdp: FC = () => {
                             {pdpData.entrepriseDInspection ? (
                                 <>
                                     <Typography variant="body1" fontWeight="bold">
-                                        {entreprises.get(pdpData?.entrepriseDInspection)?.nom || "N/A"}
+                                        {entreprises.get(pdpData?.entrepriseDInspection)?.nom || `Entreprise ID: ${pdpData.entrepriseDInspection}`}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
-                                        {entreprises.get(pdpData?.entrepriseDInspection)?.raisonSociale || "N/A"}
+                                        {entreprises.get(pdpData?.entrepriseDInspection)?.raisonSociale || "Raison sociale non disponible"}
                                     </Typography>
                                 </>
                             ) : (
@@ -438,62 +490,65 @@ const ViewPdp: FC = () => {
                 <TabPanel value={tabValue} index={0}>
                     <SectionTitle variant="h5">Risques identifiés</SectionTitle>
                     <Grid container spacing={3}>
-                        {pdpData.risques && pdpData.risques.length > 0 ? (
-                            pdpData.risques.map((risque, index) => (
-                                <Grid xs={12} md={6} key={risque.id || index}>
-                                    <ItemCard elevation={2}>
-                                        <CardContent>
-                                            <Box sx={{
-                                                display: "flex",
-                                                justifyContent: "space-between",
-                                                alignItems: "center"
-                                            }}>
-                                                <Box sx={{display: "flex", alignItems: "center"}}>
-                                                    <Avatar
-                                                        sx={{bgcolor: risque.answer ? "error.main" : "grey.500", mr: 2}}
-                                                        src={risques.get(risque?.risque_id as number)?.logo ?
-                                                            `data:${risques.get(risque?.risque_id as number)?.logo?.mimeType};base64,${risques.get(risque?.risque_id as number)?.logo?.imageData}` :
-                                                            undefined}
-                                                    >
-                                                        <Warning/>
-                                                    </Avatar>
-                                                    <Box>
-                                                        <Typography variant="h6">
-                                                            {risques.get(risque?.risque_id as number)?.title || `Risque #${risques.get(risque?.risque_id as number)?.id}`}
-                                                        </Typography>
-                                                        <Chip
-                                                            size="small"
-                                                            label={risque.answer ? "Applicable" : "Non applicable"}
-                                                            color={risque.answer ? "error" : "default"}
-                                                            sx={{mt: 1}}
-                                                        />
+                        {getRisquesRelations().length > 0 ? (
+                            getRisquesRelations().map((relation, index) => {
+                                const risque = risques.get(relation.objectId as number);
+                                return (
+                                    <Grid xs={12} md={6} key={relation.objectId || index}>
+                                        <ItemCard elevation={2}>
+                                            <CardContent>
+                                                <Box sx={{
+                                                    display: "flex",
+                                                    justifyContent: "space-between",
+                                                    alignItems: "center"
+                                                }}>
+                                                    <Box sx={{display: "flex", alignItems: "center"}}>
+                                                        <Avatar
+                                                            sx={{bgcolor: relation.answer ? "error.main" : "grey.500", mr: 2}}
+                                                            src={risque?.logo ?
+                                                                `data:${risque.logo.mimeType};base64,${risque.logo.imageData}` :
+                                                                undefined}
+                                                        >
+                                                            <Warning/>
+                                                        </Avatar>
+                                                        <Box>
+                                                            <Typography variant="h6">
+                                                                {risque?.title || `Risque #${relation.objectId}`}
+                                                            </Typography>
+                                                            <Chip
+                                                                size="small"
+                                                                label={relation.answer ? "Applicable" : "Non applicable"}
+                                                                color={relation.answer ? "error" : "default"}
+                                                                sx={{mt: 1}}
+                                                            />
+                                                        </Box>
                                                     </Box>
+                                                    <IconButton size="small">
+                                                        <ChevronRight/>
+                                                    </IconButton>
                                                 </Box>
-                                                <IconButton size="small">
-                                                    <ChevronRight/>
-                                                </IconButton>
-                                            </Box>
 
-                                            {risques.get(risque?.risque_id as number)?.description && (
-                                                <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
-                                                    {risques.get(risque?.risque_id as number)?.description}
-                                                </Typography>
-                                            )}
+                                                {risque?.description && (
+                                                    <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
+                                                        {risque.description}
+                                                    </Typography>
+                                                )}
 
-                                            {risques.get(risque?.risque_id as number)?.description && (
-                                                <Box sx={{mt: 2, p: 1, bgcolor: 'background.paper', borderRadius: 1}}>
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        Commentaire:
-                                                    </Typography>
-                                                    <Typography variant="body2">
-                                                        {risques.get(risque?.risque_id as number)?.description}
-                                                    </Typography>
-                                                </Box>
-                                            )}
-                                        </CardContent>
-                                    </ItemCard>
-                                </Grid>
-                            ))
+                                                {risque?.description && (
+                                                    <Box sx={{mt: 2, p: 1, bgcolor: 'background.paper', borderRadius: 1}}>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            Commentaire:
+                                                        </Typography>
+                                                        <Typography variant="body2">
+                                                            {risque.description}
+                                                        </Typography>
+                                                    </Box>
+                                                )}
+                                            </CardContent>
+                                        </ItemCard>
+                                    </Grid>
+                                );
+                            })
                         ) : (
                             <Grid xs={12}>
                                 <Typography variant="body1" color="text.secondary" sx={{textAlign: "center"}}>
@@ -508,66 +563,68 @@ const ViewPdp: FC = () => {
                 <TabPanel value={tabValue} index={1}>
                     <SectionTitle variant="h5">Dispositifs de prévention</SectionTitle>
                     <Grid container spacing={3}>
-                        {pdpData.dispositifs && pdpData.dispositifs.length > 0 ? (
-                            pdpData.dispositifs.map((dispositif, index) => (
-                                
-                                <Grid xs={12} md={6} key={dispositif.id || index}>
-                                    <ItemCard elevation={2}>
-                                        <CardContent>
-                                            <Box sx={{
-                                                display: "flex",
-                                                justifyContent: "space-between",
-                                                alignItems: "center"
-                                            }}>
-                                                <Box sx={{display: "flex", alignItems: "center"}}>
-                                                    <Avatar
-                                                        sx={{
-                                                            bgcolor: dispositif.answer ? "success.main" : "grey.500",
-                                                            mr: 2
-                                                        }}
-                                                        src={dispositifs.get(dispositif?.dispositif_id as number)?.logo ?
-                                                            `data:${dispositifs.get(dispositif?.dispositif_id as number)?.logo?.mimeType};base64,${dispositifs.get(dispositif?.dispositif_id as number)?.logo?.imageData}` :
-                                                            undefined}
-                                                    >
-                                                        <VerifiedUser/>
-                                                    </Avatar>
-                                                    <Box>
-                                                        <Typography variant="h6">
-                                                            {dispositifs.get(dispositif?.dispositif_id as number)?.title || `Dispositif #${dispositifs.get(dispositif?.dispositif_id as number)?.id}`}
-                                                        </Typography>
-                                                        <Chip
-                                                            size="small"
-                                                            label={dispositif.answer ? "Mis en place" : "Non applicable"}
-                                                            color={dispositif.answer ? "success" : "default"}
-                                                            sx={{mt: 1}}
-                                                        />
+                        {getDispositifsRelations().length > 0 ? (
+                            getDispositifsRelations().map((relation, index) => {
+                                const dispositif = dispositifs.get(relation.objectId as number);
+                                return (
+                                    <Grid xs={12} md={6} key={relation.objectId || index}>
+                                        <ItemCard elevation={2}>
+                                            <CardContent>
+                                                <Box sx={{
+                                                    display: "flex",
+                                                    justifyContent: "space-between",
+                                                    alignItems: "center"
+                                                }}>
+                                                    <Box sx={{display: "flex", alignItems: "center"}}>
+                                                        <Avatar
+                                                            sx={{
+                                                                bgcolor: relation.answer ? "success.main" : "grey.500",
+                                                                mr: 2
+                                                            }}
+                                                            src={dispositif?.logo ?
+                                                                `data:${dispositif.logo.mimeType};base64,${dispositif.logo.imageData}` :
+                                                                undefined}
+                                                        >
+                                                            <VerifiedUser/>
+                                                        </Avatar>
+                                                        <Box>
+                                                            <Typography variant="h6">
+                                                                {dispositif?.title || `Dispositif #${relation.objectId}`}
+                                                            </Typography>
+                                                            <Chip
+                                                                size="small"
+                                                                label={relation.answer ? "Mis en place" : "Non applicable"}
+                                                                color={relation.answer ? "success" : "default"}
+                                                                sx={{mt: 1}}
+                                                            />
+                                                        </Box>
                                                     </Box>
+                                                    <IconButton size="small">
+                                                        <ChevronRight/>
+                                                    </IconButton>
                                                 </Box>
-                                                <IconButton size="small">
-                                                    <ChevronRight/>
-                                                </IconButton>
-                                            </Box>
 
-                                            {dispositifs.get(dispositif?.dispositif_id as number)?.description && (
-                                                <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
-                                                    {dispositifs.get(dispositif?.dispositif_id as number)?.description}
-                                                </Typography>
-                                            )}
+                                                {dispositif?.description && (
+                                                    <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
+                                                        {dispositif.description}
+                                                    </Typography>
+                                                )}
 
-                                            {dispositifs.get(dispositif?.dispositif_id as number)?.description && (
-                                                <Box sx={{mt: 2, p: 1, bgcolor: 'background.paper', borderRadius: 1}}>
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        Commentaire:
-                                                    </Typography>
-                                                    <Typography variant="body2">
-                                                        {dispositifs.get(dispositif?.dispositif_id as number)?.description}
-                                                    </Typography>
-                                                </Box>
-                                            )}
-                                        </CardContent>
-                                    </ItemCard>
-                                </Grid>
-                            ))
+                                                {dispositif?.description && (
+                                                    <Box sx={{mt: 2, p: 1, bgcolor: 'background.paper', borderRadius: 1}}>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            Commentaire:
+                                                        </Typography>
+                                                        <Typography variant="body2">
+                                                            {dispositif.description}
+                                                        </Typography>
+                                                    </Box>
+                                                )}
+                                            </CardContent>
+                                        </ItemCard>
+                                    </Grid>
+                                );
+                            })
                         ) : (
                             <Grid xs={12}>
                                 <Typography variant="body1" color="text.secondary" sx={{textAlign: "center"}}>
@@ -582,51 +639,54 @@ const ViewPdp: FC = () => {
                 <TabPanel value={tabValue} index={2}>
                     <SectionTitle variant="h5">Permis requis</SectionTitle>
                     <Grid container spacing={3}>
-                        {pdpData.permits && pdpData.permits.length > 0 ? (
-                            pdpData.permits.map((permit, index) => (
-                                <Grid xs={12} md={6} key={permit.id || index}>
-                                    <ItemCard elevation={2}>
-                                        <CardContent>
-                                            <Box sx={{
-                                                display: "flex",
-                                                justifyContent: "space-between",
-                                                alignItems: "center"
-                                            }}>
-                                                <Box sx={{display: "flex", alignItems: "center"}}>
-                                                    <Avatar
-                                                        sx={{
-                                                            bgcolor: permit.answer ? "warning.main" : "grey.500",
-                                                            mr: 2
-                                                        }}
-                                                    >
-                                                        <Assignment/>
-                                                    </Avatar>
-                                                    <Box>
-                                                        <Typography variant="h6">
-                                                            {permits.get(permit?.permit_id as number)?.title || `Permis #${permits.get(permit?.permit_id  as number)?.id}`}
-                                                        </Typography>
-                                                        <Chip
-                                                            size="small"
-                                                            label={permit.answer ? "Requis" : "Non requis"}
-                                                            color={permit.answer ? "warning" : "default"}
-                                                            sx={{mt: 1}}
-                                                        />
+                        {getPermitsRelations().length > 0 ? (
+                            getPermitsRelations().map((relation, index) => {
+                                const permit = permits.get(relation.objectId as number);
+                                return (
+                                    <Grid xs={12} md={6} key={relation.objectId || index}>
+                                        <ItemCard elevation={2}>
+                                            <CardContent>
+                                                <Box sx={{
+                                                    display: "flex",
+                                                    justifyContent: "space-between",
+                                                    alignItems: "center"
+                                                }}>
+                                                    <Box sx={{display: "flex", alignItems: "center"}}>
+                                                        <Avatar
+                                                            sx={{
+                                                                bgcolor: relation.answer ? "warning.main" : "grey.500",
+                                                                mr: 2
+                                                            }}
+                                                        >
+                                                            <Assignment/>
+                                                        </Avatar>
+                                                        <Box>
+                                                            <Typography variant="h6">
+                                                                {permit?.title || `Permis #${relation.objectId}`}
+                                                            </Typography>
+                                                            <Chip
+                                                                size="small"
+                                                                label={relation.answer ? "Requis" : "Non requis"}
+                                                                color={relation.answer ? "warning" : "default"}
+                                                                sx={{mt: 1}}
+                                                            />
+                                                        </Box>
                                                     </Box>
+                                                    <IconButton size="small">
+                                                        <ChevronRight/>
+                                                    </IconButton>
                                                 </Box>
-                                                <IconButton size="small">
-                                                    <ChevronRight/>
-                                                </IconButton>
-                                            </Box>
 
-                                            {permits.get(permit?.permit_id as number)?.description && (
-                                                <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
-                                                    {permits.get(permit?.permit_id as number)?.description}
-                                                </Typography>
-                                            )}
-                                        </CardContent>
-                                    </ItemCard>
-                                </Grid>
-                            ))
+                                                {permit?.description && (
+                                                    <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
+                                                        {permit.description}
+                                                    </Typography>
+                                                )}
+                                            </CardContent>
+                                        </ItemCard>
+                                    </Grid>
+                                );
+                            })
                         ) : (
                             <Grid xs={12}>
                                 <Typography variant="body1" color="text.secondary" sx={{textAlign: "center"}}>
@@ -641,9 +701,9 @@ const ViewPdp: FC = () => {
                 <TabPanel value={tabValue} index={3}>
                     <SectionTitle variant="h5">Analyses de Risques</SectionTitle>
                     <Grid container spacing={3}>
-                        {pdpData.analyseDeRisques && pdpData.analyseDeRisques.length > 0 ? (
-                            pdpData.analyseDeRisques.map((analyse, index) => (
-                                <Grid xs={12} key={analyse.id || index}>
+                        {getAnalysesRelations().length > 0 ? (
+                            getAnalysesRelations().map((relation, index) => (
+                                <Grid xs={12} key={relation.id || index}>
                                     <ItemCard elevation={2}>
                                         <CardContent>
                                             <Box sx={{
@@ -654,27 +714,19 @@ const ViewPdp: FC = () => {
                                                 <Box sx={{display: "flex", alignItems: "center"}}>
                                                     <Avatar
                                                         sx={{bgcolor: "secondary.main", mr: 2}}
-                                                        src={analyse.analyseDeRisque?.risque?.logo ?
-                                                            `data:${analyse.analyseDeRisque.risque.logo.mimeType};base64,${analyse.analyseDeRisque.risque.logo.imageData}` :
-                                                            undefined}
                                                     >
                                                         <Shield/>
                                                     </Avatar>
                                                     <Box>
                                                         <Typography variant="h6">
-                                                            {analyse.analyseDeRisque?.risque?.title || `Analyse #${analyse.id}`}
+                                                            {`Analyse #${relation.objectId}`}
                                                         </Typography>
                                                         <Box sx={{display: 'flex', gap: 1, mt: 1}}>
-                                                            {analyse.eu && (
-                                                                <Chip size="small" label="EU" color="primary"/>
-                                                            )}
-                                                            {analyse.ee && (
-                                                                <Chip size="small" label="EE" color="secondary"/>
-                                                            )}
-                                                            {analyse.analyseDeRisque?.risque?.travailleDangereux && (
-                                                                <Chip size="small" label="Travail dangereux"
-                                                                      color="error"/>
-                                                            )}
+                                                            <Chip
+                                                                size="small"
+                                                                label={relation.answer ? "Applicable" : "Non applicable"}
+                                                                color={relation.answer ? "success" : "default"}
+                                                            />
                                                         </Box>
                                                     </Box>
                                                 </Box>
@@ -690,28 +742,12 @@ const ViewPdp: FC = () => {
                                             <Divider sx={{my: 2}}/>
 
                                             <Grid container spacing={2}>
-                                                <Grid xs={12} md={6}>
-                                                    <Typography variant="subtitle2" color="text.secondary">
-                                                        Déroulement des tâches
-                                                    </Typography>
-                                                    <Typography variant="body2">
-                                                        {analyse.analyseDeRisque?.deroulementDesTaches || "Non spécifié"}
-                                                    </Typography>
-                                                </Grid>
-                                                <Grid xs={12} md={6}>
-                                                    <Typography variant="subtitle2" color="text.secondary">
-                                                        Moyens utilisés
-                                                    </Typography>
-                                                    <Typography variant="body2">
-                                                        {analyse.analyseDeRisque?.moyensUtilises || "Non spécifié"}
-                                                    </Typography>
-                                                </Grid>
                                                 <Grid xs={12}>
                                                     <Typography variant="subtitle2" color="text.secondary">
-                                                        Mesures de prévention
+                                                        Statut
                                                     </Typography>
                                                     <Typography variant="body2">
-                                                        {analyse.analyseDeRisque?.mesuresDePrevention || "Non spécifié"}
+                                                        {relation.answer ? "Applicable" : "Non applicable"}
                                                     </Typography>
                                                 </Grid>
                                             </Grid>
@@ -800,7 +836,7 @@ const ViewPdp: FC = () => {
                     startIcon={<ArrowBack/>}
                     onClick={() =>
                         pdpData.chantier
-                            ? navigate(getRoute('VIEW_CHANTIER', {id: pdpData.chantier}))
+                            ? navigate(`/view/chantier/${pdpData.chantier}`)
                             : navigate('/')
                     }
                 >
@@ -810,7 +846,7 @@ const ViewPdp: FC = () => {
                     variant="contained"
                     color="primary"
                     startIcon={<Edit/>}
-                    onClick={() => navigate(getRoute('EDIT_PDP', {id: pdpData.id}))}
+                    onClick={() => navigate(`/edit/pdps/${pdpData.id}`)}
                 >
                     Modifier le PDP
                 </Button>

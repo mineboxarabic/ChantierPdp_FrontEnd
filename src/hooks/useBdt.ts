@@ -47,7 +47,7 @@ export const getBDTById = async (id: number): Promise<ApiResponse<BdtDTO>> => {
 // Function to create a new BdtDTO
 export const createBDT = async (bdtData: BdtDTO): Promise<ApiResponse<BdtDTO>> => {
     return fetchApi<BdtDTO>(
-        "api/bdt/",
+        "api/bdt",
         "POST",
         bdtData,
         [

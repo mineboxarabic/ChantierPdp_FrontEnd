@@ -132,7 +132,7 @@ const useEntreprise = () => {
 
     const notifications = useNotifications();
 
-    const getEntrepriseHook = async (id: number): Promise<EntrepriseDTO> => {
+    const getEntrepriseHook = async (id: number): Promise<EntrepriseDTO | null> => {
         setLoading(true);
         try {
             const result = await getEntrepriseById(id);
@@ -140,11 +140,15 @@ const useEntreprise = () => {
                 setResponse(result.data);
                 return result.data;
             }
-            throw new Error(result.message || "Failed to get entreprise");
+            // Instead of throwing an error, return null for missing/unavailable data
+            console.warn(`Entreprise with ID ${id} not found or not available:`, result.message);
+            return null;
         } catch (e: any) {
             setError(e.message);
-            notifications.show(e.message, { severity: "error" });
-            throw e;
+            console.warn(`Failed to fetch entreprise ${id}:`, e.message);
+            // Don't show notification for missing entreprise data, as it's not critical
+            // notifications.show(e.message, { severity: "error" });
+            return null;
         } finally {
             setLoading(false);
         }

@@ -57,9 +57,10 @@ interface DashboardStats {
 const Dashboard: React.FC = () => {
   const theme = useTheme();
 
-  const [statsData, setStatsData] = useState<DashboardStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState<boolean>(true);
-  const [statsError, setStatsError] = useState<string | null>(null);
+  // Temporarily commented out statistics
+  // const [statsData, setStatsData] = useState<DashboardStats | null>(null);
+  // const [statsLoading, setStatsLoading] = useState<boolean>(true);
+  // const [statsError, setStatsError] = useState<string | null>(null);
 
   const [recentChantiersData, setRecentChantiersData] = useState<ChantierDTO[]>([]);
   const [recentChantiersLoading, setRecentChantiersLoading] = useState<boolean>(true);
@@ -106,38 +107,34 @@ const Dashboard: React.FC = () => {
       fetchNotifications('unread', 0, 10);
       refreshUnreadCount();
 
-      try {
-        setStatsLoading(true);
-        const [chantiersList, pdpsList, fetchedRisquesForStats, workersList] = await Promise.all([
-          getAllChantiers(),
-          getAllPDPs(),
-          getAllRisques(), // Assuming this returns RisqueDTO[] or populates a map accessible via the hook
-          getAllWorkers()
-        ]);
-        
-
-        const allRisksArrayForStats: RisqueDTO[] = fetchedRisquesForStats;
-
-
-        const activeChantiers = chantiersList.filter(c => c.status !== 'COMPLETED' && c.status !== ChantierStatus.ACTIVE);
-        
-        // Corrected highRisksCount calculation
-        const highRiskItemsCount = allRisksArrayForStats.filter(r => r.travailleDangereux).length;
-
-        setStatsData({
-          activeChantiersCount: activeChantiers.length,
-          pendingPdpsCount: pdpsList.filter(p => p.status === DocumentStatus.NEEDS_ACTION).length,
-          highRisksCount: highRiskItemsCount, // Use the corrected count
-          assignedWorkersCount: workersList.length,
-        });
-
-        setStatsError(null);
-      } catch (err) {
-        console.error("Error fetching stats data:", err);
-        setStatsError("Erreur chargement stats");
-      } finally {
-        setStatsLoading(false);
-      }
+      // Temporarily commented out statistics fetching
+      // try {
+      //   setStatsLoading(true);
+      //   const [chantiersList, pdpsList, fetchedRisquesForStats, workersList] = await Promise.all([
+      //     getAllChantiers(),
+      //     getAllPDPs(),
+      //     getAllRisques(), // Assuming this returns RisqueDTO[] or populates a map accessible via the hook
+      //     getAllWorkers()
+      //   ]);
+      //   
+      //   const allRisksArrayForStats: RisqueDTO[] = fetchedRisquesForStats;
+      //   const activeChantiers = chantiersList.filter(c => c.status !== 'COMPLETED' && c.status !== ChantierStatus.ACTIVE);
+      //   
+      //   // Corrected highRisksCount calculation
+      //   const highRiskItemsCount = allRisksArrayForStats.filter(r => r.travailleDangereux).length;
+      //   setStatsData({
+      //     activeChantiersCount: activeChantiers.length,
+      //     pendingPdpsCount: pdpsList.filter(p => p.status === DocumentStatus.NEEDS_ACTION).length,
+      //     highRisksCount: highRiskItemsCount, // Use the corrected count
+      //     assignedWorkersCount: workersList.length,
+      //   });
+      //   setStatsError(null);
+      // } catch (err) {
+      //   console.error("Error fetching stats data:", err);
+      //   setStatsError("Erreur chargement stats");
+      // } finally {
+      //   setStatsLoading(false);
+      // }
 
       try {
         setRecentChantiersLoading(true);
@@ -184,8 +181,9 @@ const Dashboard: React.FC = () => {
   }, [ 
     ]);
 
-  const pageLoading = statsLoading || recentChantiersLoading || pendingPdpsLoading || activityLoading || notificationsLoading || workerDistributionLoading;
-  const overallError = statsError || recentChantiersError || pendingPdpsError || activityError || notificationsError || workerDistributionError;
+  // Temporarily commented out stats from loading check
+  const pageLoading = recentChantiersLoading || pendingPdpsLoading || activityLoading || notificationsLoading || workerDistributionLoading;
+  const overallError = recentChantiersError || pendingPdpsError || activityError || notificationsError || workerDistributionError;
 
   if (pageLoading) {
     return (
@@ -201,7 +199,7 @@ const Dashboard: React.FC = () => {
       <DashboardContainer maxWidth="xl" sx={{ textAlign: 'center', mt: 4 }}>
         <Alert severity="error" sx={{ mb: 2, textAlign: 'left' }}>
           Une ou plusieurs erreurs sont survenues lors du chargement des données du tableau de bord:
-          {statsError && <Typography variant="body2">- Stats: {statsError}</Typography>}
+          {/* {statsError && <Typography variant="body2">- Stats: {statsError}</Typography>} */}
           {recentChantiersError && <Typography variant="body2">- Chantiers Récents: {recentChantiersError}</Typography>}
           {pendingPdpsError && <Typography variant="body2">- PDPs en Attente: {pendingPdpsError}</Typography>}
           {activityError && <Typography variant="body2">- Activité: {activityError}</Typography>}
@@ -218,7 +216,8 @@ const Dashboard: React.FC = () => {
       <DashboardHeader />
       <Grid container spacing={3}>
         <Grid item xs={12}>
-          {statsData && !statsLoading ? <StatCards stats={statsData} /> : statsLoading ? <CircularProgress size={20} /> : null }
+          {/* Temporarily commented out StatCards */}
+          {/* {statsData && !statsLoading ? <StatCards stats={statsData} /> : statsLoading ? <CircularProgress size={20} /> : null } */}
         </Grid>
 
         <Grid item xs={12} lg={8}>
