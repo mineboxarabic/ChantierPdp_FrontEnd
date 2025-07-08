@@ -5,6 +5,7 @@ import {EntityConfig, FieldType, CrudOperations, ImageModel} from "../../compone
 import useRisque from "../../hooks/useRisque.ts";
 import defaultImage from "../../assets/wornings/worning.webp"
 import RisqueDTO from '../../utils/entitiesDTO/RisqueDTO.ts';
+import PermiTypes from '../../utils/PermiTypes.ts';
 
 // Create a theme instance
 const theme = createTheme({
@@ -81,10 +82,32 @@ export const risqueConfig: EntityConfig = {
             order: 4,
         },
         {
+            key: 'permitId',
+            type: FieldType.Number,
+            label: 'Permit ID',
+            order: 5,
+            hidden: false, // You can set to true if you don't want to show this field in forms
+        },
+        {
+            key: 'permitType',
+            type: FieldType.Enum,
+            label: 'Permit Type',
+            order: 6,
+            options: [
+                { value: PermiTypes.NONE, label: 'None' },
+                { value: PermiTypes.FOUILLE, label: 'Fouille (Excavation Work)' },
+                { value: PermiTypes.ATEX, label: 'ATEX (Explosive Atmosphere)' },
+                { value: PermiTypes.ESPACE_CONFINE, label: 'Espace Confiné (Confined Space)' },
+                { value: PermiTypes.LEVAGE, label: 'Levage (Lifting Work)' },
+                { value: PermiTypes.HAUTEUR, label: 'Hauteur (Height Work)' },
+                { value: PermiTypes.TOITURE, label: 'Toiture (Roof Work)' },
+            ],
+        },
+        {
             key: 'logo',
             type: FieldType.Image,
             label: 'Logo',
-            order: 5,
+            order: 7,
             fullWidth: true
         },
     ],

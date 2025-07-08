@@ -290,6 +290,44 @@ const ViewPdp: FC = () => {
         return date ? dayjs(date).format("DD/MM/YYYY") : "Non défini";
     };
 
+    // Function to get status tag color and label
+    const getStatusChip = () => {
+        const status = pdpData?.status;
+        
+        switch(status) {
+            case 'ACTIVE':
+                return { label: 'Actif', color: 'success' as const };
+            case 'DRAFT':
+                return { label: 'Brouillon', color: 'warning' as const };
+            case 'COMPLETED':
+                return { label: 'Terminé', color: 'primary' as const };
+            case 'NEEDS_ACTION':
+                return { label: 'Action requise', color: 'error' as const };
+            case 'EXPIRED':
+                return { label: 'Expiré', color: 'error' as const };
+            case 'CANCELED':
+                return { label: 'Annulé', color: 'default' as const };
+            default:
+                return { label: status || 'Indéfini', color: 'default' as const };
+        }
+    };
+
+    // Function to get action type tag color and label
+    const getActionTypeChip = () => {
+        const actionType = pdpData?.actionType;
+        
+        switch(actionType) {
+            case 'SIGNATURES_MISSING':
+                return { label: 'Signatures manquantes', color: 'warning' as const };
+            case 'PERMIT_MISSING':
+                return { label: 'Permis manquant', color: 'error' as const };
+            case 'NONE':
+                return { label: 'Aucune action', color: 'success' as const };
+            default:
+                return { label: actionType || 'Non défini', color: 'default' as const };
+        }
+    };
+
     if (loading) {
         return (
             <Box sx={{display: "flex", justifyContent: "center", alignItems: "center", height: "80vh"}}>
@@ -328,6 +366,21 @@ const ViewPdp: FC = () => {
                     <Grid xs={12} md={9}>
                         <Typography variant="h4" fontWeight="bold">
                             Plan de Prévention #{pdpData.id}
+                            <Chip
+                                label={getStatusChip().label}
+                                color={getStatusChip().color}
+                                size="medium"
+                                sx={{ ml: 2, fontWeight: 'bold' }}
+                            />
+                            {pdpData?.actionType && pdpData.actionType !== 'NONE' && (
+                                <Chip
+                                    label={getActionTypeChip().label}
+                                    color={getActionTypeChip().color}
+                                    size="medium"
+                                    variant="outlined"
+                                    sx={{ ml: 1, fontWeight: 'bold' }}
+                                />
+                            )}
                         </Typography>
                         <Typography variant="h6" sx={{mt: 1, opacity: 0.9}}>
                             {pdpData.entrepriseExterieure ?
@@ -379,6 +432,24 @@ const ViewPdp: FC = () => {
                         </Button>
                     </Grid>
                 </Grid>
+
+                {/* Status and Action Type Chips */}
+                <Box sx={{mt: 2, display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "flex-start"}}>
+                    <Chip
+                        label={`Statut: ${getStatusChip().label}`}
+                        color={getStatusChip().color}
+                        variant="outlined"
+                        size="small"
+                        sx={{borderRadius: 1, fontWeight: "medium"}}
+                    />
+                    <Chip
+                        label={`Action: ${getActionTypeChip().label}`}
+                        color={getActionTypeChip().color}
+                        variant="outlined"
+                        size="small"
+                        sx={{borderRadius: 1, fontWeight: "medium"}}
+                    />
+                </Box>
             </HeaderCard>
 
             {/* General Info Cards */}

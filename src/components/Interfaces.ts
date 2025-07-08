@@ -27,12 +27,11 @@ export interface ParentOAnalyseDeRisque {
 
 export interface ObjectAnsweredBasedComponentProps<ITEM extends ContentItem, PARENT extends ParentOfRelations> {
     object: ObjectAnsweredDTO;
-
     objectType: ObjectAnsweredObjects;
     saveParent: (pdp: PARENT) => void;
-
     parent: PARENT;
     setIsChanged: (value: boolean) => void;
-
     itemData?: ITEM; // Optional item data for display
+    onDeleteRelationFromItem?: () => void; // Optional delete function
+    onUpdateRelationFieldFromItem?: (relationUniqueKey: string | number, field: keyof ObjectAnsweredDTO, value: any) => void; // Optional update function
 }

@@ -1,5 +1,5 @@
 // src/pages/PDP/tabs/PdpTabPermits.tsx
-import React, { FC, useMemo } from 'react';
+import React, { FC, useMemo, useState } from 'react';
 import {
     Grid,
     Paper,
@@ -18,12 +18,15 @@ import {
     Chip,
     CardActions,
     alpha,
+    CircularProgress,
 } from '@mui/material';
+import { LoadingButton } from '@mui/lab';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser'; // Icon for Permits
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CreateIcon from '@mui/icons-material/Create';
 
 import { PdpDTO } from '../../../utils/entitiesDTO/PdpDTO';
 import  PermitDTO  from '../../../utils/entitiesDTO/PermitDTO';
@@ -52,6 +55,7 @@ interface PdpTabPermitsProps {
     // New props for permit upload
     onPermitUpload: (risqueId: number, file: File | null) => void;
     getPermitUploadStatus: (risqueId: number) => { file: File | null; status: 'none' | 'uploaded' | 'pending' };
+    onCreatePermitFromRisk: (risque: RisqueDTO) => Promise<void>;
 }
 
 const PdpTabPermits: FC<PdpTabPermitsProps> = ({
@@ -68,7 +72,10 @@ const PdpTabPermits: FC<PdpTabPermitsProps> = ({
     onShowRequiredPermitModal,
     onPermitUpload,
     getPermitUploadStatus,
+    onCreatePermitFromRisk,
 }) => {
+    const [creatingPermitForRisqueId, setCreatingPermitForRisqueId] = useState<number | null>(null);
+
     const permitsRelations = useMemo(() => {
         return formData.relations?.filter(r => r.objectType === ObjectAnsweredObjects.PERMIT && r.answer !== null) ?? [];
     }, [formData.relations]);
@@ -91,9 +98,16 @@ const PdpTabPermits: FC<PdpTabPermitsProps> = ({
         return { total, uploaded, remaining: total - uploaded };
     }, [risksRequiringPermits, getPermitUploadStatus]);
 
-    // Debug logging
-    console.log("PdpTabPermits - risksRequiringPermits:", risksRequiringPermits);
-    console.log("PdpTabPermits - permitUploadSummary:", permitUploadSummary);
+    const handleCreatePermit = async (risque: RisqueDTO) => {
+        if (!risque.id) return;
+        
+        setCreatingPermitForRisqueId(risque.id);
+        try {
+            await onCreatePermitFromRisk(risque);
+        } finally {
+            setCreatingPermitForRisqueId(null);
+        }
+    };
 
     return (
     <>
@@ -251,6 +265,10 @@ const PdpTabPermits: FC<PdpTabPermitsProps> = ({
                                                     {uploadStatus.file && (
                                                         <Typography variant="caption" display="block" sx={{ mb: 1 }}>
                                                             Fichier: {uploadStatus.file.name}
+                                                            <br />
+                                                            <Typography component="span" color="success.main" fontWeight="bold">
+                                                                Prêt pour la création du permis
+                                                            </Typography>
                                                         </Typography>
                                                     )}
                                                     
@@ -297,14 +315,21 @@ const PdpTabPermits: FC<PdpTabPermitsProps> = ({
                                                 }
                                             </CardContent>
                                             <CardActions sx={{justifyContent: 'flex-end'}}>
-                                                <Button
-                                                    size="small"
-                                                    variant="contained"
-                                                    color="primary"
-                                                    onClick={() => onOpenDialog('permits')} // Opens the dialog to add *any* permit
-                                                >
-                                                    Ajouter un permis au PDP
-                                                </Button>
+                                                <Tooltip title={uploadStatus.status !== 'uploaded' ? "Veuillez d'abord télécharger un fichier pour ce risque" : "Créer un permis à partir du fichier téléchargé"}>
+                                                    <span>
+                                                        <LoadingButton
+                                                            size="small"
+                                                            variant="contained"
+                                                            color="primary"
+                                                            startIcon={<CreateIcon />}
+                                                            loading={creatingPermitForRisqueId === risque.id}
+                                                            disabled={uploadStatus.status !== 'uploaded' || creatingPermitForRisqueId === risque.id}
+                                                            onClick={() => handleCreatePermit(risque)}
+                                                        >
+                                                            Créer le permis
+                                                        </LoadingButton>
+                                                    </span>
+                                                </Tooltip>
                                                 <Button
                                                     size="small"
                                                     variant="text"
@@ -318,6 +343,21 @@ const PdpTabPermits: FC<PdpTabPermitsProps> = ({
                                 );
                             })}
                         </Grid>
+                    </Box>
+                )}
+
+                {/* Information when no risks requiring permits */}
+                {risksRequiringPermits.length === 0 && (
+                    <Box mt={4}>
+                        <Alert severity="info" sx={{ mb: 2 }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                                Aucun risque nécessitant un permis spécifique
+                            </Typography>
+                            <Typography variant="body2">
+                                Lorsque vous ajoutez des risques qui nécessitent des permis spécifiques (comme les travaux en hauteur, espaces confinés, etc.), 
+                                une section apparaîtra ici pour vous permettre de télécharger les permis correspondants.
+                            </Typography>
+                        </Alert>
                     </Box>
                 )}
             </Paper>

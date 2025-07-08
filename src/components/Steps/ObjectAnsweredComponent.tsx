@@ -23,7 +23,9 @@ const ObjectAnsweredComponent = <ITEM extends ContentItem, PARENT extends Parent
      parent,
      setIsChanged,
      itemData,
-     objectType: type }: ObjectAnsweredBasedComponentProps<ITEM,PARENT>) => {
+     objectType: type,
+     onDeleteRelationFromItem,
+     onUpdateRelationFieldFromItem }: ObjectAnsweredBasedComponentProps<ITEM,PARENT>) => {
     
     
     
@@ -42,33 +44,45 @@ const ObjectAnsweredComponent = <ITEM extends ContentItem, PARENT extends Parent
 
     const handleConfirmDelete = () => {
         setOpenDialog(false);
-        onDelete();
+        // Use the prop function instead of the old onDelete
+        if (onDeleteRelationFromItem) {
+            onDeleteRelationFromItem();
+        } else {
+            // Fallback to old logic if prop not provided
+            onDelete();
+        }
     };
 const onCheckChange = (value: boolean) => {
     setChecked(value); // update local state so Checkbox rerenders
-    console.log("value", parent);
-    const currentArrayofObjects = parent.relations as ObjectAnsweredDTO[];
+    
+    // Use the prop function if available, otherwise fallback to direct manipulation
+    if (onUpdateRelationFieldFromItem) {
+        onUpdateRelationFieldFromItem(object.id!, 'answer', value);
+    } else {
+        // Fallback to old logic for backward compatibility
+        console.log("value", parent);
+        const currentArrayofObjects = parent.relations as ObjectAnsweredDTO[];
 
-    const newArrayofObjects = currentArrayofObjects?.map((p: ObjectAnsweredDTO) => {
-        if (p.id === object.id) {
-            return {
-                ...p,
-                answer: value,
-            };
-        }
-        return p;
-    });
+        const newArrayofObjects = currentArrayofObjects?.map((p: ObjectAnsweredDTO) => {
+            if (p.id === object.id) {
+                return {
+                    ...p,
+                    answer: value,
+                };
+            }
+            return p;
+        });
 
-    console.log("currentArrayofObjects", currentArrayofObjects);
-    console.log("newArrayofObjects", newArrayofObjects);
+        console.log("currentArrayofObjects", currentArrayofObjects);
+        console.log("newArrayofObjects", newArrayofObjects);
 
+        saveParent({
+            ...parent,
+            relations: newArrayofObjects,
+        });
 
-    saveParent({
-        ...parent,
-        relations: newArrayofObjects,
-    });
-
-    setIsChanged(true);
+        setIsChanged(true);
+    }
 };
 
     const onDelete = () => {

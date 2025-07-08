@@ -1,5 +1,5 @@
 // src/pages/PDP/tabs/PdpTabRisquesDispositifs.tsx
-import React, { FC, useMemo } from 'react';
+import React, { FC, useMemo, useState } from 'react';
 import {
     Grid,
     Paper,
@@ -16,8 +16,8 @@ import WarningIcon from '@mui/icons-material/Warning'; // For Risques
 import SecurityIcon from '@mui/icons-material/Security'; // For Dispositifs
 
 import { PdpDTO } from '../../../utils/entitiesDTO/PdpDTO';
-import  RisqueDTO  from '../../../utils/entitiesDTO/RisqueDTO';
-import  DispositifDTO  from '../../../utils/entitiesDTO/DispositifDTO';
+import RisqueDTO from '../../../utils/entitiesDTO/RisqueDTO';
+import DispositifDTO from '../../../utils/entitiesDTO/DispositifDTO';
 import ObjectAnsweredDTO from '../../../utils/pdp/ObjectAnswered';
 import ObjectAnsweredObjects from '../../../utils/ObjectAnsweredObjects';
 import { SectionTitle } from '../../../pages/Home/styles';
@@ -26,8 +26,10 @@ import { SectionTitle } from '../../../pages/Home/styles';
 import RisqueComponent from '../../../components/Steps/RisqueComponent'; // Adjust path if needed
 import ObjectAnsweredComponent from '../../../components/Steps/ObjectAnsweredComponent'; // Adjust path
 
-type DialogTypes = 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'editAnalyseDeRisque' | '';
+// Import the new multiple selection dialog
+import MultipleRiskSelectionDialog from '../../../components/MultipleSelectionDialog/MultipleRiskSelectionDialog';
 
+type DialogTypes = 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'editAnalyseDeRisque' | '';
 
 interface PdpTabRisquesDispositifsProps {
     formData: PdpDTO;
@@ -35,12 +37,15 @@ interface PdpTabRisquesDispositifsProps {
     allRisquesMap: Map<number, RisqueDTO>;
     allDispositifsMap: Map<number, DispositifDTO>;
     onOpenDialog: (type: DialogTypes) => void; // To trigger the dialog in parent
-    // onDeleteRelation: (relationId: number | undefined) => void; // Original was by relation ID
     onDeleteRelation: (objectId: number, objectType: ObjectAnsweredObjects) => void; // More robust
     onUpdateRelationField: (relationUniqueKey: string | number, field: keyof ObjectAnsweredDTO, value: any) => void;
     onNavigateBack: () => void;
     onNavigateNext: () => void;
     saveParent: (updatedPdpData: PdpDTO) => void; // Function to save parent data
+    // New prop for adding multiple risks
+    onAddMultipleRisks: (risks: RisqueDTO[], risksToUnlink?: RisqueDTO[]) => Promise<void>;
+    // Prop for refreshing risk data after creation
+    onRefreshRisks: () => Promise<void>;
 }
 
 const PdpTabRisquesDispositifs: FC<PdpTabRisquesDispositifsProps> = ({
@@ -51,14 +56,16 @@ const PdpTabRisquesDispositifs: FC<PdpTabRisquesDispositifsProps> = ({
     allDispositifsMap,
     onOpenDialog,
     onDeleteRelation,
-    onUpdateRelationField, // Make sure this is correctly implemented in EditCreatePdp
+    onUpdateRelationField,
     onNavigateBack,
     onNavigateNext,
+    onAddMultipleRisks,
+    onRefreshRisks,
 }) => {
-    const getActiveRelations = (type: ObjectAnsweredObjects): ObjectAnsweredDTO[] => {
-       // return formData.relations?.filter(r => r.objectType === type && r.answer !== null) ?? [];
-            return formData.relations?.filter(r => r.objectType === type && r.answer !== null) ?? [];
+    const [showRiskSelectionDialog, setShowRiskSelectionDialog] = useState(false);
 
+    const getActiveRelations = (type: ObjectAnsweredObjects): ObjectAnsweredDTO[] => {
+        return formData.relations?.filter(r => r.objectType === type && r.answer !== null) ?? [];
     };
 
     const risquesRelations = getActiveRelations(ObjectAnsweredObjects.RISQUE);
@@ -136,8 +143,13 @@ const PdpTabRisquesDispositifs: FC<PdpTabRisquesDispositifsProps> = ({
                                 <WarningIcon color="error" sx={{ mr: 1 }} />
                                 Risques Identifiés
                             </SectionTitle>
-                            <Button variant="outlined" size="small" startIcon={<AddIcon />} onClick={() => onOpenDialog('risques')}>
-                                Ajouter un Risque
+                            <Button 
+                                variant="outlined" 
+                                size="small" 
+                                startIcon={<AddIcon />} 
+                                onClick={() => setShowRiskSelectionDialog(true)}
+                            >
+                                Ajouter des Risques
                             </Button>
                         </Box>
                         {errors.risques && <Alert severity="error" sx={{ mb: 2 }}>{errors.risques}</Alert>}
@@ -184,6 +196,17 @@ const PdpTabRisquesDispositifs: FC<PdpTabRisquesDispositifsProps> = ({
                     Suivant
                 </Button>
             </Box>
+
+            {/* Multiple Risk Selection Dialog */}
+            <MultipleRiskSelectionDialog
+                open={showRiskSelectionDialog}
+                onClose={() => setShowRiskSelectionDialog(false)}
+                onConfirm={onAddMultipleRisks}
+                availableRisks={allRisquesMap}
+                alreadySelectedRiskIds={risquesRelations.map(r => r.objectId as number)}
+                title="Ajouter des Risques au PDP"
+                onRiskDataRefresh={onRefreshRisks}
+            />
         </>
     );
 };
