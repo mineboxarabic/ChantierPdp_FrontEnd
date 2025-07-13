@@ -44,6 +44,23 @@ const RequiredPermitModal: React.FC<RequiredPermitModalProps> = ({
     showPdfPreview = true,
     neededPermits = []
 }) => {
+    // Debug logging - Log when modal opens with permitData
+    React.useEffect(() => {
+        if (open && permitData) {
+            console.log('=== RequiredPermitModal Debug ===');
+            console.log('Modal opened at:', new Date().toISOString());
+            console.log('Permit Data:', permitData);
+            console.log('Permit ID:', permitData.id);
+            console.log('Permit Title:', permitData.title);
+            console.log('Permit Type:', permitData.type);
+            console.log('PDF Data exists:', !!permitData.pdfData);
+            console.log('PDF Data length:', permitData.pdfData?.length || 0);
+            console.log('PDF Data first 100 chars:', permitData.pdfData?.substring(0, 100) || 'None');
+            console.log('Associated Risk:', risque);
+            console.log('==================================');
+        }
+    }, [open, permitData, risque]);
+
     const handleDownload = () => {
         // If custom download handler is provided, use it
         if (onDownload) {
@@ -52,14 +69,21 @@ const RequiredPermitModal: React.FC<RequiredPermitModalProps> = ({
         }
 
         // Default download behavior - create a download from the base64 data
-        if (permitData?.pdfData) {
-            const linkSource = `data:application/pdf;base64,${permitData.pdfData}`;
-            const downloadLink = document.createElement('a');
-            const fileName = `${permitData.title || 'Permis'}.pdf`;
+        if (permitData?.pdfData && permitData.pdfData.trim().length > 0) {
+            try {
+                const linkSource = `data:application/pdf;base64,${permitData.pdfData}`;
+                const downloadLink = document.createElement('a');
+                const fileName = `${permitData.title || 'Permis'}.pdf`;
 
-            downloadLink.href = linkSource;
-            downloadLink.download = fileName;
-            downloadLink.click();
+                downloadLink.href = linkSource;
+                downloadLink.download = fileName;
+                downloadLink.click();
+            } catch (error) {
+                console.error('Error downloading PDF:', error);
+                alert('Erreur lors du téléchargement du PDF. Le fichier pourrait être corrompu.');
+            }
+        } else {
+            alert('Aucun document PDF disponible pour ce permis.');
         }
     };
 
@@ -119,15 +143,46 @@ const RequiredPermitModal: React.FC<RequiredPermitModalProps> = ({
                                 </Typography>
                             )}
                             
+                            {/* Debug information - Only show document status */}
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                                État du document: {
+                                    permitData.pdfData && permitData.pdfData.trim().length > 0 
+                                        ? `PDF disponible (${permitData.pdfData.length} caractères)`
+                                        : 'Aucun PDF disponible'
+                                }
+                            </Typography>
+                            
+                            {/* Uncomment below for detailed debugging if needed
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                                Permit ID: {permitData.id || 'Non défini'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                                Permit Type: {permitData.type || 'Non défini'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                                PDF Data Preview: {
+                                    permitData.pdfData ? 
+                                    `${permitData.pdfData.substring(0, 50)}...` : 
+                                    'Aucun'
+                                }
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                                Modal opened at: {new Date().toLocaleTimeString()}
+                            </Typography>
+                            */}
+                            
                             <Button
                                 variant="contained"
                                 color="primary"
                                 startIcon={<FileDownloadIcon />}
                                 onClick={handleDownload}
                                 sx={{ mt: 1 }}
-                                disabled={!permitData.pdfData}
+                                disabled={!permitData.pdfData || permitData.pdfData.trim().length === 0}
                             >
-                                Télécharger le Permis
+                                {permitData.pdfData && permitData.pdfData.trim().length > 0 
+                                    ? 'Télécharger le Permis' 
+                                    : 'Aucun document disponible'
+                                }
                             </Button>
                         </Paper>
                     )}
@@ -161,16 +216,23 @@ const RequiredPermitModal: React.FC<RequiredPermitModalProps> = ({
                                             startIcon={<FileDownloadIcon />}
                                             onClick={() => {
                                                 // Create a download link for this permit
-                                                if (permit.pdfData) {
-                                                    const linkSource = `data:application/pdf;base64,${permit.pdfData}`;
-                                                    const downloadLink = document.createElement('a');
-                                                    const fileName = `${permit.title || 'Permis'}.pdf`;
-                                                    downloadLink.href = linkSource;
-                                                    downloadLink.download = fileName;
-                                                    downloadLink.click();
+                                                if (permit.pdfData && permit.pdfData.trim().length > 0) {
+                                                    try {
+                                                        const linkSource = `data:application/pdf;base64,${permit.pdfData}`;
+                                                        const downloadLink = document.createElement('a');
+                                                        const fileName = `${permit.title || 'Permis'}.pdf`;
+                                                        downloadLink.href = linkSource;
+                                                        downloadLink.download = fileName;
+                                                        downloadLink.click();
+                                                    } catch (error) {
+                                                        console.error('Error downloading PDF:', error);
+                                                        alert('Erreur lors du téléchargement du PDF.');
+                                                    }
+                                                } else {
+                                                    alert('Aucun document PDF disponible pour ce permis.');
                                                 }
                                             }}
-                                            disabled={!permit.pdfData}
+                                            disabled={!permit.pdfData || permit.pdfData.trim().length === 0}
                                         >
                                             Télécharger
                                         </Button>
@@ -182,17 +244,27 @@ const RequiredPermitModal: React.FC<RequiredPermitModalProps> = ({
                     </Box>
                 )}
                 
-                {showPdfPreview && permitData?.pdfData && (
+                {showPdfPreview && permitData?.pdfData && permitData.pdfData.trim().length > 0 && (
                     <Box sx={{ mt: 3, height: '50vh', width: '100%' }}>
                         <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
                             Aperçu du Document:
                         </Typography>
                         <iframe
-                            src={`data:application/pdf;base64,${permitData.pdfData}`}
+                            key={`pdf-${permitData.id}-${Date.now()}`} // Force re-render with unique key
+                            src={`data:application/pdf;base64,${permitData.pdfData}#toolbar=0&navpanes=0&scrollbar=0&zoom=100`}
                             width="100%"
                             height="100%"
                             style={{ border: '1px solid #ccc' }}
-                            title={permitData.title || "Aperçu du Permis"}
+                            title={`${permitData.title || "Aperçu du Permis"} - ${permitData.id}`}
+                            onError={(e) => {
+                                console.error('Error loading PDF preview:', e);
+                                console.error('PDF data that failed:', permitData.pdfData?.substring(0, 100));
+                                // Hide the iframe if there's an error
+                                (e.target as HTMLIFrameElement).style.display = 'none';
+                            }}
+                            onLoad={() => {
+                                console.log('PDF iframe loaded successfully for permit:', permitData.id);
+                            }}
                         />
                     </Box>
                 )}
@@ -202,7 +274,7 @@ const RequiredPermitModal: React.FC<RequiredPermitModalProps> = ({
                 <Button onClick={onClose} color="inherit">
                     Fermer
                 </Button>
-                {permitData?.pdfData && (
+                {permitData?.pdfData && permitData.pdfData.trim().length > 0 && (
                     <Button 
                         onClick={handleDownload} 
                         color="primary" 

@@ -6,7 +6,7 @@ export default class Permit extends InfoDeBase {
     type?: PermiTypes = PermiTypes.NONE;
     pdfData?: string;
 
-    constructor(id: number, titre: string, description: string, image: ImageModel) {
+    constructor(id: number | undefined, titre: string, description: string, image: ImageModel) {
         super(id, titre, description, image);
         this.id = id;
     }

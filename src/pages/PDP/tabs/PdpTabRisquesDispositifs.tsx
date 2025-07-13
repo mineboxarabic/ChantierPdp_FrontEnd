@@ -1,5 +1,5 @@
 // src/pages/PDP/tabs/PdpTabRisquesDispositifs.tsx
-import React, { FC, useMemo, useState } from 'react';
+import React, { FC, useMemo, useState, useEffect } from 'react';
 import {
     Grid,
     Paper,
@@ -65,7 +65,18 @@ const PdpTabRisquesDispositifs: FC<PdpTabRisquesDispositifsProps> = ({
     const [showRiskSelectionDialog, setShowRiskSelectionDialog] = useState(false);
 
     const getActiveRelations = (type: ObjectAnsweredObjects): ObjectAnsweredDTO[] => {
-        return formData.relations?.filter(r => r.objectType === type && r.answer !== null) ?? [];
+        if (!formData.relations || formData.relations.length === 0) {
+            return [];
+        }
+        
+        return formData.relations.filter(r => {
+            // Handle both string and enum comparison for objectType
+            const typeMatches = r.objectType === type || String(r.objectType) === String(type);
+            // Show relations that are true OR null (null means they need to be reviewed/set)
+            // Don't show relations that are explicitly false
+            const hasValidAnswer = r.answer === true || r.answer === null;
+            return typeMatches && hasValidAnswer;
+        });
     };
 
     const risquesRelations = getActiveRelations(ObjectAnsweredObjects.RISQUE);
@@ -153,7 +164,16 @@ const PdpTabRisquesDispositifs: FC<PdpTabRisquesDispositifsProps> = ({
                             </Button>
                         </Box>
                         {errors.risques && <Alert severity="error" sx={{ mb: 2 }}>{errors.risques}</Alert>}
-                        {risquesRelations.length > 0 ? (
+                        
+                        {/* Show loading state if data is not ready */}
+                        {(!formData.relations || allRisquesMap.size === 0) ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+                                <CircularProgress size={24} sx={{ mr: 2 }} />
+                                <Typography color="text.secondary">
+                                    Chargement des risques...
+                                </Typography>
+                            </Box>
+                        ) : risquesRelations.length > 0 ? (
                             renderItemsInColumns(risquesRelations, RisqueComponent, allRisquesMap, ObjectAnsweredObjects.RISQUE)
                         ) : (
                             <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center', py: 2 }}>

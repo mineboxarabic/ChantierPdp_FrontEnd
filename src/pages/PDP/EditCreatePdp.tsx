@@ -9,7 +9,8 @@ import {
     Dialog, // Keep Dialogs here if they are complex and shared across tabs
     DialogActions,
     DialogContent,
-    DialogTitle, IconButton,
+    DialogTitle,
+    IconButton,
     Modal, // Keep Modal for AnalyseDeRisqueForm here
     Paper,
     Tab,
@@ -28,6 +29,8 @@ import useRisque from '../../hooks/useRisque';
 import usePermit from '../../hooks/usePermit';
 import useDispositif from '../../hooks/useDispositif';
 import useAnalyseRisque from '../../hooks/useAnalyseRisque';
+import useWoker from '../../hooks/useWoker';
+import { useAuth } from '../../hooks/useAuth';
 // import useChantier from "../../hooks/useChantier.ts"; // Only if chantier details beyond ID are needed directly here
 
 // --- Icons ---
@@ -55,6 +58,7 @@ import PdpTabHorairesDispo from './tabs/PdpTabHorairesDispo.tsx';
 import PdpTabRisquesDispositifs from './tabs/PdpTabRisquesDispositifs.tsx';
 import PdpTabPermits from './tabs/PdpTabPermits.tsx';
 import PdpTabAnalysesRisques from './tabs/PdpTabAnalysesRisques.tsx';
+import PdpTabDocumentSigning from './tabs/PdpTabDocumentSigning.tsx';
 
 // --- Other Custom Components used by tabs or dialogs ---
 import SelectOrCreateObjectAnswered from "../../components/Pdp/SelectOrCreateObjectAnswered"; // For dialogs
@@ -62,7 +66,7 @@ import CreateEditAnalyseDeRisqueForm from "../../components/CreateAnalyseDeRisqu
 
 // Styled components from home (if needed for the wrapper itself)
 import { DashboardCard, CardHeader } from '../../pages/Home/styles';
-import { AccessTime, Shield, Verified, Warning } from '@mui/icons-material';
+import { AccessTime, Shield, Verified, Warning, Draw } from '@mui/icons-material';
 import { DocumentStatus } from '../../utils/enums/DocumentStatus.ts';
 import CloseIcon from "@mui/icons-material/Close";
 import PermiTypes from "../../utils/PermiTypes.ts";
@@ -103,6 +107,24 @@ function a11yProps(index: number) {
 type DialogData = RisqueDTO | DispositifDTO | PermitDTO | AnalyseDeRisqueDTO | null;
 type DialogTypes = 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'editAnalyseDeRisque' | '';
 
+// Signature request interface for API
+interface SignatureRequestDTO {
+    workerId: number;
+    documentId: number;
+    userId: number;
+    name: string;
+    lastName: string;
+    signatureImage: string;
+}
+
+// New type to represent required permit types and the risks that need them
+interface RequiredPermitType {
+    permitType: PermiTypes;
+    risks: RisqueDTO[];
+    isLinked: boolean; // Whether a permit of this type is already linked to the document
+    linkedPermit?: PermitDTO; // The actual permit linked, if any
+}
+
 const modalStyle = { /* ... same as your existing modalStyle ... */
     position: 'absolute',
     top: '50%',
@@ -142,7 +164,7 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
     const [showPermitPdfModal, setShowPermitPdfModal] = useState(false);
     const [permitPdfData, setPermitPdfData] = useState<string | null>(null);
     const [permitTitle, setPermitTitle] = useState<string>('');
-   const [risksRequiringPermits, setRisksRequiringPermits] = useState<RisqueDTO[]>([]);
+    const [requiredPermitTypes, setRequiredPermitTypes] = useState<RequiredPermitType[]>([]);
 
     // Existing state for the modal (we'll reuse this)
 
@@ -173,9 +195,6 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
     const [saveError, setSaveError] = useState<string | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    // State for permit uploads
-    const [permitUploads, setPermitUploads] = useState<Map<number, { file: File | null; status: 'none' | 'uploaded' | 'pending' }>>(new Map());
-
     // --- Custom Hooks for Data ---
     const { getPlanDePrevention, createPdp, savePdp,getRisqueswithoutPermits } = usePdp();
     const { getAllEntreprises, entreprises } = useEntreprise(); // Map of entreprises
@@ -183,6 +202,8 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
     const { getAllPermits, permits: allPermitsMap, createPermit } = usePermit(); // Map of permits
     const { getAllDispositifs, dispositifs: allDispositifsMap } = useDispositif(); // Map of dispositifs
     const { getAllAnalyses, analyses: allAnalysesMap, createAnalyse, updateAnalyse } = useAnalyseRisque(); // Map of analyses
+    const { getAllWorkers, workers: allWorkersMap } = useWoker(); // Map of workers
+    const { connectedUser } = useAuth(); // Current user
 
     // --- Data Fetching (Simplified, original logic was good) ---
     useEffect(() => {
@@ -192,12 +213,11 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
             try {
                 await Promise.all([
                     getAllEntreprises(), getAllRisques(), getAllDispositifs(),
-                    getAllPermits(), getAllAnalyses()
+                    getAllPermits(), getAllAnalyses(), getAllWorkers()
                 ]);
 
                 if (isEditMode && currentPdpId) {
                     const pdpData = await getPlanDePrevention(currentPdpId);
-                    console.log("PDP Data:", pdpData);
                     if (pdpData) {
                         setFormData(prev => ({
                             ...initialFormData, ...pdpData,
@@ -299,59 +319,111 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
 // In EditCreatePdp.tsx, within the EditCreatePdp component
 
     useEffect(() => {
-        const initRisksRequiringPermits = async () => {
-
-         //   console.log('allRisquesMap',allRisquesMap)
+        const initRequiredPermitTypes = async () => {
             if (allRisquesMap.size > 0 && formData.relations) {
-                
                 try {
-                    // Fetch risks that are linked to the PDP AND are marked as needing a permit
+                    // Get all risks that are linked to the PDP and need permits
                     const linkedRisqueRelations = formData.relations.filter(
                         rel => rel.objectType === ObjectAnsweredObjects.RISQUE && rel.answer === true
                     );
 
-                 ///   console.log("Linked Risque Relations:",linkedRisqueRelations);
-                    const needed: RisqueDTO[] = [];
+                    // Group risks by permit type
+                    const permitTypeGroups = new Map<PermiTypes, RisqueDTO[]>();
                     
                     for (const rel of linkedRisqueRelations) {
                         const fullRisque = allRisquesMap.get(rel.objectId as number);
-                        console.log("Full Risque:",fullRisque);
                         if (fullRisque && fullRisque.travaillePermit && fullRisque.permitType) {
-                            
-                            const isPermitLinked = formData.relations?.some(pRel =>
-                                pRel.objectType === ObjectAnsweredObjects.PERMIT &&
-                                pRel.answer === true && // Ensure the linked permit is also marked as applicable
-                                allPermitsMap.get(pRel.objectId as number)?.type === fullRisque.permitType
-                            );
-
-                            if (!isPermitLinked) {
-                                if (!needed.find(r => r.id === fullRisque.id)) { // Avoid duplicates
-                                     needed.push(fullRisque);
-                                }
-                            }
+                            const existing = permitTypeGroups.get(fullRisque.permitType) || [];
+                            existing.push(fullRisque);
+                            permitTypeGroups.set(fullRisque.permitType, existing);
                         }
                     }
-                    setRisksRequiringPermits(needed);
 
-                    // Optionally, you can still call getRisqueswithoutPermits if it provides a more direct way
-                    // from the backend to identify these, and then merge/reconcile.
-                    // For now, client-side check based on current relations.
+                    // For each permit type, check if it's already linked to the document
+                    const requiredPermits: RequiredPermitType[] = [];
+                    for (const [permitType, risks] of permitTypeGroups.entries()) {
+                        const linkedPermit = Array.from(allPermitsMap.values()).find(permit => 
+                            permit.type === permitType &&
+                            formData.relations?.some(rel =>
+                                rel.objectType === ObjectAnsweredObjects.PERMIT &&
+                                rel.answer === true &&
+                                rel.objectId === permit.id
+                            )
+                        );
+
+                        requiredPermits.push({
+                            permitType,
+                            risks,
+                            isLinked: !!linkedPermit,
+                            linkedPermit
+                        });
+                    }
+
+                    setRequiredPermitTypes(requiredPermits);
                 } catch (e) {
-                    console.error("Error initializing risksRequiringPermits:", e);
+                    console.error("Error initializing required permit types:", e);
                     notifications.show("Erreur lors de la vérification des permis requis pour les risques.", { severity: "error" });
                 }
             }
         };
-        initRisksRequiringPermits();
-    }, [formData.relations, allRisquesMap]);
+        initRequiredPermitTypes();
+    }, [formData.relations, allRisquesMap, allPermitsMap, notifications]);
 
     
 const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
-    const targetPermit = Array.from(allPermitsMap.values()).find(p => p.type === risque.permitType);
+    console.log('=== handleShowRequiredPermitInfo Debug ===');
+    console.log('Risk:', risque);
+    console.log('Risk permit type:', risque.permitType);
+    
+    // First, try to find a permit that's actually linked to this PDP
+    const linkedPermit = Array.from(allPermitsMap.values()).find(permit => 
+        permit.type === risque.permitType &&
+        formData.relations?.some(rel =>
+            rel.objectType === ObjectAnsweredObjects.PERMIT &&
+            rel.answer === true &&
+            rel.objectId === permit.id
+        )
+    );
+    
+    if (linkedPermit) {
+        console.log('Found linked permit for this PDP:', linkedPermit);
+        setCurrentRisqueForModal(risque);
+        setRequiredPermitDataForModal(linkedPermit);
+        setShowRequiredPermitModal(true);
+        return;
+    }
+    
+    // If no linked permit, look for a permit template without PDF data (clean template)
+    const cleanTemplate = Array.from(allPermitsMap.values()).find(permit => 
+        permit.type === risque.permitType &&
+        (!permit.pdfData || permit.pdfData.trim().length === 0)
+    );
+    
+    if (cleanTemplate) {
+        console.log('Found clean permit template:', cleanTemplate);
+        setCurrentRisqueForModal(risque);
+        setRequiredPermitDataForModal(cleanTemplate);
+        setShowRequiredPermitModal(true);
+        return;
+    }
+    
+    // If no clean template found, create a minimal permit object for display
+    const minimalPermit: PermitDTO = {
+        id: undefined,
+        title: `Permis ${risque.permitType}`,
+        description: `Permis requis pour le risque: ${risque.title}`,
+        type: risque.permitType,
+        pdfData: undefined, // No PDF data
+        logo: { mimeType: undefined, imageData: undefined } // Empty logo
+    };
+    
+    console.log('No appropriate permit found, using minimal permit:', minimalPermit);
+    console.log('==========================================');
+    
     setCurrentRisqueForModal(risque);
-    setRequiredPermitDataForModal(targetPermit || null); // Pass null if not found, modal should handle
+    setRequiredPermitDataForModal(minimalPermit);
     setShowRequiredPermitModal(true);
-}, [allPermitsMap]);
+}, [allPermitsMap, formData.relations]);
 
     const handleOpenDialog = useCallback((type: DialogTypes, dataToEdit: DialogData = null) => { /* ... */
         setDialogType(type);
@@ -409,6 +481,8 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                 await getAllDispositifs();
             } else if (objectType === ObjectAnsweredObjects.PERMIT) {
                 await getAllPermits();
+            } else if (objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE) {
+                await getAllAnalyses();
             }
         } catch (error) {
             console.error(`Error refreshing ${objectType} data after adding relation:`, error);
@@ -422,29 +496,17 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
             if (risqueDetails && (risqueDetails.travailleDangereux || risqueDetails.travaillePermit) && risqueDetails.permitType) {
                 const isPermitLinked = formData.relations?.some(rel =>
                     rel.objectType === ObjectAnsweredObjects.PERMIT &&
+                    rel.answer === true &&
                     allPermitsMap.get(rel.objectId as number)?.type === risqueDetails.permitType
                 );
 
                 if (!isPermitLinked) {
-                    setRisksRequiringPermits(prev => {
-                        if (!prev.find(r => r.id === risqueDetails.id)) {
-                            return [...prev, risqueDetails];
-                        }
-                        return prev;
-                    });
                     const targetPermitInfo = Array.from(allPermitsMap.values()).find(p => p.type === risqueDetails.permitType);
                     notifications.show(
                         `Le risque "${risqueDetails.title}" nécessite un permis de type "${risqueDetails.permitType}" (${targetPermitInfo?.title || 'Permis spécifique'}). Veuillez l'ajouter depuis l'onglet Permis.`,
                         { severity: 'warning', autoHideDuration: 7000 }
                     );
                 }
-            }
-        } else if (objectType === ObjectAnsweredObjects.PERMIT) {
-            const addedPermitDetails = allPermitsMap.get(selectedItem.id);
-            if (addedPermitDetails && addedPermitDetails.type) {
-                setRisksRequiringPermits(prev =>
-                    prev.filter(risque => risque.permitType !== addedPermitDetails.type)
-                );
             }
         }
         notifications.show("Élément ajouté au PDP.", { severity: "success", autoHideDuration: 1500 });
@@ -529,21 +591,11 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
             message = `${unlinkedCount} risque(s) délié(s).`;
         }
 
-        // Handle risks requiring permits
+        // Handle risks requiring permits - now we show permit types needed
         if (risksNeedingPermits.length > 0) {
             const permitTypesList = [...new Set(risksNeedingPermits.map(r => r.permitType))];
             message += ` ${risksNeedingPermits.length} risque(s) nécessitent des permis (${permitTypesList.join(', ')}). Veuillez les ajouter depuis l'onglet Permis.`;
             notifications.show(message, { severity: 'warning', autoHideDuration: 10000 });
-            
-            setRisksRequiringPermits(prev => {
-                const updated = [...prev];
-                risksNeedingPermits.forEach(risk => {
-                    if (!updated.find(r => r.id === risk.id)) {
-                        updated.push(risk);
-                    }
-                });
-                return updated;
-            });
         } else {
             notifications.show(message, { severity: "success", autoHideDuration: 3000 });
         }
@@ -555,6 +607,68 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
             console.error("Error refreshing risks data after adding multiple relations:", error);
         }
     }, [formData.relations, allPermitsMap, notifications, getAllRisques]);
+
+    // Function to create and link a permit from file upload or new permit creation
+    const createAndLinkPermit = useCallback(async (permitType: PermiTypes, file?: File) => {
+        try {
+            // Convert file to base64 if provided
+            let pdfData: string | undefined;
+            if (file) {
+                pdfData = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const result = reader.result as string;
+                        // Remove the data URL prefix to get just the base64 data
+                        const base64Data = result.split(',')[1];
+                        resolve(base64Data);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            // Create a new permit
+            const newPermit = new Permit(
+                undefined, // Let the backend assign the ID
+                file ? `Permis ${permitType} - ${file.name}` : `Nouveau Permis ${permitType}`,
+                `Permis de type ${permitType} ${file ? 'téléchargé' : 'créé'} pour ce PDP`,
+                {} // Default empty image object
+            );
+
+            
+
+            newPermit.type = permitType;
+            if (pdfData) {
+                newPermit.pdfData = pdfData;
+            }
+
+            // Create the permit using the hook
+            const createdPermit = await createPermit(newPermit);
+            
+            if (createdPermit && createdPermit.id) {
+                // Link the permit to the PDP
+                await addRelation(ObjectAnsweredObjects.PERMIT, {
+                    id: createdPermit.id,
+                    title: createdPermit.title,
+                    type: permitType
+                });
+
+                notifications.show(
+                    `Permis de type "${permitType}" ${file ? 'téléchargé' : 'créé'} et lié au PDP avec succès.`,
+                    { severity: "success", autoHideDuration: 3000 }
+                );
+            } else {
+                throw new Error('Failed to create permit - no ID returned');
+            }
+        } catch (error) {
+            console.error('Error creating and linking permit:', error);
+            notifications.show(
+                `Erreur lors de la création du permis: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+                { severity: "error", autoHideDuration: 5000 }
+            );
+            throw error; // Re-throw to allow the UI to handle loading states
+        }
+    }, [createPermit, addRelation, notifications]);
 
     const deleteRelation = useCallback((relationObjectId: number, relationObjectType: ObjectAnsweredObjects) => {
         console.log('Deleting relation:', { relationObjectId, relationObjectType });
@@ -603,106 +717,48 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
         }));
     }, []);
 
-
-    // --- Permit File Upload Handlers ---
-    // Handler for permit file upload
-    const handlePermitUpload = useCallback((risqueId: number, file: File | null) => {
-        setPermitUploads(prev => {
-            const newMap = new Map(prev);
-            if (file) {
-                newMap.set(risqueId, { file, status: 'uploaded' });
-                notifications.show(`Permis téléchargé pour ${allRisquesMap.get(risqueId)?.title || `Risque ${risqueId}`}`, { severity: 'success' });
-            } else {
-                newMap.set(risqueId, { file: null, status: 'none' });
-            }
-            return newMap;
-        });
-    }, [allRisquesMap, notifications]);
-
-    // Get permit upload status for a risque
-    const getPermitUploadStatus = useCallback((risqueId: number) => {
-        return permitUploads.get(risqueId) || { file: null, status: 'none' };
-    }, [permitUploads]);
-
-    // Create a permit from an uploaded file and risk data
-    const handleCreatePermitFromRisk = useCallback(async (risque: RisqueDTO) => {
+    // --- Document Signature Handler ---
+    const handleSignDocument = useCallback(async (signatureData: SignatureRequestDTO) => {
         try {
-            const uploadStatus = getPermitUploadStatus(risque.id as number);
+            setIsSaving(true);
             
-            if (!uploadStatus.file) {
-                notifications.show("Aucun fichier téléchargé pour ce risque.", { severity: 'error' });
-                return;
+            
+            // After successful signature, refresh the document data to get updated signatures
+            if (currentPdpId) {
+                const updatedPdpData = await getPlanDePrevention(currentPdpId);
+                if (updatedPdpData) {
+                    setFormData(prev => ({
+                        ...prev,
+                        signatures: updatedPdpData.signatures || []
+                    }));
+                }
             }
 
-            if (!risque.permitType) {
-                notifications.show("Type de permis non spécifié pour ce risque.", { severity: 'error' });
-                return;
-            }
-
-            // Convert file to base64 string for pdfData
-            const fileBase64 = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const base64String = reader.result as string;
-                    // Remove data:mime/type;base64, prefix if present
-                    const base64Data = base64String.includes(',') ? base64String.split(',')[1] : base64String;
-                    resolve(base64Data);
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(uploadStatus.file!); // We already checked it's not null above
-            });
-
-            // Create permit with auto-generated name
-            const permitTitle = `${risque.permitType} - ${risque.title}`;
-            const permitDescription = `Permis généré automatiquement pour le risque: ${risque.title}`;
+            notifications.show('Signature enregistrée avec succès', { severity: 'success' });
             
-            // Create default image (you might want to use a default permit icon)
-            const defaultImage: ImageModel = {
-                imageData: '', // You can set a default permit icon here
-                mimeType: 'image/png'
-            };
-
-            const newPermit: Permit = {
-                id: undefined, // Will be set by backend
-                title: permitTitle,
-                description: permitDescription,
-                logo: defaultImage,
-                type: risque.permitType,
-                pdfData: fileBase64
-            };
-
-            // Create the permit in the database
-            const createdPermit = await createPermit(newPermit);
-            
-            if (createdPermit && createdPermit.id) {
-                notifications.show(`Permis "${permitTitle}" créé avec succès.`, { severity: 'success' });
-                
-                // Add the newly created permit to the PDP relations
-                await addRelation(ObjectAnsweredObjects.PERMIT, createdPermit);
-                
-                // Refresh permits data
-                await getAllPermits();
-                
-                // Remove the risk from risks requiring permits since we now have a permit for it
-                setRisksRequiringPermits(prev => prev.filter(r => r.id !== risque.id));
-                
-                // Clear the uploaded file since it's now part of a created permit
-                setPermitUploads(prev => {
-                    const newMap = new Map(prev);
-                    newMap.delete(risque.id as number);
-                    return newMap;
-                });
-            } else {
-                throw new Error("Échec de la création du permis - aucun ID retourné");
-            }
         } catch (error: any) {
-            console.error("Error creating permit from risk:", error);
-            notifications.show(
-                `Erreur lors de la création du permis: ${error?.message || 'Erreur inconnue'}`, 
-                { severity: 'error' }
-            );
+            console.error('Signature error:', error);
+            
+            // Handle specific error messages
+            let errorMessage = 'Erreur lors de l\'enregistrement de la signature';
+            if (error.message.includes('Worker not found')) {
+                errorMessage = 'Travailleur non trouvé';
+            } else if (error.message.includes('User not found')) {
+                errorMessage = 'Utilisateur non trouvé';
+            } else if (error.message.includes('Document not found')) {
+                errorMessage = 'Document non trouvé';
+            } else if (error.message.includes('Invalid base64 signature image')) {
+                errorMessage = 'Image de signature invalide';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            notifications.show(errorMessage, { severity: 'error' });
+            throw error; // Re-throw to let the component handle it
+        } finally {
+            setIsSaving(false);
         }
-    }, [getPermitUploadStatus, createPermit, notifications, addRelation, getAllPermits, setRisksRequiringPermits]);
+    }, [notifications, currentPdpId, getPlanDePrevention]);
 
     // --- Form Submission ---
     const handleSubmit = useCallback(async (e: React.FormEvent) => { /* ...your existing handleSubmit logic... */
@@ -720,18 +776,17 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                 savedPdp = await createPdp(dataToSave); // createPdp should use formData.chantier
             }
             if (savedPdp) {
-                // Check if there are permits that still need to be uploaded
-                const unuploadedPermits = risksRequiringPermits.filter(risque => 
-                    getPermitUploadStatus(risque.id as number).status !== 'uploaded'
-                );
+                // Check if there are permit types still needed for the document
+                const unlinkedPermitTypes = requiredPermitTypes.filter(pt => !pt.isLinked);
                 
-                if (unuploadedPermits.length > 0) {
+                if (unlinkedPermitTypes.length > 0) {
+                    const missingTypes = unlinkedPermitTypes.map(pt => pt.permitType).join(', ');
                     notifications.show(
-                        `PDP enregistré. Attention: ${unuploadedPermits.length} permis restent à fournir.`, 
+                        `PDP enregistré. Attention: ${unlinkedPermitTypes.length} type(s) de permis restent à ajouter (${missingTypes}).`, 
                         { severity: "warning", autoHideDuration: 5000 }
                     );
                 } else {
-                    notifications.show("PDP enregistré avec tous les permis fournis.", { severity: "success" });
+                    notifications.show("PDP enregistré avec tous les permis requis.", { severity: "success" });
                 }
                 
                 setFormData(prev => ({ ...prev, ...savedPdp })); // Update with saved data (e.g. new IDs)
@@ -745,7 +800,7 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
         } finally {
             setIsSaving(false);
         }
-    }, [formData, validateForm, isEditMode, savePdp, createPdp, navigate, notifications, risksRequiringPermits, getPermitUploadStatus]);
+    }, [formData, validateForm, isEditMode, savePdp, createPdp, navigate, notifications, requiredPermitTypes]);
 
 
     if (isLoading) { /* ... same loading indicator ... */
@@ -780,6 +835,7 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                             <Tab icon={<Warning />} iconPosition="start" label="Risques/Dispositifs" {...a11yProps(2)} />
                             <Tab icon={<Verified />} iconPosition="start" label="Permis" {...a11yProps(3)} />
                             <Tab icon={<Shield />} iconPosition="start" label="Analyses Risques" {...a11yProps(4)} />
+                            <Tab icon={<Draw />} iconPosition="start" label="Signatures" {...a11yProps(5)} />
                         </Tabs>
                     </Box>
 
@@ -824,14 +880,11 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                         formData={formData}
                         errors={errors}
                         allPermitsMap={allPermitsMap}
-                        // New props:
-                        risksRequiringPermits={risksRequiringPermits}
-                        allRisquesMap={allRisquesMap} // Pass this if NeededPermitPlaceholder needs risque details
+                        // New props for the updated logic:
+                        requiredPermitTypes={requiredPermitTypes}
+                        allRisquesMap={allRisquesMap} // Pass this if needed for risk details
                         onShowRequiredPermitModal={handleShowRequiredPermitInfo} // Pass the handler
-                        // Permit upload props:
-                        onPermitUpload={handlePermitUpload}
-                        getPermitUploadStatus={getPermitUploadStatus}
-                        onCreatePermitFromRisk={handleCreatePermitFromRisk}
+                        onCreateAndLinkPermit={createAndLinkPermit}
 
                         onOpenDialog={handleOpenDialog}
                         onDeleteRelation={deleteRelation}
@@ -850,9 +903,19 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                             onDeleteRelation={deleteRelation}
                             onUpdateRelationField={updateRelationField}
                             onNavigateBack={handleBack}
-                            // This is the last tab, so it will have the main submit button
+                            onNavigateNext={handleNext}
                         />
-                         {/* Final Save Button for the last tab */}
+                    </TabPanel>
+                    <TabPanel value={tabIndex} index={5}>
+                        <PdpTabDocumentSigning
+                            formData={formData}
+                            allWorkersMap={allWorkersMap}
+                            onSignDocument={handleSignDocument}
+                            currentUserId={connectedUser?.id}
+                            onNavigateBack={handleBack}
+                            onNavigateNext={() => {}} // Last tab, no next action
+                        />
+                        {/* Final Save Button for the last tab */}
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, pt:2, borderTop: theme => `1px solid ${theme.palette.divider}` }}>
                             <Button variant="outlined" onClick={handleBack} disabled={tabIndex === 0}>Précédent</Button>
                             <Button
@@ -932,11 +995,105 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                                     setEditItemData(null);
                                     setOpenNestedModal(true);
                                 }}
-                                sx={{ mb: 2 }}
+                                sx={{ mb: 3 }}
+                                fullWidth
                             >
                                 Créer une nouvelle Analyse de Risque
                             </Button>
-                            {/* You can add a list of existing analyses here if needed */}
+                            
+                            <Typography variant="h6" sx={{ mb: 2 }}>
+                                Ou sélectionner une analyse existante:
+                            </Typography>
+                            
+                            {/* List of existing analyses */}
+                            {allAnalysesMap && allAnalysesMap.size > 0 ? (
+                                <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
+                                    {Array.from(allAnalysesMap.values())
+                                        .filter(analyse => 
+                                            // Filter out analyses that are already linked to this PDP
+                                            !formData.relations?.some(rel => 
+                                                rel.objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE && 
+                                                rel.objectId === analyse.id
+                                            )
+                                        )
+                                        .map(analyse => {
+                                            const risqueAssocie = analyse.risqueId ? allRisquesMap.get(analyse.risqueId) : null;
+                                            
+                                            return (
+                                                <Paper 
+                                                    key={analyse.id} 
+                                                    variant="outlined" 
+                                                    sx={{ 
+                                                        p: 2, 
+                                                        mb: 1, 
+                                                        cursor: 'pointer',
+                                                        '&:hover': { 
+                                                            backgroundColor: 'action.hover',
+                                                            borderColor: 'primary.main' 
+                                                        }
+                                                    }}
+                                                    onClick={() => {
+                                                        addRelation(ObjectAnsweredObjects.ANALYSE_DE_RISQUE, {
+                                                            id: analyse.id,
+                                                            title: analyse.nom || `Analyse #${analyse.id}`
+                                                        });
+                                                        handleCloseDialog();
+                                                    }}
+                                                >
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                        <Box sx={{ flexGrow: 1 }}>
+                                                            <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                                                                {analyse.nom || `Analyse #${analyse.id}`}
+                                                            </Typography>
+                                                            {risqueAssocie && (
+                                                                <Typography variant="body2" color="text.secondary">
+                                                                    Risque associé: {risqueAssocie.title}
+                                                                </Typography>
+                                                            )}
+                                                            {analyse.deroulementDesTaches && (
+                                                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                                                    {analyse.deroulementDesTaches.length > 100 
+                                                                        ? `${analyse.deroulementDesTaches.substring(0, 100)}...` 
+                                                                        : analyse.deroulementDesTaches}
+                                                                </Typography>
+                                                            )}
+                                                        </Box>
+                                                        <Button 
+                                                            variant="outlined" 
+                                                            size="small"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                addRelation(ObjectAnsweredObjects.ANALYSE_DE_RISQUE, {
+                                                                    id: analyse.id,
+                                                                    title: analyse.nom || `Analyse #${analyse.id}`
+                                                                });
+                                                                handleCloseDialog();
+                                                            }}
+                                                        >
+                                                            Ajouter
+                                                        </Button>
+                                                    </Box>
+                                                </Paper>
+                                            );
+                                        })
+                                    }
+                                    {Array.from(allAnalysesMap.values())
+                                        .filter(analyse => 
+                                            !formData.relations?.some(rel => 
+                                                rel.objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE && 
+                                                rel.objectId === analyse.id
+                                            )
+                                        ).length === 0 && (
+                                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                                            Toutes les analyses disponibles sont déjà ajoutées à ce PDP.
+                                        </Typography>
+                                    )}
+                                </Box>
+                            ) : (
+                                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                                    Aucune analyse de risque disponible. Créez-en une nouvelle ci-dessus.
+                                </Typography>
+                            )}
                         </DialogContent>
                         <DialogActions><Button onClick={handleCloseDialog}>Fermer</Button></DialogActions>
                     </Dialog>

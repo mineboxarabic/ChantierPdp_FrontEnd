@@ -24,7 +24,9 @@ import WarningIcon from '@mui/icons-material/Warning'; // For dangerous work fla
 
 import { PdpDTO } from '../../../utils/entitiesDTO/PdpDTO';
 import { AnalyseDeRisqueDTO } from '../../../utils/entitiesDTO/AnalyseDeRisqueDTO';
-import { RisqueDTO } from '../../../utils/entitiesDTO/RisqueDTO'; // For displaying related Risque info
+import RisqueDTO from '../../../utils/entitiesDTO/RisqueDTO'; // For displaying related Risque info
+import DispositifDTO from '../../../utils/entitiesDTO/DispositifDTO';
+import PermitDTO from '../../../utils/entitiesDTO/PermitDTO';
 import ObjectAnsweredDTO from '../../../utils/pdp/ObjectAnswered';
 import ObjectAnsweredObjects from '../../../utils/ObjectAnsweredObjects';
 import { SectionTitle } from '../../../pages/Home/styles';
@@ -43,7 +45,7 @@ interface PdpTabAnalysesRisquesProps {
     onDeleteRelation: (objectId: number, objectType: ObjectAnsweredObjects) => void;
     onUpdateRelationField: (relationUniqueKey: string | number, field: keyof ObjectAnsweredDTO, value: any) => void;
     onNavigateBack: () => void;
-    // No onNavigateNext, this tab has the final submit button
+    onNavigateNext: () => void; // Now we have a next step (signatures)
 }
 
 const PdpTabAnalysesRisques: FC<PdpTabAnalysesRisquesProps> = ({
@@ -55,6 +57,7 @@ const PdpTabAnalysesRisques: FC<PdpTabAnalysesRisquesProps> = ({
     onDeleteRelation,
     onUpdateRelationField,
     onNavigateBack,
+    onNavigateNext,
 }) => {
     const analysesRelations = useMemo(() => {
         return formData.relations?.filter(r => r.objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE && r.answer !== null) ?? [];
@@ -110,7 +113,7 @@ const PdpTabAnalysesRisques: FC<PdpTabAnalysesRisquesProps> = ({
                                 );
                             }
 
-                            const risqueAssocieData = analyseData.risqueId ? allRisquesMap.get(analyseData.risqueId) : null;
+                            const risqueAssocieData = analyseData.risque ? allRisquesMap.get(analyseData.risque.id as number) : null;
 
                             return (
                                 <Paper
@@ -136,7 +139,7 @@ const PdpTabAnalysesRisques: FC<PdpTabAnalysesRisquesProps> = ({
                                                 </Tooltip>
                                             )}
                                             <Typography variant="h6" component="h3" sx={{fontWeight: 500}}>
-                                                {analyseData.nom || risqueAssocieData?.title || `Analyse #${relation.objectId}`}
+                                                {analyseData.deroulementDesTaches || risqueAssocieData?.title || `Analyse #${relation.objectId}`}
                                             </Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
@@ -217,9 +220,10 @@ const PdpTabAnalysesRisques: FC<PdpTabAnalysesRisquesProps> = ({
                 <Button variant="outlined" onClick={onNavigateBack}>
                     Précédent
                 </Button>
-                {/* The main "Enregistrer PDP" button is now part of the parent component's submit action for the whole form */}
-                {/* This tab doesn't have a "Suivant" button, it's the last step for content. */}
-                {/* The parent component will have the overall form submission button. */}
+                <Button variant="contained" onClick={onNavigateNext}>
+                    Suivant
+                </Button>
+                {/* The main "Enregistrer PDP" button is now in the signatures tab (final step) */}
             </Box>
         </>
     );

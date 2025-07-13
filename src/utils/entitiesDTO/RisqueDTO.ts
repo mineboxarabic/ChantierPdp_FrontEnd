@@ -3,12 +3,8 @@ import InfoDeBase from "../InfoDeBase";
 import PermiTypes from "../PermiTypes";
 
 class RisqueDTO extends InfoDeBase {
-    travailleDangereux?: boolean;
-    
-
-    
+    travailleDangereux?: boolean;    
     travaillePermit?: boolean;
-    permitId?: number;
     permitType?: PermiTypes;
 }
 

@@ -108,21 +108,28 @@ const RisqueComponent = <ITEM extends ContentItem, PARENT extends DocumentDTO ,>
                     <Typography>{
                         risque?.title
                     }</Typography>
-                    <Select defaultValue={ object.answer ? 1 : 0}
+                    <Select defaultValue={ 
+                        object.answer === true ? 1 : 
+                        object.answer === false ? 0 : 
+                        2  // null case - needs review
+                    }
                     sx={{
                         backgroundColor: `${risque?.travaillePermit ? theme.palette.customColor?.tp : 'paper'}`,
                     }}
 
                             onChange={e => {
-                                const newAnswer = e.target.value === 1;
+                                const value = e.target.value;
+                                const newAnswer = value === 1 ? true : value === 0 ? false : null;
                                 
                                 // Use the prop function if available, otherwise fallback to direct manipulation
                                 if (onUpdateRelationFieldFromItem) {
-                                    onUpdateRelationFieldFromItem(object.id!, 'answer', newAnswer);
+                                    // Use the correct relation key: either object.id or objectId_objectType
+                                    const relationKey = object.id || `${object.objectId}_${object.objectType}`;
+                                    onUpdateRelationFieldFromItem(relationKey, 'answer', newAnswer);
                                 } else {
                                     // Fallback to old logic for backward compatibility
                                     parent?.relations?.map((r: ObjectAnsweredDTO) => {
-                                        if (r.id === object.id) {
+                                        if (r.id === object.id || (r.objectId === object.objectId && r.objectType === object.objectType)) {
                                             r.answer = newAnswer;
                                         }
                                         return r;
@@ -138,6 +145,7 @@ const RisqueComponent = <ITEM extends ContentItem, PARENT extends DocumentDTO ,>
                     >
                         <MenuItem value={0}>Non</MenuItem>
                         <MenuItem value={1}>Oui</MenuItem>
+                        <MenuItem value={2} sx={{ color: 'warning.main', fontStyle: 'italic' }}>À réviser</MenuItem>
                     </Select>
                 </CardContent>
 

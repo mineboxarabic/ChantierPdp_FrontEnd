@@ -147,11 +147,15 @@ const ViewPdp: FC = () => {
 
     //Maps
     const [risques, setRisques] = useState<Map<number, RisqueDTO>> (new Map<number, RisqueDTO>());
+
     const [entreprises, setEntreprises] = useState<Map<number, EntrepriseDTO>> (new Map<number, EntrepriseDTO>());
+
     const [dispositifs, setDispositifs] = useState<Map<number, DispositifDTO>> (new Map<number, DispositifDTO>());
+
     const [permits, setPermits] = useState<Map<number, any>> (new Map<number, any>());
 
     // Utility functions to get relations by type
+    
     const getRisquesRelations = () => {
         if (!pdpData?.relations) return [];
         return pdpData.relations.filter(rel => rel.objectType === ObjectAnsweredObjects.RISQUE);

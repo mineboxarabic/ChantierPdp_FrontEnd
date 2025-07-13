@@ -35,8 +35,17 @@ import ObjectAnsweredObjects from '../../../utils/ObjectAnsweredObjects';
 import { SectionTitle } from '../../../pages/Home/styles';
 import { ListItemCard } from '../../../pages/Home/styles'; // Using ListItemCard for consistency
 import RisqueDTO from '../../../utils/entitiesDTO/RisqueDTO';
+import PermiTypes from '../../../utils/PermiTypes';
 
 type DialogTypes = 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'editAnalyseDeRisque' | '';
+
+// Type to represent required permit types and the risks that need them
+interface RequiredPermitType {
+    permitType: PermiTypes;
+    risks: RisqueDTO[];
+    isLinked: boolean; // Whether a permit of this type is already linked to the document
+    linkedPermit?: PermitDTO; // The actual permit linked, if any
+}
 
 interface PdpTabPermitsProps {
     formData: PdpDTO;
@@ -48,14 +57,10 @@ interface PdpTabPermitsProps {
     onNavigateBack: () => void;
     onNavigateNext: () => void;
 
-    risksRequiringPermits: RisqueDTO[];
-    allRisquesMap: Map<number, RisqueDTO>; // You might not need this if RisqueDTO in risksRequiringPermits is complete
+    requiredPermitTypes: RequiredPermitType[];
+    allRisquesMap: Map<number, RisqueDTO>; // For displaying risk details
     onShowRequiredPermitModal: (risque: RisqueDTO) => void;
-    
-    // New props for permit upload
-    onPermitUpload: (risqueId: number, file: File | null) => void;
-    getPermitUploadStatus: (risqueId: number) => { file: File | null; status: 'none' | 'uploaded' | 'pending' };
-    onCreatePermitFromRisk: (risque: RisqueDTO) => Promise<void>;
+    onCreateAndLinkPermit: (permitType: PermiTypes, file?: File) => Promise<void>;
 }
 
 const PdpTabPermits: FC<PdpTabPermitsProps> = ({
@@ -67,14 +72,46 @@ const PdpTabPermits: FC<PdpTabPermitsProps> = ({
     onUpdateRelationField,
     onNavigateBack,
     onNavigateNext,
-    risksRequiringPermits,
+    requiredPermitTypes,
     allRisquesMap,
     onShowRequiredPermitModal,
-    onPermitUpload,
-    getPermitUploadStatus,
-    onCreatePermitFromRisk,
+    onCreateAndLinkPermit,
 }) => {
-    const [creatingPermitForRisqueId, setCreatingPermitForRisqueId] = useState<number | null>(null);
+
+    // State to track loading for each permit type
+    const [loadingPermitTypes, setLoadingPermitTypes] = useState<Set<PermiTypes>>(new Set());
+
+    // Function to handle file upload and permit creation
+    const handleFileUpload = async (permitType: PermiTypes, file: File) => {
+        setLoadingPermitTypes(prev => new Set(prev).add(permitType));
+        try {
+            await onCreateAndLinkPermit(permitType, file);
+        } catch (error) {
+            console.error('Error uploading file and creating permit:', error);
+        } finally {
+            setLoadingPermitTypes(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(permitType);
+                return newSet;
+            });
+        }
+    };
+
+    // Function to handle creating a new permit without file
+    const handleCreateNewPermit = async (permitType: PermiTypes) => {
+        setLoadingPermitTypes(prev => new Set(prev).add(permitType));
+        try {
+            await onCreateAndLinkPermit(permitType);
+        } catch (error) {
+            console.error('Error creating new permit:', error);
+        } finally {
+            setLoadingPermitTypes(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(permitType);
+                return newSet;
+            });
+        }
+    };
 
     const permitsRelations = useMemo(() => {
         return formData.relations?.filter(r => r.objectType === ObjectAnsweredObjects.PERMIT && r.answer !== null) ?? [];
@@ -89,42 +126,29 @@ const PdpTabPermits: FC<PdpTabPermitsProps> = ({
         return formData.relations?.filter(r => r.objectType === ObjectAnsweredObjects.PERMIT && r.answer !== null) ?? [];
     }, [formData.relations]);
 
-    // Calculate permit upload summary
-    const permitUploadSummary = useMemo(() => {
-        const total = risksRequiringPermits.length;
-        const uploaded = risksRequiringPermits.filter(risque => 
-            getPermitUploadStatus(risque.id as number).status === 'uploaded'
-        ).length;
-        return { total, uploaded, remaining: total - uploaded };
-    }, [risksRequiringPermits, getPermitUploadStatus]);
-
-    const handleCreatePermit = async (risque: RisqueDTO) => {
-        if (!risque.id) return;
-        
-        setCreatingPermitForRisqueId(risque.id);
-        try {
-            await onCreatePermitFromRisk(risque);
-        } finally {
-            setCreatingPermitForRisqueId(null);
-        }
-    };
+    // Calculate required permit types summary
+    const permitTypesSummary = useMemo(() => {
+        const total = requiredPermitTypes.length;
+        const linked = requiredPermitTypes.filter(pt => pt.isLinked).length;
+        return { total, linked, missing: total - linked };
+    }, [requiredPermitTypes]);
 
     return (
     <>
-            {/* Permit Summary Section */}
-            {risksRequiringPermits.length > 0 && (
+            {/* Required Permit Types Summary Section */}
+            {requiredPermitTypes.length > 0 && (
                 <Alert 
-                    severity={permitUploadSummary.remaining === 0 ? 'success' : 'warning'} 
+                    severity={permitTypesSummary.missing === 0 ? 'success' : 'warning'} 
                     sx={{ mb: 3 }}
                 >
                     <Typography variant="subtitle2" gutterBottom>
                         Statut des permis requis
                     </Typography>
                     <Typography variant="body2">
-                        {permitUploadSummary.uploaded} sur {permitUploadSummary.total} permis fournis
-                        {permitUploadSummary.remaining > 0 && (
+                        {permitTypesSummary.linked} sur {permitTypesSummary.total} types de permis fournis
+                        {permitTypesSummary.missing > 0 && (
                             <Typography component="span" color="warning.main" fontWeight="bold">
-                                {" "}({permitUploadSummary.remaining} restant{permitUploadSummary.remaining > 1 ? 's' : ''})
+                                {" "}({permitTypesSummary.missing} manquant{permitTypesSummary.missing > 1 ? 's' : ''})
                             </Typography>
                         )}
                     </Typography>
@@ -221,141 +245,127 @@ const PdpTabPermits: FC<PdpTabPermitsProps> = ({
                 )}
 
 
-                {/* Display for Risks Requiring Permits */}
-                {risksRequiringPermits.length > 0 && (
+                {/* Display for Required Permit Types */}
+                {requiredPermitTypes.length > 0 && (
                     <Box mt={4}>
                         <Divider sx={{mb:2}}>
-                            <Chip label="Permis Requis Non Liés" color="warning" />
+                            <Chip label="Types de Permis Requis" color="warning" />
                         </Divider>
                         <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 2 }}>
-                            Les risques suivants ont été ajoutés et nécessitent des permis spécifiques qui ne sont pas encore liés à ce PDP:
+                            Les types de permis suivants sont requis pour les risques ajoutés à ce PDP:
                         </Typography>
                         <Grid container spacing={2}>
-                            {risksRequiringPermits.map((risque) => {
-                                const targetPermitType = risque.permitType;
-                                const targetPermitDetails = targetPermitType ? Array.from(allPermitsMap.values()).find(p => p.type === targetPermitType) : undefined;
-                                const uploadStatus = getPermitUploadStatus(risque.id as number);
-
-                                return (
-                                    <Grid item xs={12} md={6} key={`needed-permit-for-risque-${risque.id}`}>
-                                        <Card variant="outlined" sx={{ borderColor: 'warning.main', backgroundColor: (theme) => alpha(theme.palette.warning.light, 0.1) }}>
-                                            <CardContent>
-                                                <Typography variant="h6" component="div" gutterBottom>
-                                                    Permis requis pour: <Typography component="span" fontWeight="bold">{risque.title}</Typography>
+                            {requiredPermitTypes.map((permitType) => (
+                                <Grid item xs={12} md={6} key={`required-permit-type-${permitType.permitType}`}>
+                                    <Card 
+                                        variant="outlined" 
+                                        sx={{ 
+                                            borderColor: permitType.isLinked ? 'success.main' : 'warning.main', 
+                                            backgroundColor: (theme) => permitType.isLinked 
+                                                ? alpha(theme.palette.success.light, 0.1)
+                                                : alpha(theme.palette.warning.light, 0.1)
+                                        }}
+                                    >
+                                        <CardContent>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                                                <Typography variant="h6" component="div">
+                                                    {permitType.permitType}
                                                 </Typography>
-                                                <Typography variant="body2" color="text.secondary" sx={{mb:1}}>
-                                                    Type de permis nécessaire: <strong>{targetPermitType || 'Non spécifié'}</strong>
-                                                    {targetPermitDetails && ` (${targetPermitDetails.title})`}
+                                                <Chip
+                                                    size="small"
+                                                    label={permitType.isLinked ? 'Permis lié' : 'Permis requis'}
+                                                    color={permitType.isLinked ? 'success' : 'warning'}
+                                                    icon={permitType.isLinked ? <CheckCircleIcon /> : undefined}
+                                                />
+                                            </Box>
+                                            
+                                            {permitType.linkedPermit && (
+                                                <Typography variant="body2" color="success.main" sx={{ mb: 1, fontWeight: 'bold' }}>
+                                                    Permis lié: {permitType.linkedPermit.title}
                                                 </Typography>
-                                                
-                                                {/* Upload Status Section */}
-                                                <Box sx={{ mb: 2, p: 1.5, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                                                        <Typography variant="subtitle2">
-                                                            Statut du permis:
-                                                        </Typography>
-                                                        <Chip
-                                                            size="small"
-                                                            label={uploadStatus.status === 'uploaded' ? 'Permis fourni' : 'Permis non fourni'}
-                                                            color={uploadStatus.status === 'uploaded' ? 'success' : 'error'}
-                                                            icon={uploadStatus.status === 'uploaded' ? <CheckCircleIcon /> : undefined}
-                                                        />
-                                                    </Box>
-                                                    
-                                                    {uploadStatus.file && (
-                                                        <Typography variant="caption" display="block" sx={{ mb: 1 }}>
-                                                            Fichier: {uploadStatus.file.name}
-                                                            <br />
-                                                            <Typography component="span" color="success.main" fontWeight="bold">
-                                                                Prêt pour la création du permis
-                                                            </Typography>
-                                                        </Typography>
-                                                    )}
-                                                    
-                                                    <Button
-                                                        component="label"
-                                                        variant={uploadStatus.status === 'uploaded' ? 'outlined' : 'contained'}
-                                                        size="small"
-                                                        startIcon={<UploadFileIcon />}
-                                                        sx={{ mt: 1 }}
-                                                    >
-                                                        {uploadStatus.status === 'uploaded' ? 'Remplacer le permis' : 'Télécharger le permis'}
+                                            )}
+                                            
+                                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                                Requis pour {permitType.risks.length} risque(s): {permitType.risks.map(r => r.title).join(', ')}
+                                            </Typography>
+                                            
+                                            {!permitType.isLinked && (
+                                                <Alert severity="warning" variant="outlined" sx={{mb:1.5}}>
+                                                    Ce type de permis doit être ajouté au document. Vous pouvez télécharger un fichier permis ou utiliser un permis existant.
+                                                </Alert>
+                                            )}
+                                        </CardContent>
+                                        <CardActions sx={{justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1}}>
+                                            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                                                {!permitType.isLinked && (
+                                                    <>
                                                         <input
-                                                            type="file"
-                                                            hidden
                                                             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                                            style={{ display: 'none' }}
+                                                            id={`upload-permit-${permitType.permitType}`}
+                                                            type="file"
                                                             onChange={(e) => {
-                                                                const file = e.target.files?.[0] || null;
-                                                                onPermitUpload(risque.id as number, file);
+                                                                const file = e.target.files?.[0];
+                                                                if (file) {
+                                                                    handleFileUpload(permitType.permitType, file);
+                                                                }
                                                             }}
                                                         />
-                                                    </Button>
-                                                    
-                                                    {uploadStatus.status === 'uploaded' && (
-                                                        <Button
-                                                            size="small"
-                                                            color="error"
-                                                            sx={{ ml: 1, mt: 1 }}
-                                                            onClick={() => onPermitUpload(risque.id as number, null)}
-                                                        >
-                                                            Supprimer
-                                                        </Button>
-                                                    )}
-                                                </Box>
-
-                                                {targetPermitDetails?.description &&
-                                                    <Typography variant="caption" display="block" sx={{mb:1.5}}>
-                                                        Description du permis type: {targetPermitDetails.description}
-                                                    </Typography>
-                                                }
-                                                {!targetPermitDetails && targetPermitType &&
-                                                     <Alert severity="warning" variant="outlined" sx={{mb:1.5}}>
-                                                        Aucun permis correspondant au type "{targetPermitType}" n'est actuellement défini dans le système. Veuillez en créer un ou vérifier la configuration des risques.
-                                                    </Alert>
-                                                }
-                                            </CardContent>
-                                            <CardActions sx={{justifyContent: 'flex-end'}}>
-                                                <Tooltip title={uploadStatus.status !== 'uploaded' ? "Veuillez d'abord télécharger un fichier pour ce risque" : "Créer un permis à partir du fichier téléchargé"}>
-                                                    <span>
+                                                        <label htmlFor={`upload-permit-${permitType.permitType}`}>
+                                                            <LoadingButton
+                                                                variant="contained"
+                                                                color="primary"
+                                                                component="span"
+                                                                size="small"
+                                                                startIcon={<UploadFileIcon />}
+                                                                loading={loadingPermitTypes.has(permitType.permitType)}
+                                                                disabled={loadingPermitTypes.has(permitType.permitType)}
+                                                            >
+                                                                Télécharger Permis
+                                                            </LoadingButton>
+                                                        </label>
                                                         <LoadingButton
                                                             size="small"
-                                                            variant="contained"
-                                                            color="primary"
+                                                            variant="outlined"
                                                             startIcon={<CreateIcon />}
-                                                            loading={creatingPermitForRisqueId === risque.id}
-                                                            disabled={uploadStatus.status !== 'uploaded' || creatingPermitForRisqueId === risque.id}
-                                                            onClick={() => handleCreatePermit(risque)}
+                                                            loading={loadingPermitTypes.has(permitType.permitType)}
+                                                            disabled={loadingPermitTypes.has(permitType.permitType)}
+                                                            onClick={() => handleCreateNewPermit(permitType.permitType)}
                                                         >
-                                                            Créer le permis
+                                                            Créer Nouveau
                                                         </LoadingButton>
-                                                    </span>
-                                                </Tooltip>
-                                                <Button
-                                                    size="small"
-                                                    variant="text"
-                                                    onClick={() => onShowRequiredPermitModal(risque)} // Shows specific info
-                                                >
-                                                    Détails du permis requis
-                                                </Button>
-                                            </CardActions>
-                                        </Card>
-                                    </Grid>
-                                );
-                            })}
+                                                    </>
+                                                )}
+                                            </Box>
+                                            <Box>
+                                                {permitType.risks.length > 0 && (
+                                                    <Button
+                                                        size="small"
+                                                        variant="text"
+                                                        onClick={() => onShowRequiredPermitModal(permitType.risks[0])} // Show details for first risk
+                                                    >
+                                                        Détails du permis requis
+                                                    </Button>
+                                                )}
+                                            </Box>
+                                        </CardActions>
+                                    </Card>
+                                </Grid>
+                            ))}
                         </Grid>
                     </Box>
                 )}
 
-                {/* Information when no risks requiring permits */}
-                {risksRequiringPermits.length === 0 && (
+                {/* Information when no permit types are required */}
+                {requiredPermitTypes.length === 0 && (
                     <Box mt={4}>
                         <Alert severity="info" sx={{ mb: 2 }}>
                             <Typography variant="subtitle2" gutterBottom>
-                                Aucun risque nécessitant un permis spécifique
+                                Aucun type de permis requis
                             </Typography>
                             <Typography variant="body2">
                                 Lorsque vous ajoutez des risques qui nécessitent des permis spécifiques (comme les travaux en hauteur, espaces confinés, etc.), 
-                                une section apparaîtra ici pour vous permettre de télécharger les permis correspondants.
+                                cette section affichera les types de permis requis et leur statut.
                             </Typography>
                         </Alert>
                     </Box>
