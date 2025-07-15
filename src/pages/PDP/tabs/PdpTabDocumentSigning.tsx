@@ -359,6 +359,7 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
                             <FormControl fullWidth sx={{ mb: 2 }}>
                                 <InputLabel>Sélectionner un travailleur du chantier</InputLabel>
                                 <Select
+                                
                                     value={selectedWorkerId}
                                     onChange={(e) => handleWorkerSelection(e.target.value as number)}
                                     label="Sélectionner un travailleur du chantier"
