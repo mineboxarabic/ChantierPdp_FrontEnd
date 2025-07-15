@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import {
     Box,
     Button,
@@ -18,19 +18,43 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSave, disabled =
     const [isDrawing, setIsDrawing] = useState(false);
     const [hasSignature, setHasSignature] = useState(false);
 
-    const startDrawing = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-        if (disabled) return;
-        
-        setIsDrawing(true);
+    // Initialize canvas on mount
+    useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        const rect = canvas.getBoundingClientRect();
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
+        // Set up canvas for high DPI displays
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        
+        ctx.scale(dpr, dpr);
+        
+        // Set drawing styles
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        // Clear canvas
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, rect.width, rect.height);
+    }, []);
+
+    const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return { x: 0, y: 0 };
+
+        const rect = canvas.getBoundingClientRect();
         let clientX, clientY;
+        
         if ('touches' in e) {
+            e.preventDefault(); // Prevent scrolling
             clientX = e.touches[0].clientX;
             clientY = e.touches[0].clientY;
         } else {
@@ -38,8 +62,23 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSave, disabled =
             clientY = e.clientY;
         }
 
-        const x = clientX - rect.left;
-        const y = clientY - rect.top;
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top
+        };
+    };
+
+    const startDrawing = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+        if (disabled) return;
+        
+        setIsDrawing(true);
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const { x, y } = getCoordinates(e);
 
         ctx.beginPath();
         ctx.moveTo(x, y);
@@ -52,25 +91,11 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSave, disabled =
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        const rect = canvas.getBoundingClientRect();
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        let clientX, clientY;
-        if ('touches' in e) {
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        } else {
-            clientX = e.clientX;
-            clientY = e.clientY;
-        }
+        const { x, y } = getCoordinates(e);
 
-        const x = clientX - rect.left;
-        const y = clientY - rect.top;
-
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = '#000';
         ctx.lineTo(x, y);
         ctx.stroke();
     }, [isDrawing, disabled]);
@@ -86,7 +111,9 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSave, disabled =
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const rect = canvas.getBoundingClientRect();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, rect.width, rect.height);
         setHasSignature(false);
     }, []);
 
@@ -99,7 +126,9 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSave, disabled =
         if (!canvas) return;
 
         const signatureData = canvas.toDataURL('image/png');
-        onSignatureSave(signatureData);
+        // Remove the "data:image/png;base64," prefix for backend compatibility
+        const base64Data = signatureData.replace(/^data:image\/[a-z]+;base64,/, '');
+        onSignatureSave(base64Data);
     }, [hasSignature, onSignatureSave]);
 
     return (
@@ -114,14 +143,20 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSave, disabled =
                 </Alert>
             )}
 
-            <Box sx={{ border: '2px dashed #ccc', borderRadius: 1, mb: 2 }}>
+            <Box sx={{ 
+                border: '2px dashed #ccc', 
+                borderRadius: 1, 
+                mb: 2,
+                width: '100%',
+                height: '200px',
+                position: 'relative'
+            }}>
                 <canvas
                     ref={canvasRef}
-                    width={400}
-                    height={200}
                     style={{
                         width: '100%',
-                        height: '200px',
+                        height: '100%',
+                        display: 'block',
                         cursor: disabled ? 'not-allowed' : 'crosshair',
                         touchAction: 'none'
                     }}

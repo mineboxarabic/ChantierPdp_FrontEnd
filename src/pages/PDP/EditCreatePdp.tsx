@@ -717,49 +717,6 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
         }));
     }, []);
 
-    // --- Document Signature Handler ---
-    const handleSignDocument = useCallback(async (signatureData: SignatureRequestDTO) => {
-        try {
-            setIsSaving(true);
-            
-            
-            // After successful signature, refresh the document data to get updated signatures
-            if (currentPdpId) {
-                const updatedPdpData = await getPlanDePrevention(currentPdpId);
-                if (updatedPdpData) {
-                    setFormData(prev => ({
-                        ...prev,
-                        signatures: updatedPdpData.signatures || []
-                    }));
-                }
-            }
-
-            notifications.show('Signature enregistrée avec succès', { severity: 'success' });
-            
-        } catch (error: any) {
-            console.error('Signature error:', error);
-            
-            // Handle specific error messages
-            let errorMessage = 'Erreur lors de l\'enregistrement de la signature';
-            if (error.message.includes('Worker not found')) {
-                errorMessage = 'Travailleur non trouvé';
-            } else if (error.message.includes('User not found')) {
-                errorMessage = 'Utilisateur non trouvé';
-            } else if (error.message.includes('Document not found')) {
-                errorMessage = 'Document non trouvé';
-            } else if (error.message.includes('Invalid base64 signature image')) {
-                errorMessage = 'Image de signature invalide';
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
-            
-            notifications.show(errorMessage, { severity: 'error' });
-            throw error; // Re-throw to let the component handle it
-        } finally {
-            setIsSaving(false);
-        }
-    }, [notifications, currentPdpId, getPlanDePrevention]);
-
     // --- Form Submission ---
     const handleSubmit = useCallback(async (e: React.FormEvent) => { /* ...your existing handleSubmit logic... */
         e.preventDefault();
@@ -910,7 +867,6 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                         <PdpTabDocumentSigning
                             formData={formData}
                             allWorkersMap={allWorkersMap}
-                            onSignDocument={handleSignDocument}
                             currentUserId={connectedUser?.id}
                             onNavigateBack={handleBack}
                             onNavigateNext={() => {}} // Last tab, no next action
