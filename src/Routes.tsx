@@ -35,6 +35,8 @@ import EditChantierPage from "./pages/Chantier/EditChantierPage.tsx";
 import ViewChantierPage from "./pages/Chantier/ViewChantierPage.tsx";
 import CreatePdpPage from "./pages/PDP/CreatePdpPage.tsx";
 import EditCreatePdp from "./pages/PDP/EditCreatePdp.tsx";
+import ExampleUsage from "./components/CustomViewComponent.example.tsx";
+import ExampleCustomViewPage from "./components/CustomViewPage.example.tsx";
 
 
 //Standard naming
@@ -168,6 +170,11 @@ PDP_LIST:{
     REGISTER: {
         path: "/register",
         element: <Register />
+    },
+
+    EXEMPLE:{
+        path: "/exemple",
+        element: <ExampleCustomViewPage/>
     }
 };
 export type NameOfRoute = keyof typeof ROUTES
@@ -213,7 +220,8 @@ export const getRouteLists = () => {
         ROUTES.CREATE_BDT,
         ROUTES.CRUD_AUDISECU,
         ROUTES.VIEW_BDT,
-        ROUTES.EDIT_BDT
+        ROUTES.EDIT_BDT,
+        ROUTES.EXEMPLE,
     ];
 
     // Public routes (no login required)

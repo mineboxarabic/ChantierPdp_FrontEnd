@@ -128,6 +128,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ onSignatureSave, disabled =
         const signatureData = canvas.toDataURL('image/png');
         // Remove the "data:image/png;base64," prefix for backend compatibility
         const base64Data = signatureData.replace(/^data:image\/[a-z]+;base64,/, '');
+
         onSignatureSave(base64Data);
     }, [hasSignature, onSignatureSave]);
 

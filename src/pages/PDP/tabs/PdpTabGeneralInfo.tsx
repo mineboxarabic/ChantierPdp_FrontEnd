@@ -14,7 +14,6 @@ interface PdpTabGeneralInfoProps {
     onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     onDateChange: (name: keyof PdpDTO, date: Date | null) => void;
     onAutocompleteChange: <T>(fieldName: keyof PdpDTO, newValue: T | null) => void;
-    onNavigateNext: () => void;
 }
 
 const PdpTabGeneralInfo: FC<PdpTabGeneralInfoProps> = ({
@@ -24,7 +23,6 @@ const PdpTabGeneralInfo: FC<PdpTabGeneralInfoProps> = ({
     onInputChange,
     onDateChange,
     onAutocompleteChange,
-    onNavigateNext,
 }) => {
     const entreprisesOptions = Array.from(entreprisesMap.values());
 
@@ -111,11 +109,6 @@ const PdpTabGeneralInfo: FC<PdpTabGeneralInfoProps> = ({
                     />
                 </Grid>
             </Grid>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-                <Button variant="contained" color="primary" onClick={onNavigateNext}>
-                    Suivant
-                </Button>
-            </Box>
         </>
     );
 };

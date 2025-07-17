@@ -1,6 +1,6 @@
 export type UserDTO = {
     id?: number;
-    name?: string;
+    username?: string;
     role?: string;
     fonction?: string;
     notel?: string;

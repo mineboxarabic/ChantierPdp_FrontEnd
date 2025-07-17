@@ -199,6 +199,14 @@ const ChantierFormWrapper: FC = () => {
         }
     }, [formData.nbHeurs, formData.isAnnuelle]);
 
+  useEffect(() => {
+        if(!isEditMode && saveSuccess) {
+            setTimeout(() => {
+                navigate(getRoute('EDIT_CHANTIER', { id: formData.id?.toString() || '' }));
+            }, 3000); // Redirect after 3 seconds
+        }
+    },[saveSuccess]);
+
     const handleInputChange = (field: keyof ChantierDTO, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
         if (errors[field]) {
@@ -293,6 +301,8 @@ const ChantierFormWrapper: FC = () => {
 
             if (result) {
                 setSaveSuccess(true);
+                formData.id = result.id; // Update formData with new ID
+                setFormData(prev => ({ ...prev, id: result.id }));
             }
         } catch (error: any) {
             console.error("Error saving chantier:", error);
@@ -313,6 +323,9 @@ const ChantierFormWrapper: FC = () => {
             </Box>
         );
     }
+
+
+  
 
     return (
         <Box sx={{ p: { xs: 2, md: 3 }, mx: "auto", maxWidth: '1200px' }}>

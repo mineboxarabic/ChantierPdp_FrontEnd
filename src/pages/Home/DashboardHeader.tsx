@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { 
   Box, 
-  Typography, 
   TextField, 
   InputAdornment, 
   Button, 
@@ -12,7 +11,6 @@ import {
   Badge,
   Menu,
   MenuItem,
-  Avatar,
   useMediaQuery
 } from '@mui/material';
 import { styled, useTheme, alpha } from '@mui/material/styles';
@@ -22,8 +20,7 @@ import {
   NotificationsOutlined as NotificationsIcon,
   AddCircleOutline as AddIcon,
   TuneOutlined as CustomizeIcon,
-  DateRange as DateRangeIcon,
-  PersonOutline as UserIcon
+  DateRange as DateRangeIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { getRoute } from '../../Routes';
@@ -83,13 +80,17 @@ const ActionButton = styled(Button)(({ theme }) => ({
 }));
 
 // Dashboard Header Component
-const DashboardHeader = () => {
+interface DashboardHeaderProps {
+  onlyCreateChantierButton?: boolean;
+}
+
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onlyCreateChantierButton = false }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   
   const [tabValue, setTabValue] = useState(0);
-  const [searchQuery, setSearchQeuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
   
   const naviate = useNavigate();
@@ -112,100 +113,144 @@ const DashboardHeader = () => {
 
   return (
     <HeaderContainer>
-      {/* Title and User Row */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box>
-          <Typography variant="h4" component="h1" fontWeight="700" color="text.primary">
-            Tableau de Bord
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
-            Bienvenue dans votre espace de gestion des chantiers
-          </Typography>
-        </Box>
-        
-        {!isMobile && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton
-              size="small"
-              sx={{ 
-                backgroundColor: alpha(theme.palette.primary.light, 0.1),
-                '&:hover': { backgroundColor: alpha(theme.palette.primary.light, 0.2) }
-              }}
-            >
-              <Badge badgeContent={3} color="error">
-                <NotificationsIcon color="primary" />
-              </Badge>
-            </IconButton>
-            
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Avatar sx={{ width: 38, height: 38, bgcolor: theme.palette.primary.main }}>
-                <UserIcon />
-              </Avatar>
-              {!isTablet && (
-                <Box>
-                  <Typography variant="subtitle2" fontWeight="600">Antoine Dubois</Typography>
-                  <Typography variant="caption" color="text.secondary">Administrateur</Typography>
-                </Box>
-              )}
+      {!onlyCreateChantierButton && (
+        <>
+          {/* Title and User Row */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box>
             </Box>
-          </Box>
-        )}
-      </Box>
-      
-      {/* Search and Actions Row */}
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: isTablet ? 'column' : 'row', 
-        justifyContent: 'space-between', 
-        alignItems: isTablet ? 'stretch' : 'center',
-        gap: 2
-      }}>
-        <SearchInput
-          placeholder="Rechercher un chantier, PDP, entreprise..."
-          variant="outlined"
-          fullWidth={isTablet}
-          size="small"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton 
-                  size="small" 
-                  onClick={handleFilterClick}
+            
+            {!isMobile && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <IconButton
+                  size="small"
                   sx={{ 
                     backgroundColor: alpha(theme.palette.primary.light, 0.1),
                     '&:hover': { backgroundColor: alpha(theme.palette.primary.light, 0.2) }
                   }}
                 >
-                  <FilterListIcon fontSize="small" />
+                  <Badge badgeContent={3} color="error">
+                    <NotificationsIcon color="primary" />
+                  </Badge>
                 </IconButton>
-                <Menu
-                  anchorEl={anchorEl}
-                  open={Boolean(anchorEl)}
-                  onClose={handleMenuClose}
-                >
-                  <MenuItem onClick={handleMenuClose}>Tous les chantiers</MenuItem>
-                  <MenuItem onClick={handleMenuClose}>Chantiers actifs</MenuItem>
-                  <MenuItem onClick={handleMenuClose}>PDPs en attente</MenuItem>
-                  <MenuItem onClick={handleMenuClose}>Risques élevés</MenuItem>
-                </Menu>
-              </InputAdornment>
-            )
-          }}
-          sx={{ maxWidth: isTablet ? '100%' : 400 }}
-        />
-        
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                </Box>
+              </Box>
+            )}
+          </Box>
+          
+          {/* Search and Actions Row */}
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: isTablet ? 'column' : 'row', 
+            justifyContent: 'space-between', 
+            alignItems: isTablet ? 'stretch' : 'center',
+            gap: 2
+          }}>
+            <SearchInput
+              placeholder="Rechercher un chantier, PDP, entreprise..."
+              variant="outlined"
+              fullWidth={isTablet}
+              size="small"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="action" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton 
+                        size="small" 
+                        onClick={handleFilterClick}
+                        sx={{ 
+                          backgroundColor: alpha(theme.palette.primary.light, 0.1),
+                          '&:hover': { backgroundColor: alpha(theme.palette.primary.light, 0.2) }
+                        }}
+                      >
+                        <FilterListIcon fontSize="small" />
+                      </IconButton>
+                      <Menu
+                        anchorEl={anchorEl}
+                        open={Boolean(anchorEl)}
+                        onClose={handleMenuClose}
+                      >
+                        <MenuItem onClick={handleMenuClose}>Tous les chantiers</MenuItem>
+                        <MenuItem onClick={handleMenuClose}>Chantiers actifs</MenuItem>
+                        <MenuItem onClick={handleMenuClose}>PDPs en attente</MenuItem>
+                        <MenuItem onClick={handleMenuClose}>Risques élevés</MenuItem>
+                      </Menu>
+                    </InputAdornment>
+                  )
+                }
+              }}
+              sx={{ maxWidth: isTablet ? '100%' : 400 }}
+            />
+            
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 1.5,
+              flexDirection: isMobile ? 'column' : 'row', 
+              alignItems: isMobile ? 'stretch' : 'center',
+            }}>
+              <ActionButton
+                variant="contained"
+                color="primary"
+                startIcon={<AddIcon />}
+                disableElevation
+                onClick={handleCreateChantier}
+              >
+                Créer Chantier
+              </ActionButton>
+              
+              <IconButton 
+                sx={{ 
+                  display: { xs: 'none', sm: 'flex' },
+                  backgroundColor: alpha(theme.palette.grey[500], 0.1),
+                  '&:hover': { backgroundColor: alpha(theme.palette.grey[500], 0.2) }
+                }}
+              >
+                <DateRangeIcon />
+              </IconButton>
+              
+              <IconButton 
+                sx={{ 
+                  display: { xs: 'none', sm: 'flex' },
+                  backgroundColor: alpha(theme.palette.grey[500], 0.1),
+                  '&:hover': { backgroundColor: alpha(theme.palette.grey[500], 0.2) }
+                }}
+              >
+                <CustomizeIcon />
+              </IconButton>
+            </Box>
+          </Box>
+          
+          {/* Tabs Row */}
+          <StyledTabs
+            value={tabValue}
+            onChange={handleTabChange}
+            variant={isMobile ? "scrollable" : "standard"}
+            scrollButtons={isMobile ? "auto" : false}
+          >
+            <Tab label="Vue d'ensemble" />
+            <Tab label="Chantiers" />
+            <Tab label="PDPs" />
+            <Tab label="Risques" />
+            <Tab label="Travailleurs" />
+          </StyledTabs>
+        </>
+      )}
+      
+      {onlyCreateChantierButton && (
         <Box sx={{ 
           display: 'flex', 
-          gap: 1.5,
-          flexDirection: isMobile ? 'column' : 'row', 
-          alignItems: isMobile ? 'stretch' : 'center',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          mb: 2
         }}>
           <ActionButton
             variant="contained"
@@ -216,42 +261,8 @@ const DashboardHeader = () => {
           >
             Créer Chantier
           </ActionButton>
-          
-          <IconButton 
-            sx={{ 
-              display: { xs: 'none', sm: 'flex' },
-              backgroundColor: alpha(theme.palette.grey[500], 0.1),
-              '&:hover': { backgroundColor: alpha(theme.palette.grey[500], 0.2) }
-            }}
-          >
-            <DateRangeIcon />
-          </IconButton>
-          
-          <IconButton 
-            sx={{ 
-              display: { xs: 'none', sm: 'flex' },
-              backgroundColor: alpha(theme.palette.grey[500], 0.1),
-              '&:hover': { backgroundColor: alpha(theme.palette.grey[500], 0.2) }
-            }}
-          >
-            <CustomizeIcon />
-          </IconButton>
         </Box>
-      </Box>
-      
-      {/* Tabs Row */}
-      <StyledTabs
-        value={tabValue}
-        onChange={handleTabChange}
-        variant={isMobile ? "scrollable" : "standard"}
-        scrollButtons={isMobile ? "auto" : false}
-      >
-        <Tab label="Vue d'ensemble" />
-        <Tab label="Chantiers" />
-        <Tab label="PDPs" />
-        <Tab label="Risques" />
-        <Tab label="Travailleurs" />
-      </StyledTabs>
+      )}
     </HeaderContainer>
   );
 };

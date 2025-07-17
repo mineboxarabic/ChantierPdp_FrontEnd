@@ -8,6 +8,7 @@ export interface DocumentDTO
   id?: number;
   chantier?: number;
   entrepriseExterieure?: number;
+  donneurDOrdre?: number;
   status?: DocumentStatus;
   actionType?: ActionType;
   date?: Date;

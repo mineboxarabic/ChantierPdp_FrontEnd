@@ -1,4 +1,3 @@
-// src/pages/PDP/tabs/PdpTabHorairesDispo.tsx
 import React, { FC } from 'react';
 import {
     Grid,
@@ -6,8 +5,6 @@ import {
     Typography,
     FormControlLabel,
     Switch,
-    Box,
-    Button,
     Paper,
     Divider,
 } from '@mui/material';
@@ -20,20 +17,15 @@ interface PdpTabHorairesDispoProps {
     formData: PdpDTO;
     errors: Record<string, string>;
     onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-    onNavigateBack: () => void;
-    onNavigateNext: () => void;
 }
 
 const PdpTabHorairesDispo: FC<PdpTabHorairesDispoProps> = ({
     formData,
     errors,
     onInputChange,
-    onNavigateBack,
-    onNavigateNext,
 }) => {
     return (
-        <>
-            <Grid container spacing={3}>
+        <Grid container spacing={3}>
                 {/* Section for Horaires de travail */}
                 <Grid item xs={12}>
                     <Paper elevation={2} sx={{ p: {xs: 1.5, md:2.5}, borderRadius: 2 }}>
@@ -148,17 +140,7 @@ const PdpTabHorairesDispo: FC<PdpTabHorairesDispoProps> = ({
                     </Paper>
                 </Grid>
             </Grid>
-
-            {/* Navigation Buttons */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt:2, borderTop: theme => `1px solid ${theme.palette.divider}` }}>
-                <Button variant="outlined" onClick={onNavigateBack}>
-                    Précédent
-                </Button>
-                <Button variant="contained" color="primary" onClick={onNavigateNext}>
-                    Suivant
-                </Button>
-            </Box>
-        </>
+     
     );
 };
 

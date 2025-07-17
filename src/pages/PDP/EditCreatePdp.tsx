@@ -6,21 +6,32 @@ import {
     Box,
     Button,
     CircularProgress,
-    Dialog, // Keep Dialogs here if they are complex and shared across tabs
+    Dialog,
     DialogActions,
     DialogContent,
     DialogTitle,
     IconButton,
-    Modal, // Keep Modal for AnalyseDeRisqueForm here
+    Modal,
     Paper,
     Tab,
     Tabs,
     Typography
 } from '@mui/material';
+import { 
+    Save as SaveIcon,
+    ArrowBack as ArrowBackIcon,
+    Business as BusinessIcon,
+    AccessTime,
+    Warning,
+    Verified,
+    Shield,
+    Draw,
+    Close as CloseIcon
+} from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import 'dayjs/locale/fr'; // Import French locale for dayjs
+import 'dayjs/locale/fr';
 
 // --- Custom Hooks ---
 import usePdp from '../../hooks/usePdp';
@@ -31,14 +42,8 @@ import useDispositif from '../../hooks/useDispositif';
 import useAnalyseRisque from '../../hooks/useAnalyseRisque';
 import useWoker from '../../hooks/useWoker';
 import { useAuth } from '../../hooks/useAuth';
-// import useChantier from "../../hooks/useChantier.ts"; // Only if chantier details beyond ID are needed directly here
 
-// --- Icons ---
-import SaveIcon from '@mui/icons-material/Save';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import BusinessIcon from '@mui/icons-material/Business';
-
-
+// --- Types and DTOs ---
 import { PdpDTO } from '../../utils/entitiesDTO/PdpDTO';
 import { EntrepriseDTO } from '../../utils/entitiesDTO/EntrepriseDTO';
 import  RisqueDTO  from '../../utils/entitiesDTO/RisqueDTO';
@@ -47,12 +52,14 @@ import  PermitDTO  from '../../utils/entitiesDTO/PermitDTO';
 import  Permit  from '../../utils/entities/Permit';
 import { AnalyseDeRisqueDTO } from '../../utils/entitiesDTO/AnalyseDeRisqueDTO';
 import { ImageModel } from '../../utils/image/ImageModel';
-import ObjectAnsweredDTO from '../../utils/pdp/ObjectAnswered'; // Assuming this is the correct path
-import ObjectAnsweredObjects from '../../utils/ObjectAnsweredObjects'; // Assuming this is the correct path
+import ObjectAnsweredDTO from '../../utils/pdp/ObjectAnswered';
+import ObjectAnsweredObjects from '../../utils/ObjectAnsweredObjects';
 import { getRoute } from "../../Routes.tsx";
-import { useNotifications } from "@toolpad/core/useNotifications"; // Or your preferred notification system
+import { useNotifications } from "@toolpad/core/useNotifications";
+import { DocumentStatus } from '../../utils/enums/DocumentStatus.ts';
+import PermiTypes from "../../utils/PermiTypes.ts";
 
-// --- PDP Tab Components (NEW) ---
+// --- PDP Tab Components ---
 import PdpTabGeneralInfo from './tabs/PdpTabGeneralInfo.tsx';
 import PdpTabHorairesDispo from './tabs/PdpTabHorairesDispo.tsx';
 import PdpTabRisquesDispositifs from './tabs/PdpTabRisquesDispositifs.tsx';
@@ -60,27 +67,80 @@ import PdpTabPermits from './tabs/PdpTabPermits.tsx';
 import PdpTabAnalysesRisques from './tabs/PdpTabAnalysesRisques.tsx';
 import PdpTabDocumentSigning from './tabs/PdpTabDocumentSigning.tsx';
 
-// --- Other Custom Components used by tabs or dialogs ---
-import SelectOrCreateObjectAnswered from "../../components/Pdp/SelectOrCreateObjectAnswered"; // For dialogs
-import CreateEditAnalyseDeRisqueForm from "../../components/CreateAnalyseDeRisqueForm"; // For modal
-
-// Styled components from home (if needed for the wrapper itself)
-import { DashboardCard, CardHeader } from '../../pages/Home/styles';
-import { AccessTime, Shield, Verified, Warning, Draw } from '@mui/icons-material';
-import { DocumentStatus } from '../../utils/enums/DocumentStatus.ts';
-import CloseIcon from "@mui/icons-material/Close";
-import PermiTypes from "../../utils/PermiTypes.ts";
-import { set } from 'date-fns';
+// --- Other Custom Components ---
+import SelectOrCreateObjectAnswered from "../../components/Pdp/SelectOrCreateObjectAnswered";
+import CreateEditAnalyseDeRisqueForm from "../../components/CreateAnalyseDeRisqueForm";
 import RequiredPermitModal from './tabs/RequiredPermitModal.tsx';
 
-
-dayjs.locale('fr'); // Set dayjs locale globally here or in your main App.tsx
+dayjs.locale('fr');
 
 interface TabPanelProps {
     children?: React.ReactNode;
     index: number;
     value: number;
 }
+
+// Navigation component for tabs - Reusable across all PDP tabs
+interface PdpTabNavigationProps {
+    tabIndex: number;
+    isLastTab: boolean;
+    isSaving: boolean;
+    isLoading: boolean;
+    onBack: () => void;
+    onNext: () => void;
+    onSave: () => void;
+    showSaveButton?: boolean; // Option to hide save button if needed
+}
+
+const PdpTabNavigation: React.FC<PdpTabNavigationProps> = ({ 
+    tabIndex, 
+    isLastTab, 
+    isSaving, 
+    isLoading, 
+    onBack, 
+    onNext, 
+    onSave,
+    showSaveButton = true
+}) => (
+    <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        mt: 3, 
+        pt: 2, 
+        borderTop: '1px solid',
+        borderColor: 'divider'
+    }}>
+        <Button 
+            variant="outlined" 
+            onClick={onBack} 
+            disabled={tabIndex === 0}
+        >
+            Précédent
+        </Button>
+        
+        {showSaveButton && (
+            <Button
+                variant="contained"
+                color="primary"
+                onClick={onSave}
+                startIcon={<SaveIcon />}
+                disabled={isSaving || isLoading}
+            >
+                {isSaving ? <CircularProgress size={24} color="inherit" /> : "Sauvegarder"}
+            </Button>
+        )}
+        
+        {!isLastTab && (
+            <Button 
+                variant="outlined" 
+                onClick={onNext}
+            >
+                Suivant
+            </Button>
+        )}
+    </Box>
+);
 
 function TabPanel(props: TabPanelProps) {
     const { children, value, index, ...other } = props;
@@ -92,7 +152,11 @@ function TabPanel(props: TabPanelProps) {
             aria-labelledby={`pdps-tab-${index}`}
             {...other}
         >
-            {value === index && <Box sx={{ pt: 3, pb:3, px: {xs: 1, md: 0} }} key={`tabpanel-${index}`}>{children}</Box>}
+            {value === index && (
+                <Box sx={{ pt: 2, pb: 2 }} key={`tabpanel-${index}`}>
+                    {children}
+                </Box>
+            )}
         </div>
     );
 }
@@ -286,38 +350,65 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
     // --- Tab Navigation ---
     const handleTabChange = useCallback((_event: React.SyntheticEvent, newIndex: number) => setTabIndex(newIndex), []);
 
-    // --- Validation Logic (Keep your existing validateForm logic here) ---
-    const validateForm = useCallback((currentData: PdpDTO): boolean => { /* ...your existing validation logic... */
+    // --- Validation Logic with tolerant save option ---
+    const validateForm = useCallback((currentData: PdpDTO, allowTolerantSave: boolean = false): { isValid: boolean; hasWarnings: boolean; firstErrorTabIndex: number } => {
         const newErrors: Record<string, string> = {};
+        const warnings: Record<string, string> = {};
         let firstErrorTabIndex = -1;
+        let firstWarningTabIndex = -1;
 
-
+        // Critical errors (must be fixed)
         if (!currentData.entrepriseExterieure) {
             newErrors.entrepriseExterieure = "L'entreprise extérieure est requise";
             if (firstErrorTabIndex === -1) firstErrorTabIndex = 0;
         }
 
-        setErrors(newErrors);
-        if (firstErrorTabIndex !== -1) {
-            setTabIndex(firstErrorTabIndex);
-            notifications.show("Veuillez corriger les erreurs.", { severity: 'warning' });
-        }
-        return Object.keys(newErrors).length === 0;
-    }, [notifications]);
+        
 
-    // --- Stepper/Tab Navigation Actions (handleNext, handleBack) ---
-    // Keep your existing logic, pass them to tab components that need them.
-     const handleNext = useCallback(() => {
-        if (validateForm(formData)) { // Optional: validate before allowing next
-             if (tabIndex < 4) setTabIndex(prev => prev + 1);
+        if (!currentData.relations || currentData.relations.length === 0) {
+            warnings.relations = "Aucun risque ou dispositif ajouté";
+            if (firstWarningTabIndex === -1) firstWarningTabIndex = 2;
+        }
+
+        setErrors(newErrors);
+        
+        const hasErrors = Object.keys(newErrors).length > 0;
+        const hasWarnings = Object.keys(warnings).length > 0;
+        
+        // Navigate to first error tab if errors exist
+        if (hasErrors && firstErrorTabIndex !== -1) {
+            setTabIndex(firstErrorTabIndex);
+            notifications.show("Erreurs critiques détectées. Veuillez les corriger.", { severity: 'error' });
+        } else if (hasWarnings && firstWarningTabIndex !== -1 && !allowTolerantSave) {
+            setTabIndex(firstWarningTabIndex);
+            // Show specific warning details
+            const warningMessages = Object.values(warnings);
+            const detailedMessage = `Avertissements détectés: ${warningMessages.join(', ')}. Vous pouvez sauvegarder quand même.`;
+            notifications.show(detailedMessage, { severity: 'warning', autoHideDuration: 8000 });
+        }
+
+        return {
+            isValid: !hasErrors,
+            hasWarnings,
+            firstErrorTabIndex: hasErrors ? firstErrorTabIndex : firstWarningTabIndex
+        };
+    }, [notifications, setTabIndex]);
+
+    // --- Tab Navigation Functions ---
+    const handleNavigateNext = useCallback(() => {
+        const validation = validateForm(formData, false);
+        if ((validation.isValid || validation.hasWarnings) && tabIndex < 5) {
+            setTabIndex(prev => prev + 1);
         }
     }, [formData, tabIndex, validateForm]);
-    const handleBack = useCallback(() => {
-         if (tabIndex > 0) setTabIndex(prev => prev - 1);
+
+    const handleNavigateBack = useCallback(() => {
+        if (tabIndex > 0) {
+            setTabIndex(prev => prev - 1);
+        }
     }, [tabIndex]);
 
-// In EditCreatePdp.tsx, within the EditCreatePdp component
-
+    // --- useEffect for Required Permit Types ---
     useEffect(() => {
         const initRequiredPermitTypes = async () => {
             if (allRisquesMap.size > 0 && formData.relations) {
@@ -717,23 +808,28 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
         }));
     }, []);
 
-    // --- Form Submission ---
-    const handleSubmit = useCallback(async (e: React.FormEvent) => { /* ...your existing handleSubmit logic... */
-        e.preventDefault();
-        if (!validateForm(formData)) {
-             notifications.show("Validation échouée.", { severity: 'error' }); return;
+    // --- Form Submission with tolerant save ---
+    const handleSave = useCallback(async (tolerantSave: boolean = false) => {
+        const validation = validateForm(formData, tolerantSave);
+        
+        if (!validation.isValid && !tolerantSave) {
+            notifications.show("Erreurs critiques détectées. Impossible de sauvegarder.", { severity: 'error' });
+            return;
         }
-        setIsSaving(true); setSaveError(null);
+        
+        setIsSaving(true); 
+        setSaveError(null);
         const dataToSave: PdpDTO = { ...formData };
+        
         try {
             let savedPdp: PdpDTO | null = null;
             if (isEditMode && dataToSave.id) {
                 savedPdp = await savePdp(dataToSave, dataToSave.id);
             } else {
-                savedPdp = await createPdp(dataToSave); // createPdp should use formData.chantier
+                savedPdp = await createPdp(dataToSave);
             }
+            
             if (savedPdp) {
-                // Check if there are permit types still needed for the document
                 const unlinkedPermitTypes = requiredPermitTypes.filter(pt => !pt.isLinked);
                 
                 if (unlinkedPermitTypes.length > 0) {
@@ -743,14 +839,16 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                         { severity: "warning", autoHideDuration: 5000 }
                     );
                 } else {
-                    notifications.show("PDP enregistré avec tous les permis requis.", { severity: "success" });
+                    notifications.show("PDP enregistré avec succès.", { severity: "success" });
                 }
                 
-                setFormData(prev => ({ ...prev, ...savedPdp })); // Update with saved data (e.g. new IDs)
+                setFormData(prev => ({ ...prev, ...savedPdp }));
                 if (!isEditMode && savedPdp.id) {
                     navigate(getRoute('EDIT_PDP', { id: savedPdp.id.toString() }), { replace: true });
                 }
-            } else { throw new Error("Sauvegarde PDP échouée."); }
+            } else { 
+                throw new Error("Sauvegarde PDP échouée."); 
+            }
         } catch (error: any) {
             setSaveError(error?.message || "Erreur sauvegarde PDP.");
             notifications.show(error?.message || "Erreur sauvegarde PDP.", { severity: 'error' });
@@ -758,6 +856,11 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
             setIsSaving(false);
         }
     }, [formData, validateForm, isEditMode, savePdp, createPdp, navigate, notifications, requiredPermitTypes]);
+
+    const handleSubmit = useCallback(async (e: React.FormEvent) => {
+        e.preventDefault();
+        await handleSave(true); // Allow tolerant save for form submission
+    }, [handleSave]);
 
 
     if (isLoading) { /* ... same loading indicator ... */
@@ -767,12 +870,18 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="fr">
             <Box sx={{ width: '100%', p: { xs: 1, sm: 2 } }} component="form" onSubmit={handleSubmit} noValidate>
-                <DashboardCard component={Paper} elevation={3} sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
-                    <CardHeader sx={{ flexDirection: {xs: 'column', md: 'row'} }}> {/* Use CardHeader from home styles */}
-                        <Typography variant="h4" component="h1" gutterBottom sx={{ flexGrow: 1, textAlign: {xs: 'center', md: 'left'} }}>
-                            {isEditMode ? "Modifier le Plan de Prévention" : "Créer un Plan de Prévention"}
-                            {formData.chantier && <Typography variant="subtitle1" color="text.secondary">Pour Chantier ID: {formData.chantier}</Typography>}
-                        </Typography>
+                <Box sx={{ bgcolor: 'background.paper', borderRadius: 1, p: { xs: 1, sm: 2, md: 3 } }}>
+                    <Box sx={{ display: 'flex', flexDirection: {xs: 'column', md: 'row'}, alignItems: 'center', mb: 2 }}>
+                        <Box sx={{ flexGrow: 1, textAlign: {xs: 'center', md: 'left'} }}>
+                            <Typography variant="h4" component="h1" gutterBottom>
+                                {isEditMode ? "Modifier le Plan de Prévention" : "Créer un Plan de Prévention"}
+                            </Typography>
+                            {formData.chantier && (
+                                <Typography variant="subtitle1" color="text.secondary">
+                                    Pour Chantier ID: {formData.chantier}
+                                </Typography>
+                            )}
+                        </Box>
                         <Button
                             variant="outlined"
                             startIcon={<ArrowBackIcon />}
@@ -781,11 +890,11 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                         >
                             Retour {formData.chantier ? "au Chantier" : ""}
                         </Button>
-                    </CardHeader>
+                    </Box>
 
                     {saveError && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setSaveError(null)}>{saveError}</Alert>}
 
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 0 }}>
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
                         <Tabs value={tabIndex} onChange={handleTabChange} aria-label="PDP form tabs" variant="scrollable" scrollButtons="auto">
                             <Tab icon={<BusinessIcon />} iconPosition="start" label="Infos Générales" {...a11yProps(0)} />
                             <Tab icon={<AccessTime />} iconPosition="start" label="Horaires/Dispo." {...a11yProps(1)} />
@@ -804,18 +913,35 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                             onInputChange={handleInputChange}
                             onDateChange={handleDateChange}
                             onAutocompleteChange={handleAutocompleteChange}
-                            onNavigateNext={handleNext}
+                        />
+                        <PdpTabNavigation
+                            tabIndex={tabIndex}
+                            isLastTab={tabIndex === 5}
+                            isSaving={isSaving}
+                            isLoading={isLoading}
+                            onBack={handleNavigateBack}
+                            onNext={handleNavigateNext}
+                            onSave={handleSave}
                         />
                     </TabPanel>
+                    
                     <TabPanel value={tabIndex} index={1}>
                         <PdpTabHorairesDispo
                             formData={formData}
                             errors={errors}
                             onInputChange={handleInputChange}
-                            onNavigateBack={handleBack}
-                            onNavigateNext={handleNext}
+                        />
+                        <PdpTabNavigation
+                            tabIndex={tabIndex}
+                            isLastTab={tabIndex === 5}
+                            isSaving={isSaving}
+                            isLoading={isLoading}
+                            onBack={handleNavigateBack}
+                            onNext={handleNavigateNext}
+                            onSave={handleSave}
                         />
                     </TabPanel>
+                    
                     <TabPanel value={tabIndex} index={2}>
                         <PdpTabRisquesDispositifs
                             formData={formData}
@@ -823,77 +949,98 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                             allRisquesMap={allRisquesMap}
                             allDispositifsMap={allDispositifsMap}
                             onOpenDialog={handleOpenDialog}
-                            onDeleteRelation={deleteRelation} // Pass simplified delete
+                            onDeleteRelation={deleteRelation}
                             onUpdateRelationField={updateRelationField}
-                            onNavigateBack={handleBack}
-                            onNavigateNext={handleNext}
-                            saveParent={setFormData} // Pass saveParent to update formData
-                            onAddMultipleRisks={handleAddMultipleRisks} // New prop for multiple risk selection
-                            onRefreshRisks={async () => { await getAllRisques(); }} // Wrapper function that returns void
+                            saveParent={setFormData}
+                            onAddMultipleRisks={handleAddMultipleRisks}
+                            onRefreshRisks={async () => { await getAllRisques(); }}
+                        />
+                        <PdpTabNavigation
+                            tabIndex={tabIndex}
+                            isLastTab={tabIndex === 5}
+                            isSaving={isSaving}
+                            isLoading={isLoading}
+                            onBack={handleNavigateBack}
+                            onNext={handleNavigateNext}
+                            onSave={handleSave}
                         />
                     </TabPanel>
+                    
                     <TabPanel value={tabIndex} index={3}>
-                      <PdpTabPermits
-                        formData={formData}
-                        errors={errors}
-                        allPermitsMap={allPermitsMap}
-                        // New props for the updated logic:
-                        requiredPermitTypes={requiredPermitTypes}
-                        allRisquesMap={allRisquesMap} // Pass this if needed for risk details
-                        onShowRequiredPermitModal={handleShowRequiredPermitInfo} // Pass the handler
-                        onCreateAndLinkPermit={createAndLinkPermit}
-
-                        onOpenDialog={handleOpenDialog}
-                        onDeleteRelation={deleteRelation}
-                        onUpdateRelationField={updateRelationField}
-                        onNavigateBack={handleBack}
-                        onNavigateNext={handleNext}
-                    />
+                        <PdpTabPermits
+                            formData={formData}
+                            errors={errors}
+                            allPermitsMap={allPermitsMap}
+                            requiredPermitTypes={requiredPermitTypes}
+                            allRisquesMap={allRisquesMap}
+                            onShowRequiredPermitModal={handleShowRequiredPermitInfo}
+                            onCreateAndLinkPermit={createAndLinkPermit}
+                            onOpenDialog={handleOpenDialog}
+                            onDeleteRelation={deleteRelation}
+                            onUpdateRelationField={updateRelationField}
+                        />
+                        <PdpTabNavigation
+                            tabIndex={tabIndex}
+                            isLastTab={tabIndex === 5}
+                            isSaving={isSaving}
+                            isLoading={isLoading}
+                            onBack={handleNavigateBack}
+                            onNext={handleNavigateNext}
+                            onSave={handleSave}
+                        />
                     </TabPanel>
+                    
                     <TabPanel value={tabIndex} index={4}>
                         <PdpTabAnalysesRisques
                             formData={formData}
                             errors={errors}
                             allAnalysesMap={allAnalysesMap}
-                            allRisquesMap={allRisquesMap} // For context in displaying analyses
-                            onOpenDialog={handleOpenDialog} // To add existing or trigger create new (which opens modal)
+                            allRisquesMap={allRisquesMap}
+                            onOpenDialog={handleOpenDialog}
                             onDeleteRelation={deleteRelation}
                             onUpdateRelationField={updateRelationField}
-                            onNavigateBack={handleBack}
-                            onNavigateNext={handleNext}
+                        />
+                        <PdpTabNavigation
+                            tabIndex={tabIndex}
+                            isLastTab={tabIndex === 5}
+                            isSaving={isSaving}
+                            isLoading={isLoading}
+                            onBack={handleNavigateBack}
+                            onNext={handleNavigateNext}
+                            onSave={handleSave}
                         />
                     </TabPanel>
+                    
                     <TabPanel value={tabIndex} index={5}>
                         <PdpTabDocumentSigning
                             formData={formData}
                             allWorkersMap={allWorkersMap}
                             currentUserId={connectedUser?.id}
-                            onNavigateBack={handleBack}
-                            onNavigateNext={() => {}} // Last tab, no next action
                         />
-                        {/* Final Save Button for the last tab */}
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, pt:2, borderTop: theme => `1px solid ${theme.palette.divider}` }}>
-                            <Button variant="outlined" onClick={handleBack} disabled={tabIndex === 0}>Précédent</Button>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                type="submit"
-                                startIcon={<SaveIcon />}
-                                disabled={isSaving || isLoading}
-                            >
-                                {isSaving ? <CircularProgress size={24} color="inherit" /> : (isEditMode ? "Mettre à Jour PDP" : "Enregistrer PDP")}
-                            </Button>
-                        </Box>
+                        <PdpTabNavigation
+                            tabIndex={tabIndex}
+                            isLastTab={tabIndex === 5}
+                            isSaving={isSaving}
+                            isLoading={isLoading}
+                            onBack={handleNavigateBack}
+                            onNext={handleNavigateNext}
+                            onSave={handleSave}
+                        />
                     </TabPanel>
 
+                    {/* ...existing code... */}
+
+                    {/* ...existing code... */}
+                    
                     {/* --- Dialog for Adding/Selecting Items (Risques, Dispositifs, Permits) --- */}
-                    {/* This uses SelectOrCreateObjectAnswered */}
                     <Dialog open={openDialog && (dialogType === 'risques' || dialogType === 'dispositifs' || dialogType === 'permits')} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                        <DialogTitle>Ajouter {
-                            dialogType === 'risques' ? 'un Risque' :
-                            dialogType === 'dispositifs' ? 'un Dispositif' :
-                            dialogType === 'permits' ? 'un Permis' : ''
-                        }</DialogTitle>
+                        <DialogTitle>
+                            Ajouter {
+                                dialogType === 'risques' ? 'un Risque' :
+                                dialogType === 'dispositifs' ? 'un Dispositif' :
+                                dialogType === 'permits' ? 'un Permis' : ''
+                            }
+                        </DialogTitle>
                         <DialogContent dividers>
                             {dialogType === 'risques' && (
                                 <SelectOrCreateObjectAnswered<RisqueDTO, PdpDTO>
@@ -961,12 +1108,10 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                                 Ou sélectionner une analyse existante:
                             </Typography>
                             
-                            {/* List of existing analyses */}
                             {allAnalysesMap && allAnalysesMap.size > 0 ? (
                                 <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
                                     {Array.from(allAnalysesMap.values())
                                         .filter(analyse => 
-                                            // Filter out analyses that are already linked to this PDP
                                             !formData.relations?.some(rel => 
                                                 rel.objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE && 
                                                 rel.objectId === analyse.id
@@ -1066,32 +1211,31 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                                  saveParent={setFormData}
                                  setIsChanged={() => {}}
                                  onSave={async (savedAnalyse) => {
-                                     await getAllAnalyses(); // Refresh the list
-                                     if (!editItemData && savedAnalyse.id) { // If it was a new analyse, add relation
+                                     await getAllAnalyses();
+                                     if (!editItemData && savedAnalyse.id) {
                                          addRelation(ObjectAnsweredObjects.ANALYSE_DE_RISQUE, savedAnalyse);
                                      }
                                      handleCloseNestedModal();
                                   }}
                                  onCancel={handleCloseNestedModal}
-                                 currentAnalyse={editItemData || undefined} // Pass data for editing, or undefined for create
+                                 currentAnalyse={editItemData || undefined}
                                  isEdit={!!editItemData}
                              />
                          </Box>
                      </Modal>
-                </DashboardCard>
+                </Box>
             </Box>
 
-                 
-        <RequiredPermitModal
-            open={showRequiredPermitModal}
-            onClose={() => setShowRequiredPermitModal(false)}
-            permitData={requiredPermitDataForModal} // The specific permit needed
-            risque={currentRisqueForModal}           // The risk that triggered this
-            showPdfPreview={true} // Or as configured
-            onDownload={() => {
-                notifications.show("Téléchargement du permis en cours...", { severity: "info" });
-            }}
-        />
+            <RequiredPermitModal
+                open={showRequiredPermitModal}
+                onClose={() => setShowRequiredPermitModal(false)}
+                permitData={requiredPermitDataForModal}
+                risque={currentRisqueForModal}
+                showPdfPreview={true}
+                onDownload={() => {
+                    notifications.show("Téléchargement du permis en cours...", { severity: "info" });
+                }}
+            />
         </LocalizationProvider>
     );
 };

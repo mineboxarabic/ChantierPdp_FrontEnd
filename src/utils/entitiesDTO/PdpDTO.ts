@@ -18,14 +18,13 @@ extends DocumentDTO
     private MisesEnDisposition misesEnDisposition; */
 {
 
+  dateInspection?: Date; // ✅ Date of inspection
+  icpdate?: Date; // ✅ Date of ICP (Intervention Control Plan)
   datePrevenirCSSCT?: Date; // ✅ Notification date for CSSCT (if required)
   datePrev?: Date; // ✅ Planned date for something (depends on business rules)
-
-    horairesDetails?: string; // ✅ Details about working hours
-    entrepriseDInspection?: number; // ✅ ID of the inspection company
-    horaireDeTravail?: HoraireDeTravaille; // ✅ ID of the working hours
-    misesEnDisposition?: MiseEnDisposition; // ✅ ID of the provisions made
-    dateInspection?: Date; // ✅ Date of inspection
-    icpdate?: Date; // ✅ Date of ICP (Intervention Control Plan)
+  horairesDetails?: string; // ✅ Details about working hours
+  entrepriseDInspection?: number; // ✅ ID of the inspection company
+  horaireDeTravail?: HoraireDeTravaille; // ✅ ID of the working hours
+  misesEnDisposition?: MiseEnDisposition; // ✅ ID of the provisions made
     
 }

@@ -39,8 +39,6 @@ interface PdpTabRisquesDispositifsProps {
     onOpenDialog: (type: DialogTypes) => void; // To trigger the dialog in parent
     onDeleteRelation: (objectId: number, objectType: ObjectAnsweredObjects) => void; // More robust
     onUpdateRelationField: (relationUniqueKey: string | number, field: keyof ObjectAnsweredDTO, value: any) => void;
-    onNavigateBack: () => void;
-    onNavigateNext: () => void;
     saveParent: (updatedPdpData: PdpDTO) => void; // Function to save parent data
     // New prop for adding multiple risks
     onAddMultipleRisks: (risks: RisqueDTO[], risksToUnlink?: RisqueDTO[]) => Promise<void>;
@@ -57,8 +55,6 @@ const PdpTabRisquesDispositifs: FC<PdpTabRisquesDispositifsProps> = ({
     onOpenDialog,
     onDeleteRelation,
     onUpdateRelationField,
-    onNavigateBack,
-    onNavigateNext,
     onAddMultipleRisks,
     onRefreshRisks,
 }) => {
@@ -206,16 +202,6 @@ const PdpTabRisquesDispositifs: FC<PdpTabRisquesDispositifsProps> = ({
                     </Paper>
                 </Grid>
             </Grid>
-
-            {/* Navigation Buttons */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt:2, borderTop: theme => `1px solid ${theme.palette.divider}` }}>
-                <Button variant="outlined" onClick={onNavigateBack}>
-                    Précédent
-                </Button>
-                <Button variant="contained" color="primary" onClick={onNavigateNext}>
-                    Suivant
-                </Button>
-            </Box>
 
             {/* Multiple Risk Selection Dialog */}
             <MultipleRiskSelectionDialog

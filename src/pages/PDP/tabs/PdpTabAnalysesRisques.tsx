@@ -44,8 +44,6 @@ interface PdpTabAnalysesRisquesProps {
     onOpenDialog: (type: DialogTypes, dataToEdit?: DialogData) => void; // Can now pass dataToEdit for the modal
     onDeleteRelation: (objectId: number, objectType: ObjectAnsweredObjects) => void;
     onUpdateRelationField: (relationUniqueKey: string | number, field: keyof ObjectAnsweredDTO, value: any) => void;
-    onNavigateBack: () => void;
-    onNavigateNext: () => void; // Now we have a next step (signatures)
 }
 
 const PdpTabAnalysesRisques: FC<PdpTabAnalysesRisquesProps> = ({
@@ -56,8 +54,6 @@ const PdpTabAnalysesRisques: FC<PdpTabAnalysesRisquesProps> = ({
     onOpenDialog,
     onDeleteRelation,
     onUpdateRelationField,
-    onNavigateBack,
-    onNavigateNext,
 }) => {
     const analysesRelations = useMemo(() => {
         return formData.relations?.filter(r => r.objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE && r.answer !== null) ?? [];
@@ -210,21 +206,6 @@ const PdpTabAnalysesRisques: FC<PdpTabAnalysesRisquesProps> = ({
                     </Typography>
                 )}
             </Paper>
-
-            {/* Navigation Buttons are handled in the parent EditCreatePdp for the last tab */}
-            {/* The main submit button is typically placed after the last tab's content in the parent. */}
-            {/* However, if a per-tab save is desired or specific final actions, they'd be here. */}
-            {/* For now, the parent EditCreatePdp.tsx handles the final save button after this tab. */}
-            {/* We still need the "Précédent" button here. */}
-             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt:2, borderTop: theme => `1px solid ${theme.palette.divider}` }}>
-                <Button variant="outlined" onClick={onNavigateBack}>
-                    Précédent
-                </Button>
-                <Button variant="contained" onClick={onNavigateNext}>
-                    Suivant
-                </Button>
-                {/* The main "Enregistrer PDP" button is now in the signatures tab (final step) */}
-            </Box>
         </>
     );
 };

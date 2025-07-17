@@ -63,6 +63,7 @@ const ChantierTeamForm: FC<ChantierTeamFormProps> = ({
     const [workerSelectDialogOpen, setWorkerSelectDialogOpen] = useState(false);
     const [workerModalOpen, setWorkerModalOpen] = useState(false);
     const [currentWorkerForModal, setCurrentWorkerForModal] = useState<number | undefined>(undefined);
+    const [errorDialogOpen, setErrorDialogOpen] = useState(false);
 
     const selectedDonneurDOrdre = useMemo(() => {
         return allUsers.find(u => u.id === formData.donneurDOrdre) || null;
@@ -71,6 +72,13 @@ const ChantierTeamForm: FC<ChantierTeamFormProps> = ({
     const selectedWorkerDTOs = useMemo(() => {
         return workersOfChantier;
     }, [workersOfChantier]);
+
+    // Helper function to get enterprise name by ID
+    const getEnterpriseName = (enterpriseId?: number) => {
+        if (!enterpriseId || !allEntreprisesOfChantier) return 'Entreprise non spécifiée';
+        const enterprise = allEntreprisesOfChantier.find(e => e.id === enterpriseId);
+        return enterprise?.nom || 'Entreprise non spécifiée';
+    };
 
 
     const handleRemoveWorker = (workerIdToRemove: number | undefined) => {
@@ -94,6 +102,16 @@ const ChantierTeamForm: FC<ChantierTeamFormProps> = ({
         setWorkerSelectDialogOpen(false);
     };
 
+    // Handle button click with validation
+    const handleSelectWorkers = () => {
+        if (!formData.entrepriseUtilisatrice) {
+            setErrorDialogOpen(true);
+            return;
+        }
+        console.log('Open worker selection dialog', workerSelectDialogOpen);
+        setWorkerSelectDialogOpen(true);
+    };
+
 
     return (
         <Grid container spacing={3}>
@@ -104,7 +122,7 @@ const ChantierTeamForm: FC<ChantierTeamFormProps> = ({
             <Grid item xs={12}>
                 <Autocomplete
                     options={allUsers}
-                    getOptionLabel={(option) => option.username || option.name || `Utilisateur ID: ${option.id}`}
+                    getOptionLabel={(option) => option.username || `Utilisateur ID: ${option.id}`}
                     value={selectedDonneurDOrdre}
                     onChange={(_, newValue) => {
                         onInputChange('donneurDOrdre', newValue ? newValue.id : undefined);
@@ -123,7 +141,7 @@ const ChantierTeamForm: FC<ChantierTeamFormProps> = ({
                     renderOption={(props, option) => (
                         <Box component="li" {...props} key={option.id}>
                             <DonneurDOrdreIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                            {option.username || option.name} ({option.email})
+                            {option.username} ({option.email})
                         </Box>
                     )}
                 />
@@ -140,10 +158,7 @@ const ChantierTeamForm: FC<ChantierTeamFormProps> = ({
                     <Button
                         variant="outlined"
                         startIcon={<AddIcon />}
-                        onClick={() => {
-                            console.log('Open worker selection dialog' , workerSelectDialogOpen);
-                            setWorkerSelectDialogOpen(true);
-                        }}
+                        onClick={handleSelectWorkers}
                     >
                         Sélectionner des Intervenants
                     </Button>
@@ -178,7 +193,7 @@ const ChantierTeamForm: FC<ChantierTeamFormProps> = ({
                                         <PersonIcon color="primary" sx={{ mr: 1.5 }} />
                                         <ListItemText
                                             primary={`${worker.nom || ''} ${worker.prenom || ''}`}
-                                            secondary={worker.entreprise?.nom || worker.entrepriseName || 'Entreprise non spécifiée'}
+                                            secondary={getEnterpriseName(worker.entreprise)}
                                         />
                                     </Box>
                                     <ListItemSecondaryAction>
@@ -226,6 +241,21 @@ const ChantierTeamForm: FC<ChantierTeamFormProps> = ({
                     setWorkerModalOpen(false);
                 }}
             />
+
+            {/* Error Dialog */}
+            <Dialog open={errorDialogOpen} onClose={() => setErrorDialogOpen(false)}>
+                <DialogTitle>Erreur</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Vous devez d'abord sélectionner une entreprise utilisatrice avant de pouvoir ajouter des intervenants.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setErrorDialogOpen(false)} color="primary">
+                        OK
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Grid>
     );
 };

@@ -3,17 +3,29 @@
 import { useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
 import fetchApi, { ApiResponse } from "../api/fetchApi";
+import { ImageModel } from "../utils/image/ImageModel";
 
 export interface SignatureRequestDTO {
-  workerId: number;
+  workerId: number | null;
   documentId: number;
-  userId: number;
-  name: string;
-  lastName: string;
+  userId: number | null; // Null if signed by worker
+  prenom: string;
+  nom: string;
   signatureImage: string; // Base64 encoded image
 }
 
-type DocumentResult = string | number | null;
+export interface SignatureResponseDTO {
+  id: number;
+  workerId: number | null; // Null if signed by user
+  userId: number | null; // Null if signed by worker
+  documentId: number;
+  prenom: string;
+  nom: string;
+  signatureImage: ImageModel; // Base64 encoded image
+  signatureDate: Date;
+}
+
+type DocumentResult = string | number | null | SignatureResponseDTO[] | SignatureResponseDTO;
 
 const useDocument = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -40,6 +52,7 @@ const useDocument = () => {
           { status: 500, message: "Internal server error" },
         ]
       );
+      console.log('useDocument: API response:', res);
       setResult(res.data ?? null);
       notifications.show(res.message || "Document signed by worker successfully", { severity: "success" });
       return res;
@@ -108,13 +121,42 @@ const useDocument = () => {
     }
   };
 
-  // GET /api/document/{documentId}/signatures
-  const getSignaturesByDocumentId = async (documentId: number) => {
+
+    // DELETE /api/document/user/{userId}/unsign/{signatureId}
+  const unsignDocumentByWorker = async (workerId: number, signatureId: number) => {
     setIsLoading(true);
     setError(null);
     setResult(null);
     try {
-      const res = await fetchApi<any[]>(
+      const res = await fetchApi<string>(
+        `/api/document/worker/${workerId}/unsign/${signatureId}`,
+        "DELETE",
+        null,
+        [
+          { status: 400, message: "Bad request" },
+          { status: 500, message: "Internal server error" },
+        ]
+      );
+      setResult(res.data ?? null);
+      notifications.show(res.message || "Document unsigned by worker successfully", { severity: "success" });
+      return res;
+    } catch (e: any) {
+      setError(e.message);
+      notifications.show(e.message, { severity: "error" });
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+  // GET /api/document/{documentId}/signatures
+  const getSignaturesByDocumentId = async (documentId: number):Promise<SignatureResponseDTO[]> => {
+    setIsLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetchApi<SignatureResponseDTO[]>(
         `/api/document/${documentId}/signatures`,
         "GET",
         null,
@@ -123,9 +165,15 @@ const useDocument = () => {
         ]
       );
       console.log('useDocument: Signatures fetched:', res.data);
-      setResult(res.data ?? null as any);
+      console.log('useDocument: Individual signature objects:', res.data?.map((sig, index) => ({ 
+        index, 
+        signature: sig, 
+        keys: Object.keys(sig || {}),
+        fullObject: JSON.stringify(sig, null, 2)
+      })));
+      setResult(res.data as SignatureResponseDTO[]);
       // Don't show success notification for GET requests - too noisy
-      return res;
+      return res.data as SignatureResponseDTO[];
     } catch (e: any) {
       setError(e.message);
       notifications.show(e.message, { severity: "error" });
@@ -142,7 +190,8 @@ const useDocument = () => {
     signDocumentByWorker,
     signDocumentByUser,
     unsignDocumentByUser,
-    getSignaturesByDocumentId,
+    unsignDocumentByWorker,
+    getSignaturesByDocumentId
   };
 };
 

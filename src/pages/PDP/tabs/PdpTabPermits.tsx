@@ -54,8 +54,6 @@ interface PdpTabPermitsProps {
     onOpenDialog: (type: DialogTypes) => void;
     onDeleteRelation: (objectId: number, objectType: ObjectAnsweredObjects) => void;
     onUpdateRelationField: (relationUniqueKey: string | number, field: keyof ObjectAnsweredDTO, value: any) => void;
-    onNavigateBack: () => void;
-    onNavigateNext: () => void;
 
     requiredPermitTypes: RequiredPermitType[];
     allRisquesMap: Map<number, RisqueDTO>; // For displaying risk details
@@ -70,8 +68,6 @@ const PdpTabPermits: FC<PdpTabPermitsProps> = ({
     onOpenDialog,
     onDeleteRelation,
     onUpdateRelationField,
-    onNavigateBack,
-    onNavigateNext,
     requiredPermitTypes,
     allRisquesMap,
     onShowRequiredPermitModal,
@@ -371,16 +367,6 @@ const PdpTabPermits: FC<PdpTabPermitsProps> = ({
                     </Box>
                 )}
             </Paper>
-
-            {/* Navigation Buttons */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt:2, borderTop: theme => `1px solid ${theme.palette.divider}` }}>
-                <Button variant="outlined" onClick={onNavigateBack}>
-                    Précédent
-                </Button>
-                <Button variant="contained" color="primary" onClick={onNavigateNext}>
-                    Suivant
-                </Button>
-            </Box>
         </>
     );
 };

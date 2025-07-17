@@ -28,51 +28,49 @@ import {
 import { Person, CheckCircle, Pending, Draw, Delete as DeleteIcon } from '@mui/icons-material';
 import SignaturePad from '../../../components/DocumentSigning/SignaturePad';
 import { WorkerDTO } from '../../../utils/entitiesDTO/WorkerDTO';
+import { UserDTO } from '../../../utils/entitiesDTO/UserDTO';
 import { PdpDTO } from '../../../utils/entitiesDTO/PdpDTO';
 import useWorkerSelection from '../../../hooks/useWorkerSelection';
-import useDocument from '../../../hooks/useDocument';
+import useDocument, { SignatureRequestDTO, SignatureResponseDTO } from '../../../hooks/useDocument';
+import useChantier from '../../../hooks/useChantier';
+import useUser from '../../../hooks/useUser';
 
-interface SignatureData {
-    workerId: number;
-    userId: number;
-    name: string;
-    lastName: string;
-    signatureImage: string;
-    signedAt: Date;
-}
+
 
 interface PdpTabDocumentSigningProps {
     formData: PdpDTO;
     allWorkersMap: Map<number, WorkerDTO>; // Keep for backward compatibility, but we'll use chantier-specific workers
     currentUserId?: number;
-    onNavigateBack: () => void;
-    onNavigateNext: () => void;
 }
-
 const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
     formData,
     allWorkersMap,
     currentUserId,
-    onNavigateBack,
-    onNavigateNext
 }) => {
     const [selectedWorkerId, setSelectedWorkerId] = useState<number | ''>('');
+    const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
     const [name, setName] = useState('');
+    const [image, setImage] = useState<string | null>(null);
     const [lastName, setLastName] = useState('');
     const [success, setSuccess] = useState<string | null>(null);
     const [chantierWorkers, setChantierWorkers] = useState<WorkerDTO[]>([]);
+    const [availableUsers, setAvailableUsers] = useState<UserDTO[]>([]);
     const [loadingWorkers, setLoadingWorkers] = useState(false);
-    const [documentSignatures, setDocumentSignatures] = useState<any[]>([]);
+    const [loadingUsers, setLoadingUsers] = useState(false);
+    const [documentSignatures, setDocumentSignatures] = useState<SignatureResponseDTO[]>([]);
     const [signatureMode, setSignatureMode] = useState<'worker' | 'donneurDOrdre'>('worker');
 
     const { getWorkersForChantier } = useWorkerSelection();
+    const { getChantier } = useChantier();
+    const { getUser } = useUser();
     const { 
         isLoading: isDocumentLoading, 
         error: documentError, 
         signDocumentByWorker,
         signDocumentByUser,
         unsignDocumentByUser,
-        getSignaturesByDocumentId 
+        unsignDocumentByWorker,
+        getSignaturesByDocumentId
     } = useDocument();
 
     // Load workers for the specific chantier when component mounts or chantierId changes
@@ -100,6 +98,87 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
         loadChantierWorkers();
     }, []);
 
+    // Load available users for the specific chantier
+    useEffect(() => {
+        const loadAvailableUsers = async () => {
+            if (!formData.chantier || !currentUserId) {
+                console.warn('No chantier ID or currentUserId found');
+                return;
+            }
+
+            setLoadingUsers(true);
+            
+            try {
+                console.log('Loading users for chantier:', formData.chantier);
+                
+                // Get chantier details to access donneurDOrdre
+                const chantierData = await getChantier(formData.chantier);
+                console.log('Chantier data loaded:', chantierData);
+                
+                const users: UserDTO[] = [];
+                
+                // Add donneurDOrdre if exists
+                if (chantierData.donneurDOrdre) {
+                    try {
+                        const donneurUser = await getUser(chantierData.donneurDOrdre);
+                        console.log('Donneur d\'ordre loaded:', donneurUser);
+                        console.log('Donneur d\'ordre user details:', {
+                            id: donneurUser.id,
+                            username: donneurUser.username,
+                            role: donneurUser.role,
+                            fonction: donneurUser.fonction,
+                            email: donneurUser.email
+                        });
+                        if (donneurUser) {
+                            users.push(donneurUser);
+                        }
+                    } catch (error) {
+                        console.error('Failed to load donneur d\'ordre user:', error);
+                    }
+                }
+                
+                // Add current user if different from donneurDOrdre
+                if (currentUserId !== chantierData.donneurDOrdre) {
+                    try {
+                        const currentUser = await getUser(currentUserId);
+                        console.log('Current user loaded:', currentUser);
+                        console.log('Current user details:', {
+                            id: currentUser.id,
+                            username: currentUser.username,
+                            role: currentUser.role,
+                            fonction: currentUser.fonction,
+                            email: currentUser.email
+                        });
+                        if (currentUser) {
+                            users.push(currentUser);
+                        }
+                    } catch (error) {
+                        console.error('Failed to load current user:', error);
+                    }
+                }
+                
+                console.log('Available users:', users);
+                console.log('Available users detailed:', users.map(u => ({
+                    id: u.id,
+                    username: u.username,
+                    role: u.role,
+                    fonction: u.fonction,
+                    hasUsername: !!u.username,
+                    hasRole: !!u.role,
+                    hasFonction: !!u.fonction
+                })));
+                setAvailableUsers(users);
+                
+            } catch (error: any) {
+                console.error('Failed to load available users:', error);
+            } finally {
+                setLoadingUsers(false);
+            }
+        };
+    
+        loadAvailableUsers();
+    }, [formData.chantier, currentUserId]);
+
     // Load existing signatures for the document
     useEffect(() => {
         const loadDocumentSignatures = async () => {
@@ -107,9 +186,57 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
             
             try {
                 const response = await getSignaturesByDocumentId(formData.id);
-                if (response.data) {
-                    setDocumentSignatures(response.data);
+
+                console.log('All signatures loaded:', response);
+                
+                // Debug: Check the structure of individual signature objects
+                if (response && response.length > 0) {
+                    console.log('Sample signature objects:', response.map((sig, index) => ({
+                        index,
+                        workerId: sig.workerId,
+                        userId: sig.userId,
+                        id: sig.id,
+                        documentId: sig.documentId,
+                        prenom: sig.prenom,
+                        nom: sig.nom,
+                        fullObject: JSON.stringify(sig, null, 2)
+                    })));
                 }
+
+                // Now the backend returns all signatures in one call
+                // We need to separate them based on workerId vs userId and add typeOfSign property
+                const allSignatures: any[] = (response || []).map(sig => {
+                    console.log('Processing signature:', sig);
+                    console.log('Signature properties:', Object.keys(sig));
+                    console.log('Signature workerId:', sig.workerId);
+                    console.log('Signature userId:', sig.userId);
+                    console.log('Signature id field:', sig.id);
+                    
+                    // Add typeOfSign property based on workerId vs userId
+                    if (sig.workerId !== null && sig.workerId !== undefined) {
+                        console.log('Creating worker signature for workerId:', sig.workerId);
+                        return {
+                            ...sig, // Keep all original properties from backend
+                            typeOfSign: 'worker' // Add typeOfSign for frontend logic
+                        };
+                    } else {
+                        // Otherwise it's a user signature
+                        console.log('Creating user signature for userId:', sig.userId);
+                        return {
+                            ...sig, // Keep all original properties from backend
+                            typeOfSign: 'user' // Add typeOfSign for frontend logic
+                        };
+                    }
+                });
+                
+                console.log('Combined signatures:', allSignatures);
+
+                if(!allSignatures || allSignatures.length === 0) {
+                    console.warn('No signatures found for document:', formData.id);
+                }
+
+                setDocumentSignatures(allSignatures);
+
             } catch (error) {
                 console.error('Failed to load document signatures:', error);
             }
@@ -123,23 +250,6 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
         return chantierWorkers;
     };
 
-    // Get signed workers from document signatures
-    const getSignedWorkers = (): number[] => {
-        return documentSignatures
-            .filter((sig: any) => sig.workerId) // Only worker signatures
-            .map((sig: any) => sig.workerId) as number[];
-    };
-
-    // Check if donneurDOrdre has signed
-    const isDonneurDOrdreSigned = (): boolean => {
-        return documentSignatures.some((sig: any) => sig.userId && !sig.workerId);
-    };
-
-    // Get donneurDOrdre signature ID for unsigning
-    const getDonneurDOrdreSignatureId = (): number | null => {
-        const signature = documentSignatures.find((sig: any) => sig.userId && !sig.workerId);
-        return signature?.id || null;
-    };
 
     const handleWorkerSelection = useCallback((workerId: number) => {
         setSelectedWorkerId(workerId);
@@ -153,11 +263,33 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
         }
     }, [chantierWorkers, allWorkersMap]);
 
-    const handleSignatureSave = useCallback(async (signatureData: string) => {
+    const handleUserSelection = useCallback((userId: number) => {
+        setSelectedUserId(userId);
+        setSuccess(null);
+        
+        // Find user in available users
+        const user = availableUsers.find(u => u.id === userId);
+        if (user) {
+            setName(user.username || '');
+            setLastName(''); // UserDTO doesn't have lastName, so keep it empty
+        }
+    }, [availableUsers]);
+
+
+
+
+    const handleSignatureSave = useCallback(async (imageBase: string) => {
         // For worker mode, require selectedWorkerId
-        // For donneurDOrdre mode, no selectedWorkerId needed
+        // For donneurDOrdre mode, require selectedUserId
+
+        //console.log('handleSignatureSave called with:', signatureData);
         if (signatureMode === 'worker' && !selectedWorkerId) {
             console.error('Missing selectedWorkerId for worker signature');
+            return;
+        }
+        
+        if (signatureMode === 'donneurDOrdre' && !selectedUserId) {
+            console.error('Missing selectedUserId for donneur d\'ordre signature');
             return;
         }
         
@@ -172,25 +304,35 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
         }
 
         // Validate signature data format (should be pure base64 now)
-        if (!signatureData || signatureData.length < 100) {
-            console.error('Invalid signature data - too short or empty:', signatureData?.substring(0, 50));
-            return;
-        }
+        // if (!signatureData || signatureData.length < 100) {
+        //     console.error('Invalid signature data - too short or empty:', signatureData?.substring(0, 50));
+        //     return;
+        // }
 
         setSuccess(null);
 
         // Create the signature request object - ensure proper types for Java backend
-        const signatureRequest = {
-            workerId: signatureMode === 'worker' ? Number(selectedWorkerId) : Number(currentUserId),
+        // const signatureRequest = {
+        //     workerId: signatureMode === 'worker' ? Number(selectedWorkerId) : Number(selectedUserId),
+        //     documentId: Number(formData.id),
+        //     userId: Number(currentUserId),
+        //     name: (name || '').trim(),
+        //     lastName: (lastName || '').trim(),
+        //     signatureImage: signatureData
+        // };
+
+
+        const signatureRequest: SignatureRequestDTO = {
+            workerId: signatureMode === 'worker' ? Number(selectedWorkerId) : null,
+            userId: signatureMode === 'donneurDOrdre' ? Number(selectedUserId) : null,
             documentId: Number(formData.id),
-            userId: Number(currentUserId),
-            name: (name || '').trim(),
-            lastName: (lastName || '').trim(),
-            signatureImage: signatureData
-        };
+            prenom: (name || '').trim(),
+            nom: (lastName || '').trim(),
+            signatureImage: imageBase || '' // Use the image state directly
+        }
 
         // Validate all required fields are present and valid
-        if (!signatureRequest.documentId || !signatureRequest.userId) {
+        if (!signatureRequest.documentId) {
             console.error('Invalid data types or missing values:', signatureRequest);
             return;
         }
@@ -202,6 +344,7 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
 
         try {
             if (signatureMode === 'worker') {
+
                 await signDocumentByWorker(signatureRequest);
             } else {
                 await signDocumentByUser(signatureRequest);
@@ -211,43 +354,143 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
             
             // Reset form
             setSelectedWorkerId('');
+            setSelectedUserId('');
             setName('');
             setLastName('');
             
-            // Reload signatures
-            const response = await getSignaturesByDocumentId(formData.id);
-            if (response.data) {
-                setDocumentSignatures(response.data);
+            // Reload signatures using the same unified approach
+            if (formData.id) {
+                const response = await getSignaturesByDocumentId(formData.id);
+
+                // Now the backend returns all signatures in one call
+                // We need to separate them based on workerId vs userId and add typeOfSign property
+                const allSignatures: any[] = (response || []).map(sig => {
+                    console.log('Reloading - Processing signature:', sig);
+                    
+                    // Add typeOfSign property based on workerId vs userId
+                    if (sig.workerId !== null && sig.workerId !== undefined) {
+                        console.log('Reloading - Creating worker signature for workerId:', sig.workerId);
+                        return {
+                            ...sig, // Keep all original properties from backend
+                            typeOfSign: 'worker' // Add typeOfSign for frontend logic
+                        };
+                    } else {
+                        // Otherwise it's a user signature
+                        console.log('Reloading - Creating user signature for userId:', sig.userId);
+                        return {
+                            ...sig, // Keep all original properties from backend
+                            typeOfSign: 'user' // Add typeOfSign for frontend logic
+                        };
+                    }
+                });
+                
+                setDocumentSignatures(allSignatures);
             }
             
         } catch (err: any) {
             console.error('Error signing document:', err);
         }
-    }, [selectedWorkerId, formData.id, currentUserId, name, lastName, signatureMode, signDocumentByWorker, signDocumentByUser, getSignaturesByDocumentId]);
+    }, [selectedWorkerId, selectedUserId, formData.id, currentUserId, name, lastName, signatureMode ]);
 
     // Handle unsigning documents
-    const handleUnsignDocument = useCallback(async (signatureId: number, isUserSignature: boolean = false) => {
-        if (!currentUserId) return;
+    const handleUnsignDocument = useCallback(async (signature: SignatureResponseDTO) => {
+        if (!currentUserId || !formData.id) {
+            console.error('Missing currentUserId or formData.id for unsigning');
+            return;
+        }
 
         setSuccess(null);
 
         try {
-            await unsignDocumentByUser(currentUserId, signatureId);
+            console.log('Attempting to unsign document:', {
+                userId: signature.userId,
+                signatureId : signature.id, // This is the actual signature ID
+                workerId : signature.workerId, // This is the worker ID or user ID
+                documentId: signature.documentId,
+            });
+            
+            const isWorker = signature.workerId !== null && signature.workerId !== undefined;
+
+            // Use appropriate unsign function based on signature type
+            if (isWorker) {
+                if (signature.workerId !== null) {
+                    console.log('Unsigning worker - workerId:', signature.workerId, 'signatureId:', signature.id);
+                    
+                    // API expects: workerId, signatureId
+                    await unsignDocumentByWorker(signature.workerId, signature.id);
+                } else {
+                    console.error('workerId is null, cannot unsign worker signature:', signature);
+                    return;
+                }
+            } else {
+            
+                console.log('Unsigning user - userId:', signature.userId, 'signatureId:', signature.id);
+                    if(signature.userId !== null) {
+                            await unsignDocumentByUser(signature.userId , signature.id);
+                    }
+            }
+            
             setSuccess('Signature supprimée avec succès');
             
             // Reload signatures
-            const response = await getSignaturesByDocumentId(formData.id!);
-            if (response.data) {
-                setDocumentSignatures(response.data);
+            if (formData.id) {
+                const response = await getSignaturesByDocumentId(formData.id);
+
+                // Now the backend returns all signatures in one call
+                // We need to separate them based on workerId vs userId and add typeOfSign property
+                const allSignatures: any[] = (response || []).map(sig => {
+                    console.log('After unsign - Processing signature:', sig);
+                    
+                    // Add typeOfSign property based on workerId vs userId
+                    if (sig.workerId !== null && sig.workerId !== undefined) {
+                        console.log('After unsign - Creating worker signature for workerId:', sig.workerId);
+                        return {
+                            ...sig, // Keep all original properties from backend
+                            typeOfSign: 'worker' // Add typeOfSign for frontend logic
+                        };
+                    } else {
+                        // Otherwise it's a user signature
+                        console.log('After unsign - Creating user signature for userId:', sig.userId);
+                        return {
+                            ...sig, // Keep all original properties from backend
+                            typeOfSign: 'user' // Add typeOfSign for frontend logic
+                        };
+                    }
+                });
+                
+                setDocumentSignatures(allSignatures);
             }
             
         } catch (err: any) {
             console.error('Error unsigning document:', err);
+            console.error('Error details:', {
+                message: err.message,
+                response: err.response?.data,
+                status: err.response?.status
+            });
+            
+            // Show the error to the user
+            let errorMessage = 'Erreur inconnue';
+            if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+            
+            // Special handling for backend "Signature not found" error
+            if (errorMessage === 'Signature not found') {
+                errorMessage = `Impossible de supprimer la signature (ID: ${signature.id}). La signature n'existe peut-être plus dans la base de données. Veuillez rafraîchir la page.`;
+            }
+            
+            setSuccess(`Erreur lors de la suppression de la signature: ${errorMessage}`);
+            
+            if (documentError) {
+                console.error('Document error after unsigning:', documentError);
+            }
         }
-    }, [currentUserId, unsignDocumentByUser, getSignaturesByDocumentId, formData.id]);
+    }, [currentUserId, formData.id, unsignDocumentByUser, unsignDocumentByWorker, getSignaturesByDocumentId, documentError]);
 
     const workersNeedingSigning = getWorkersNeedingSigning();
-  //  const signedWorkerIds = documentSignatures;
 
     return (
         <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
@@ -257,7 +500,7 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
                     Signature des Documents
                 </Typography>
                 
-                <Typography variant="body1" color="text.secondary" paragraph>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
                     Sélectionnez un travailleur assigné au chantier et apposez votre signature pour valider le plan de prévention.
                 </Typography>
 
@@ -273,6 +516,7 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
                                     setSignatureMode(newMode);
                                     // Reset form when switching modes
                                     setSelectedWorkerId('');
+                                    setSelectedUserId('');
                                     setName('');
                                     setLastName('');
                                 }
@@ -312,9 +556,9 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
                         {!loadingWorkers && workersNeedingSigning.length > 0 ? (
                             <List>
                                 {workersNeedingSigning.map((worker) => {
-                                    const isSigned = documentSignatures.includes(worker.id as number);
+                                    const isSigned = documentSignatures.filter(sig => sig.workerId != null && sig.workerId === worker.id).length > 0;
                                     return (
-                                        <React.Fragment key={worker.id}>
+                                        <React.Fragment key={`worker-${worker.id}`}>
                                             <ListItem>
                                                 <ListItemAvatar>
                                                     <Avatar sx={{ bgcolor: isSigned ? 'success.main' : 'grey.400' }}>
@@ -347,6 +591,61 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
                     </CardContent>
                 </Card>
 
+                {/* Users Signatures Status */}
+                <Card sx={{ mb: 3, bgcolor: 'background.default' }}>
+                    <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                            État des Signatures - Utilisateurs
+                        </Typography>
+                        
+                        {/* Loading indicator for users */}
+                        {loadingUsers && (
+                            <Alert severity="info" sx={{ mb: 2 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <CircularProgress size={20} />
+                                    Chargement des utilisateurs...
+                                </Box>
+                            </Alert>
+                        )}
+                        
+                        {!loadingUsers && availableUsers.length > 0 ? (
+                            <List>
+                                {availableUsers.map((user) => {
+                                    const isSigned = documentSignatures.filter(sig => sig.userId != null && sig.userId === user.id).length > 0;
+                                    return (
+                                        <React.Fragment key={`user-${user.id}`}>
+                                            <ListItem>
+                                                <ListItemAvatar>
+                                                    <Avatar sx={{ bgcolor: isSigned ? 'success.main' : 'grey.400' }}>
+                                                        {isSigned ? <CheckCircle /> : <Pending />}
+                                                    </Avatar>
+                                                </ListItemAvatar>
+                                                <ListItemText
+                                                    primary={user.username || `Utilisateur ${user.id}`}
+                                                    secondary={`ID: ${user.id}` + (user.role ? ` - ${user.role}` : '') + (user.fonction ? ` - ${user.fonction}` : '')}
+                                                />
+                                                <Chip
+                                                    label={isSigned ? 'Signé' : 'En attente'}
+                                                    color={isSigned ? 'success' : 'warning'}
+                                                    size="small"
+                                                />
+                                            </ListItem>
+                                            <Divider variant="inset" component="li" />
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </List>
+                        ) : (
+                            <Alert severity="info">
+                                {loadingUsers 
+                                    ? "Chargement des utilisateurs..."
+                                    : "Aucun utilisateur disponible pour signature."
+                                }
+                            </Alert>
+                        )}
+                    </CardContent>
+                </Card>
+
                 {/* Signature Form - Worker Mode */}
                 {signatureMode === 'worker' && (
                     <Card sx={{ mb: 3 }}>
@@ -366,7 +665,7 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
                                     disabled={loadingWorkers || chantierWorkers.length === 0}
                                 >
                                     {workersNeedingSigning
-                                        .filter(worker => !documentSignatures.includes(worker.id as number))
+                                        .filter(worker => !documentSignatures.some(sig => sig.workerId != null && sig.workerId === worker.id))
                                         .map((worker) => (
                                             <MenuItem key={worker.id} value={worker.id}>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -417,20 +716,45 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
                             </Typography>
                             
                             <Alert severity="info" sx={{ mb: 2 }}>
-                                Mode signature donneur d'ordre - Vous signerez en tant qu'utilisateur connecté.
+                                Mode signature donneur d'ordre - Sélectionnez l'utilisateur qui va signer.
                             </Alert>
+
+                            {/* User Selection */}
+                            <FormControl fullWidth sx={{ mb: 2 }}>
+                                <InputLabel>Sélectionner un utilisateur</InputLabel>
+                                <Select
+                                    value={selectedUserId}
+                                    onChange={(e) => handleUserSelection(e.target.value as number)}
+                                    label="Sélectionner un utilisateur"
+                                    disabled={loadingUsers || availableUsers.length === 0}
+                                >
+                                    {availableUsers
+                                        .filter(user => !documentSignatures.some(sig => sig.userId != null && sig.userId === user.id))
+                                        .map((user) => (
+                                            <MenuItem key={user.id} value={user.id}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Person fontSize="small" />
+                                                    {user.username || `Utilisateur ${user.id}`}
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        - {user.role || 'Aucun rôle'} - ID: {user.id}
+                                                    </Typography>
+                                                </Box>
+                                            </MenuItem>
+                                        ))}
+                                </Select>
+                            </FormControl>
 
                             {/* Name Fields */}
                             <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                                 <TextField
-                                    label="Prénom"
+                                    label="Nom"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     fullWidth
                                     disabled={isDocumentLoading}
                                 />
                                 <TextField
-                                    label="Nom"
+                                    label="Nom de famille"
                                     value={lastName}
                                     onChange={(e) => setLastName(e.target.value)}
                                     fullWidth
@@ -441,7 +765,7 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
                             {/* Signature Pad */}
                             <SignaturePad
                                 onSignatureSave={handleSignatureSave}
-                                disabled={!name || !lastName || isDocumentLoading}
+                                disabled={!selectedUserId || !name || isDocumentLoading}
                             />
                         </CardContent>
                     </Card>
@@ -453,34 +777,24 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
                         <Typography variant="h6" gutterBottom>
                             Signatures Existantes
                         </Typography>
-                        
                         {documentSignatures && documentSignatures.length > 0 ? (
                             <Box>
-                                {documentSignatures.map((signature, index) => (
-                                    <Box key={index} sx={{ mb: 2, p: 2, border: 1, borderColor: 'grey.300', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                {documentSignatures.map((signature) => (
+                                    <Box key={`${signature.workerId != null ? "Worker" : "User"}-${signature.id}`} sx={{ mb: 2, p: 2, border: 1, borderColor: 'grey.300', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                         <Box sx={{ flex: 1 }}>
                                             <Typography variant="subtitle1">
-                                                {signature.name} {signature.lastName}
+                                                {signature.workerId != null ? `Signature Travailleur: ${signature.prenom || ''} ${signature.nom || ''}` : `Signature Utilisateur: ${signature.prenom || ''} ${signature.nom || ''}`}
                                             </Typography>
-                                            <Typography variant="body2" color="textSecondary">
-                                                Signé le: {new Date(signature.signedAt).toLocaleString()}
-                                            </Typography>
-                                            {signature.signatureImage && (
-                                                <Box sx={{ mt: 1 }}>
-                                                    <img 
-                                                        src={`data:image/png;base64,${signature.signatureImage}`} 
-                                                        alt="Signature" 
-                                                        style={{ maxWidth: '200px', maxHeight: '100px', border: '1px solid #ccc' }}
-                                                    />
-                                                </Box>
-                                            )}
                                         </Box>
-                                        
                                         {/* Unsign Button */}
-                                        {signature.id && (
+                                        {Boolean(signature.id) && (
                                             <IconButton
                                                 color="error"
-                                                onClick={() => handleUnsignDocument(signature.id!)}
+                                                onClick={() => {
+                                                    console.log('Attempting to delete signature:', signature);                                                   
+                                                    handleUnsignDocument(signature);
+                                            
+                                                }}
                                                 disabled={isDocumentLoading}
                                                 title="Supprimer la signature"
                                             >
@@ -520,16 +834,6 @@ const PdpTabDocumentSigning: FC<PdpTabDocumentSigningProps> = ({
                         {documentError}
                     </Alert>
                 )}
-
-                {/* Navigation Buttons */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, pt: 2, borderTop: theme => `1px solid ${theme.palette.divider}` }}>
-                    <Button variant="outlined" onClick={onNavigateBack}>
-                        Précédent
-                    </Button>
-                    <Button variant="contained" onClick={onNavigateNext}>
-                        Suivant
-                    </Button>
-                </Box>
             </Paper>
         </Box>
     );
