@@ -8,6 +8,7 @@ import {
     Button,
     TextField,
     Alert,
+    Box,
 } from '@mui/material';
 import { 
     Business as BusinessIcon,
@@ -45,6 +46,7 @@ import BdtTabAuditSecu from './tabs/BdtTabAuditSecu';
 import BdtTabComplements from './tabs/BdtTabComplements';
 import BdtTabSignatures from './tabs/BdtTabSignatures';
 import SelectOrCreateObjectAnswered from "../../components/Pdp/SelectOrCreateObjectAnswered";
+import useWorker from '../../hooks/useWoker.ts';
 
 // Define the interface for URL params
 interface ParamTypes extends Record<string, string | undefined> {
@@ -62,78 +64,6 @@ interface ComplementOuRappel {
 type DialogTypes = 'risques' | 'audits' | 'complement' | 'chargeDeTravail' | 'donneurDOrdre';
 
 dayjs.locale('fr');
-
-const EditCreateBdt: React.FC = () => {
-    const { id, chantierId } = useParams<ParamTypes>();
-    const navigate = useNavigate();
-    const isEditMode = Boolean(id);
-    const notifications = useNotifications();
-
-    // Dialog state
-    const [openDialog, setOpenDialog] = useState<boolean>(false);
-    const [dialogType, setDialogType] = useState<DialogTypes | ''>('');
-    const [newComplement, setNewComplement] = useState<ComplementOuRappel>({
-        complement: '',
-        respect: false
-    });
-
-    // Form state
-    const [formData, setFormData] = useState<BdtDTO>({
-        id: undefined,
-        nom: undefined,
-        complementOuRappels: [],
-        date: undefined,
-        relations: [],
-        status: DocumentStatus.DRAFT,
-        actionType: ActionType.NONE
-    });
-
-    // Loading and error states
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [isSaving, setIsSaving] = useState<boolean>(false);
-    const [saveError, setSaveError] = useState<string | null>(null);
-    const [errors, setErrors] = useState<Record<string, string>>({});
-
-    // Hooks
-    const { getBDT, createBDT, saveBDT } = useBdt();
-    const { getAllEntreprises, entreprises } = useEntreprise();
-    const { getAllRisques, risques } = useRisque();
-    const { getAllAuditSecus, auditSecus } = useAuditSecu();
-    const { getChantier, getAllChantiers } = useChantier();
-
-    // Data states
-    const [chantiers, setChantiers] = useState<ChantierDTO[]>([]);
-
-// TabPanel component for tab navigation
-function TabPanel(props: TabPanelProps) {
-    const { children, value, index, ...other } = props;
-
-    return (
-        <div
-            role="tabpanel"
-            hidden={value !== index}
-            id={`bdt-tabpanel-${index}`}
-            aria-labelledby={`bdt-tab-${index}`}
-            {...other}
-        >
-            {value === index && (
-                <Box sx={{ p: 3 }}>
-                    {children}
-                </Box>
-            )}
-        </div>
-    );
-}
-
-function a11yProps(index: number) {
-    return {
-        id: `bdt-tab-${index}`,
-        'aria-controls': `bdt-tabpanel-${index}`,
-    };
-}
-
-// Define dialog data types
-type DialogTypes = 'risques' | 'audits' | 'complement' | 'chargeDeTravail' | 'donneurDOrdre';
 
 const EditCreateBdt: React.FC = () => {
     const {id, chantierId} = useParams<ParamTypes>();
@@ -160,13 +90,17 @@ const EditCreateBdt: React.FC = () => {
         nom: undefined,
         complementOuRappels: [],
         date: undefined,
-        relations: [] // Add relations for handling risques
+        relations: [], // Add relations for handling risques
+        status: DocumentStatus.DRAFT,
+        actionType: ActionType.NONE
     });
 
-    // Loading state
+    // Loading and error states
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+    const [isSaving, setIsSaving] = useState<boolean>(false);
     const [saveError, setSaveError] = useState<string | null>(null);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
     // Hooks
     const {getBDT, createBDT, saveBDT, linkRisqueToBDT, linkAuditToBDT, unlinkRisqueToBDT, unlinkAuditToBDT} = useBdt();
@@ -175,8 +109,6 @@ const EditCreateBdt: React.FC = () => {
     const {getAllRisques, risques} = useRisque();
     const {getAllAuditSecus, auditSecus} = useAuditSecu();
     const {getChantier, getAllChantiers} = useChantier();
-    const {getAllWorkers} = useWoker();
-
     // Data states
     const [chantiers, setChantiers] = useState<ChantierDTO[]>([]);
 
