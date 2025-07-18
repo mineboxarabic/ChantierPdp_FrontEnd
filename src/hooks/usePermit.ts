@@ -7,6 +7,14 @@ import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
 
 type PermitResponse = Permit | Permit[] | PermitDTO | PermitDTO[] | boolean | null;
 
+// Utility function to convert Permit to PermitDTO
+const convertPermitToDTO = (permit: Permit): PermitDTO => {
+    const permitDTO = new PermitDTO(permit.id || 0, permit.title, permit.description, permit.logo);
+    permitDTO.type = permit.type;
+    permitDTO.pdfData = permit.pdfData;
+    return permitDTO;
+};
+
 // Function to get a permit by ID
 export const getPermitById = async (id: number): Promise<ApiResponse<PermitDTO>> => {
     return fetchApi<PermitDTO>(
@@ -96,7 +104,7 @@ const usePermit = () => {
     const [response, setResponse] = useState<PermitResponse>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
-    const [permits, setPermits] = useState<Map<number, Permit>>(new Map<number, Permit>());
+    const [permits, setPermits] = useState<Map<number, PermitDTO>>(new Map<number, PermitDTO>());
 
     const notifications = useNotifications();
 
@@ -139,10 +147,11 @@ const usePermit = () => {
             () => getAllPermits(),
             "Error while getting all permits",
             (data: Permit[]) => {
-                const updatedPermits = new Map<number, Permit>();
+                const updatedPermits = new Map<number, PermitDTO>();
                 data.forEach(permit => {
                     if (permit.id !== undefined) {
-                        updatedPermits.set(permit.id, permit);
+                        const permitDTO = convertPermitToDTO(permit);
+                        updatedPermits.set(permit.id, permitDTO);
                     }
                 });
                 setPermits(updatedPermits);

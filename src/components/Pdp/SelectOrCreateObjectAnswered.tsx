@@ -9,10 +9,12 @@ import useDispositif, {createDispositif, getAllDispositifs} from "../../hooks/us
 import useRisque, {createRisque, getAllRisques} from "../../hooks/useRisque.ts";
 import usePermit, {createPermit, getAllPermits} from "../../hooks/usePermit.ts";
 import useAuditSecu, {createAuditSecu, getAllAuditSecus} from "../../hooks/useAuditSecu.ts";
+import useAnalyseRisque, {createAnalyse, getAllAnalyses} from "../../hooks/useAnalyseRisque.ts";
 import EditItem, {FieldConfig} from "../EditItem.tsx";
 import {risqueConfig} from "../../pages/Risque/RisqueManager.tsx";
 import {permitConfig} from "../../pages/Permit/PermiManager.tsx";
 import {auditSecuConfig} from "../../pages/AudiSecu/AudiSecuManager.tsx";
+import {AnalyseDeRisqueConfig} from "../../pages/AnalyseDeRisque/AnalyseDeRisqueManager.tsx";
 import EditGeneric from "../GenericCRUD/EditGeneirc.tsx";
 import {EntityConfig} from "../GenericCRUD/TypeConfig.ts";
 import { dispositifConfig } from "../../pages/dispositifs/DispositifManager.tsx";
@@ -65,6 +67,9 @@ function SelectOrCreateObjectAnswered<ITEM extends ContentItem, PARENT extends P
             case ObjectAnsweredObjects.AUDIT:
                 response = await getAllAuditSecus();
                 break;
+            case ObjectAnsweredObjects.ANALYSE_DE_RISQUE:
+                response = await getAllAnalyses();
+                break;
             default:
                 throw new Error("Invalid item type");
         }
@@ -81,6 +86,8 @@ function SelectOrCreateObjectAnswered<ITEM extends ContentItem, PARENT extends P
                 return "Permis";
             case ObjectAnsweredObjects.AUDIT:
                 return "Audit de sécurité";
+            case ObjectAnsweredObjects.ANALYSE_DE_RISQUE:
+                return "Analyse de risque";
             default:
                 return "";
         }
@@ -96,6 +103,8 @@ function SelectOrCreateObjectAnswered<ITEM extends ContentItem, PARENT extends P
                 return permitConfig;
             case ObjectAnsweredObjects.AUDIT:
                 return auditSecuConfig;
+            case ObjectAnsweredObjects.ANALYSE_DE_RISQUE:
+                return AnalyseDeRisqueConfig;
             default:
                 throw new Error("Invalid item type");
         }
@@ -119,6 +128,9 @@ function SelectOrCreateObjectAnswered<ITEM extends ContentItem, PARENT extends P
                 break;
             case ObjectAnsweredObjects.AUDIT:
                 response = await createAuditSecu(item as ITEM) as ITEM;
+                break;
+            case ObjectAnsweredObjects.ANALYSE_DE_RISQUE:
+                response = await createAnalyse(item as ITEM) as ITEM;
                 break;
             default:
                 throw new Error("Invalid item type");

@@ -10,7 +10,6 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
-    IconButton,
     Modal,
     Paper,
     Tab,
@@ -25,8 +24,7 @@ import {
     Warning,
     Verified,
     Shield,
-    Draw,
-    Close as CloseIcon
+    Draw
 } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -45,27 +43,27 @@ import { useAuth } from '../../hooks/useAuth';
 
 // --- Types and DTOs ---
 import { PdpDTO } from '../../utils/entitiesDTO/PdpDTO';
-import { EntrepriseDTO } from '../../utils/entitiesDTO/EntrepriseDTO';
 import  RisqueDTO  from '../../utils/entitiesDTO/RisqueDTO';
 import  DispositifDTO  from '../../utils/entitiesDTO/DispositifDTO';
 import  PermitDTO  from '../../utils/entitiesDTO/PermitDTO';
 import  Permit  from '../../utils/entities/Permit';
 import { AnalyseDeRisqueDTO } from '../../utils/entitiesDTO/AnalyseDeRisqueDTO';
-import { ImageModel } from '../../utils/image/ImageModel';
 import ObjectAnsweredDTO from '../../utils/pdp/ObjectAnswered';
 import ObjectAnsweredObjects from '../../utils/ObjectAnsweredObjects';
 import { getRoute } from "../../Routes.tsx";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import { DocumentStatus } from '../../utils/enums/DocumentStatus.ts';
 import PermiTypes from "../../utils/PermiTypes.ts";
 
 // --- PDP Tab Components ---
 import PdpTabGeneralInfo from './tabs/PdpTabGeneralInfo.tsx';
 import PdpTabHorairesDispo from './tabs/PdpTabHorairesDispo.tsx';
-import PdpTabRisquesDispositifs from './tabs/PdpTabRisquesDispositifs.tsx';
-import PdpTabPermits from './tabs/PdpTabPermits.tsx';
-import PdpTabAnalysesRisques from './tabs/PdpTabAnalysesRisques.tsx';
-import PdpTabDocumentSigning from './tabs/PdpTabDocumentSigning.tsx';
+// Import generic document tabs
+import { 
+    DocumentTabRelations,
+    DocumentTabPermits,
+    DocumentTabRiskAnalyses,
+    DocumentTabSigning
+} from '../../components/Document/tabs';
 
 // --- Other Custom Components ---
 import SelectOrCreateObjectAnswered from "../../components/Pdp/SelectOrCreateObjectAnswered";
@@ -943,7 +941,7 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                     </TabPanel>
                     
                     <TabPanel value={tabIndex} index={2}>
-                        <PdpTabRisquesDispositifs
+                        <DocumentTabRelations
                             formData={formData}
                             errors={errors}
                             allRisquesMap={allRisquesMap}
@@ -967,7 +965,7 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                     </TabPanel>
                     
                     <TabPanel value={tabIndex} index={3}>
-                        <PdpTabPermits
+                        <DocumentTabPermits
                             formData={formData}
                             errors={errors}
                             allPermitsMap={allPermitsMap}
@@ -991,7 +989,7 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                     </TabPanel>
                     
                     <TabPanel value={tabIndex} index={4}>
-                        <PdpTabAnalysesRisques
+                        <DocumentTabRiskAnalyses
                             formData={formData}
                             errors={errors}
                             allAnalysesMap={allAnalysesMap}
@@ -1012,7 +1010,7 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                     </TabPanel>
                     
                     <TabPanel value={tabIndex} index={5}>
-                        <PdpTabDocumentSigning
+                        <DocumentTabSigning
                             formData={formData}
                             allWorkersMap={allWorkersMap}
                             currentUserId={connectedUser?.id}
