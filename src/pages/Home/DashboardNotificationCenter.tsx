@@ -16,7 +16,7 @@ import {
   Tooltip,
   Badge,
 } from '@mui/material';
-import { styled, useTheme, alpha } from '@mui/material/styles';
+import { styled, alpha } from '@mui/material/styles';
 import {
   NotificationsActive as NotificationsActiveIcon,
   ChevronRight as ChevronRightIcon,
@@ -35,6 +35,8 @@ import useDashboardNotifications from '../../hooks/useDashboardNotifications';
 // Assuming DashboardNotification is correctly imported from your DTO file
 // and useDashboardNotifications hook provides it.
 import { DashboardNotification } from '../../utils/entitiesDTO/NotificationDTO';
+
+type NotificationFilter = 'all' | 'unread' | 'read';
 
 // --- Styled Components ---
 const CardWrapper = styled(Box)(({ theme }) => ({
@@ -77,22 +79,36 @@ const NotificationItem = styled(ListItem)<{ priority: DashboardNotification['pri
     low: alpha(theme.palette.info.main, 0.12),
   };
 
-  const priorityColor = priority === 'high' ? theme.palette.error.main :
-                       priority === 'medium' ? theme.palette.warning.main :
-                       theme.palette.info.main;
+  const getPriorityColor = (priority: DashboardNotification['priority']) => {
+    switch (priority) {
+      case 'high': return theme.palette.error.main;
+      case 'medium': return theme.palette.warning.main;
+      case 'low': return theme.palette.info.main;
+      default: return theme.palette.info.main;
+    }
+  };
+
+  const priorityColor = getPriorityColor(priority);
 
   return {
     padding: theme.spacing(1.5, 2),
     marginBottom: theme.spacing(1),
     borderRadius: theme.shape.borderRadius,
-    backgroundColor: isRead ? alpha(theme.palette.grey[500], 0.05) : bgColors[priority],
-    opacity: isRead ? 0.75 : 1,
+    backgroundColor: isRead 
+      ? alpha(theme.palette.grey[400], 0.1) // More prominent gray for read notifications
+      : bgColors[priority],
+    opacity: isRead ? 0.7 : 1, // Slightly more faded for read notifications
     transition: 'transform 0.2s, box-shadow 0.2s, background-color 0.2s',
-    borderLeft: `4px solid ${isRead ? theme.palette.grey[400] : priorityColor}`,
+    borderLeft: `4px solid ${isRead ? theme.palette.grey[500] : priorityColor}`, // Gray border for read notifications
+    // Add stronger visual cues for read notifications
+    filter: isRead ? 'grayscale(0.5)' : 'none', // More grayscale for read notifications
     '&:hover': {
       transform: 'translateY(-2px)',
       boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-      backgroundColor: isRead ? alpha(theme.palette.grey[500], 0.1) : hoverBgColors[priority],
+      backgroundColor: isRead 
+        ? alpha(theme.palette.grey[400], 0.15) // Gray hover for read notifications
+        : hoverBgColors[priority],
+      filter: isRead ? 'grayscale(0.3)' : 'none', // Less grayscale on hover
     },
     '&:last-child': {
       marginBottom: 0,
@@ -101,7 +117,7 @@ const NotificationItem = styled(ListItem)<{ priority: DashboardNotification['pri
 });
 
 // Using DashboardNotification['type']
-const NotificationIconAvatar = styled(Avatar)<{ notificationUiType: DashboardNotification['type'] }>(({ theme, notificationUiType }) => {
+const NotificationIconAvatar = styled(Avatar)<{ notificationUiType: DashboardNotification['type'], isRead?: boolean }>(({ theme, notificationUiType, isRead }) => {
   const typeColors: Record<DashboardNotification['type'], { main: string }> = {
     inspection: { main: theme.palette.info.main },
     worker: { main: theme.palette.success.main },
@@ -113,10 +129,13 @@ const NotificationIconAvatar = styled(Avatar)<{ notificationUiType: DashboardNot
   };
 
   const colorPalette = typeColors[notificationUiType] || typeColors.general;
+  
+  // Use gray colors for read notifications
+  const finalColor = isRead ? theme.palette.grey[500] : colorPalette.main;
 
   return {
-    backgroundColor: alpha(colorPalette.main, 0.12),
-    color: colorPalette.main,
+    backgroundColor: alpha(finalColor, 0.12),
+    color: finalColor,
     width: 40,
     height: 40,
   };
@@ -138,25 +157,46 @@ const getNotificationIcon = (uiType: DashboardNotification['type']) => {
 // --- End Styled Components ---
 
 const DashboardNotificationCenter: React.FC = () => {
-  const theme = useTheme();
   const navigate = useNavigate();
   const {
     notifications,
-    unreadCount,
+    unreadCount: backendUnreadCount,
     isLoading,
+    isLoadingMore,
     error,
+    hasMore,
+    totalElements,
     fetchNotifications,
+    loadMoreNotifications,
     markNotificationAsRead,
     markAllNotificationsAsRead,
     refreshUnreadCount,
   } = useDashboardNotifications();
 
   const [displayLimit, setDisplayLimit] = useState(5);
+  const [filter, setFilter] = useState<NotificationFilter>('all');
+
+  // Calculate actual unread count from notifications data as fallback
+  const actualUnreadCount = notifications.filter(n => !n.isRead).length;
+  
+  // Use backend count if it seems correct, otherwise use calculated count
+  const unreadCount = backendUnreadCount > 0 ? backendUnreadCount : actualUnreadCount;
 
   useEffect(() => {
-    fetchNotifications('all', 0, 20); // Fetch read and unread, initial 20
+    fetchNotifications(filter, 0, 20);
     refreshUnreadCount();
-  }, [fetchNotifications, refreshUnreadCount]);
+  }, [fetchNotifications, refreshUnreadCount, filter]);
+
+
+  useEffect(() => {
+  console.log('Notifications updated:', notifications);
+  }, [notifications]);
+
+  const handleFilterChange = (newFilter: NotificationFilter) => {
+    console.log('Filter changing to:', newFilter, 'Backend unread count:', backendUnreadCount, 'Calculated unread count:', actualUnreadCount);
+    setFilter(newFilter);
+    setDisplayLimit(5); // Reset display limit when filter changes
+  };
 
   const handleMarkAsRead = async (id: number) => {
     await markNotificationAsRead(id);
@@ -167,7 +207,7 @@ const DashboardNotificationCenter: React.FC = () => {
   };
 
   const handleRefresh = () => {
-    fetchNotifications('all', 0, 20); // Re-fetch initial set
+    fetchNotifications(filter, 0, 20); // Use current filter
     refreshUnreadCount();
   };
 
@@ -181,12 +221,13 @@ const DashboardNotificationCenter: React.FC = () => {
   };
 
   const handleShowMore = () => {
-    setDisplayLimit(prev => prev + 5);
-    // If all currently fetched items are displayed and more might exist on backend:
-    // const nextPage = Math.floor(notifications.length / 20); // Assuming '20' is your page size for fetching
-    // if (displayLimit >= notifications.length && notifications.length % 20 === 0) {
-    //   fetchNotifications('all', nextPage, 20);
-    // }
+    if (displayLimit >= notifications.length && hasMore) {
+      // Load more from backend
+      loadMoreNotifications();
+    } else {
+      // Show more from current loaded notifications
+      setDisplayLimit(prev => prev + 5);
+    }
   };
 
   return (
@@ -213,78 +254,170 @@ const DashboardNotificationCenter: React.FC = () => {
           )}
         </Box>
       </CardHeaderStyled>
+
+      {/* Filter Controls */}
+      <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <Button
+          variant={filter === 'all' ? 'contained' : 'outlined'}
+          size="small"
+          onClick={() => handleFilterChange('all')}
+        >
+          Toutes {filter === 'all' && totalElements > 0 && `(${totalElements})`}
+        </Button>
+        <Button
+          variant={filter === 'unread' ? 'contained' : 'outlined'}
+          size="small"
+          onClick={() => handleFilterChange('unread')}
+          color="warning"
+        >
+          Non lues ({unreadCount})
+        </Button>
+        <Button
+          variant={filter === 'read' ? 'contained' : 'outlined'}
+          size="small"
+          onClick={() => handleFilterChange('read')}
+          color="info"
+        >
+          Lues ({filter === 'read' && totalElements > 0 ? totalElements : Math.max(0, totalElements - unreadCount)})
+        </Button>
+      </Box>
+
       <Divider sx={{ mb: 2 }} />
 
-      {isLoading && notifications.length === 0 ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, p: 3 }}>
-          <CircularProgress />
-        </Box>
-      ) : error ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, p: 3 }}>
-            <Alert severity="error" sx={{ width: '100%' }}>{error}</Alert>
-        </Box>
-      ) : notifications.length > 0 ? (
-        <>
-          <List disablePadding sx={{ flexGrow: 1, overflow: 'auto', maxHeight: 400 /* Adjust as needed */ }}>
-            {notifications.slice(0, displayLimit).map((notification) => (
-              <NotificationItem
-                key={notification.id}
-                priority={notification.priority}
-                isRead={notification.isRead}
-                onClick={() => handleNotificationClick(notification)}
-              >
-                <ListItemIcon sx={{ minWidth: 'auto', mr: 1.5 }}>
-                  {/* Pass the UI-specific type to NotificationIconAvatar */}
-                  <NotificationIconAvatar notificationUiType={notification.type}>
-                    {getNotificationIcon(notification.type)}
-                  </NotificationIconAvatar>
-                </ListItemIcon>
-                <ListItemText
-                  primary={
-                    <Typography variant="body2" fontWeight={notification.isRead ? 500 : 600} color={notification.isRead ? "text.secondary" : "text.primary"}>
-                      {notification.message}
-                    </Typography>
-                  }
-                  secondary={
-                    <Typography variant="caption" color="text.secondary">
-                      {notification.date}
-                      {/* Displaying originalType can be useful for debugging or if UI needs it */}
-                      {/* {notification.originalType && ` - Type: ${notification.originalType}`} */}
-                    </Typography>
-                  }
-                />
-                {!notification.isRead && (
-                  <Tooltip title="Marquer comme lue">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMarkAsRead(notification.id);
-                      }}
-                      sx={{ ml: 1 }}
-                    >
-                      <ChevronRightIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                )}
-              </NotificationItem>
-            ))}
-          </List>
-          {notifications.length > displayLimit && (
-            <Button onClick={handleShowMore} fullWidth sx={{ mt: 1.5 }}>
-              Afficher plus ({notifications.length - displayLimit} restantes)
-            </Button>
-          )}
-          {/* Shows a small spinner at the bottom if loading more items */}
-          {isLoading && notifications.length > 0 && notifications.length <= displayLimit && (
-             <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}><CircularProgress size={20}/></Box>
-          )}
-        </>
-      ) : (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, p: 3 }}>
-          <Typography color="text.secondary">Aucune notification pour le moment.</Typography>
-        </Box>
-      )}
+      {(() => {
+        console.log('Render logic - filter:', filter, 'notifications:', notifications.length, 'isLoading:', isLoading, 'error:', error);
+        console.log('Backend unread count:', backendUnreadCount, 'Calculated unread count:', actualUnreadCount, 'Using:', unreadCount);
+        
+        if (isLoading && notifications.length === 0) {
+          return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, p: 3 }}>
+              <CircularProgress />
+            </Box>
+          );
+        }
+        if (error) {
+          return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, p: 3 }}>
+              <Alert severity="error" sx={{ width: '100%' }}>{error}</Alert>
+            </Box>
+          );
+        }
+        
+        // Since backend filtering is now working correctly, we can rely on the backend-filtered notifications
+        const filteredNotifications = notifications;
+        
+        console.log('Displaying notifications:', filteredNotifications.length);
+        
+        if (filteredNotifications.length > 0) {
+          return (
+            <>
+              <List disablePadding sx={{ flexGrow: 1, overflow: 'auto', maxHeight: 400 /* Adjust as needed */ }}>
+                {filteredNotifications.slice(0, displayLimit).map((notification) => (
+                  <NotificationItem
+                    key={notification.id}
+                    priority={notification.priority}
+                    isRead={notification.isRead}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <ListItemIcon sx={{ minWidth: 'auto', mr: 1.5 }}>
+                      {/* Pass the UI-specific type and isRead status to NotificationIconAvatar */}
+                      <NotificationIconAvatar notificationUiType={notification.type} isRead={notification.isRead}>
+                        {getNotificationIcon(notification.type)}
+                      </NotificationIconAvatar>
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography 
+                            variant="body2" 
+                            fontWeight={notification.isRead ? 500 : 700} 
+                            color={notification.isRead ? "text.secondary" : "text.primary"}
+                            sx={{ 
+                              lineHeight: 1.4
+                            }}
+                          >
+                            {notification.message}
+                          </Typography>
+                          {!notification.isRead && (
+                            <Box 
+                              sx={{ 
+                                width: 8, 
+                                height: 8, 
+                                borderRadius: '50%', 
+                                backgroundColor: 'primary.main',
+                                flexShrink: 0
+                              }} 
+                            />
+                          )}
+                        </Box>
+                      }
+                      secondary={
+                        <Typography variant="caption" color="text.secondary">
+                          {notification.date}
+                        </Typography>
+                      }
+                    />
+                    {!notification.isRead && (
+                      <Tooltip title="Marquer comme lue">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkAsRead(notification.id);
+                          }}
+                          sx={{ ml: 1 }}
+                        >
+                          <ChevronRightIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </NotificationItem>
+                ))}
+              </List>
+              {(filteredNotifications.length > displayLimit || hasMore) && (
+                <Button 
+                  onClick={handleShowMore} 
+                  fullWidth 
+                  sx={{ mt: 1.5 }}
+                  disabled={isLoadingMore}
+                >
+                  {isLoadingMore ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CircularProgress size={16} />
+                      Chargement...
+                    </Box>
+                  ) : (
+                    (() => {
+                      if (displayLimit < filteredNotifications.length) {
+                        return `Afficher plus (${filteredNotifications.length - displayLimit} restantes)`;
+                      }
+                      if (hasMore) {
+                        return 'Afficher plus (plus de notifications)';
+                      }
+                      return 'Afficher plus';
+                    })()
+                  )}
+                </Button>
+              )}
+              {/* Shows a small spinner at the bottom if loading more items */}
+              {isLoadingMore && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
+                  <CircularProgress size={20}/>
+                </Box>
+              )}
+            </>
+          );
+        }
+        return (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, p: 3 }}>
+            <Typography color="text.secondary">
+              {filter === 'unread' && 'Aucune notification non lue pour le moment.'}
+              {filter === 'read' && 'Aucune notification lue pour le moment.'}
+              {filter === 'all' && 'Aucune notification pour le moment.'}
+            </Typography>
+          </Box>
+        );
+      })()}
     </CardWrapper>
   );
 };

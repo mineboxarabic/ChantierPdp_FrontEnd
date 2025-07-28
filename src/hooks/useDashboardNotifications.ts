@@ -4,14 +4,31 @@ import { useNotifications as useSnackbar } from '@toolpad/core/useNotifications'
 import fetchApi from '../api/fetchApi'; //
 import {
   NotificationDTO as BackendNotificationDTO, //
-  FrontendNotificationType, //
   DashboardNotification, //
 } from '../utils/entitiesDTO/NotificationDTO'; //
 
 // Helper function (keep as is or refine based on all backend NotificationType.java values)
+type NotificationFilter = 'all' | 'read' | 'unread';
+
 const transformToDashboardNotification = (dto: BackendNotificationDTO): DashboardNotification => {
   let panelType: DashboardNotification['type'] = 'general'; // Default type
   let priority: DashboardNotification['priority'] = 'medium'; // Default priority
+
+  // Debug: Check what we're getting from the backend
+  console.log('Raw backend notification:', dto);
+  console.log('Backend isRead field:', dto.isRead, 'Type:', typeof dto.isRead);
+  console.log('Backend read field:', (dto as any).read, 'Type:', typeof (dto as any).read);
+
+  // Handle the isRead field - backend might send it as 'read' or 'isRead'
+  let isReadValue: boolean;
+  if (dto.isRead !== undefined) {
+    isReadValue = dto.isRead;
+  } else if ((dto as any).read !== undefined) {
+    isReadValue = (dto as any).read;
+  } else {
+    console.warn('No isRead or read field found in notification, defaulting to false');
+    isReadValue = false;
+  }
 
   // Mapping backend NotificationType enum (from Java) to frontend display types
   // This needs to be exhaustive based on your com.danone.pdpbackend.Utils.NotificationType
@@ -21,28 +38,25 @@ const transformToDashboardNotification = (dto: BackendNotificationDTO): Dashboar
       priority = 'high';
       break;
     case 'RISK_IDENTIFIED': //
+    case 'CHANTIER_STATUS_BAD': //
       panelType = 'risk';
       priority = 'high';
       break;
     case 'INSPECTION_NEEDED': //
       panelType = 'inspection';
-      priority = 'medium';
       break;
     case 'CHANTIER_UPDATE': //
       panelType = 'event';
-      priority = 'medium';
       break;
     case 'TASK_ASSIGNED': //
+    case 'CHANTIER_PENDING_BDT': //
       panelType = 'task';
-      priority = 'medium';
       break;
     case 'WORKER_ADDED': //
        panelType = 'worker';
        priority = 'low';
        break;
     case 'GENERAL_ALERT': //
-       panelType = 'general';
-       priority = 'medium';
        break;
     // Add more cases from your NotificationType.java
     // e.g. NEW_PDP_SUBMITTED, ACTION_REQUIRED, USER_MENTIONED etc.
@@ -55,16 +69,19 @@ const transformToDashboardNotification = (dto: BackendNotificationDTO): Dashboar
       break;
   }
 
-  return {
+  const transformed = {
     id: dto.id,
     message: dto.message,
     date: dto.timestamp ? new Date(dto.timestamp).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Date inconnue',
-    isRead: dto.isRead,
+    isRead: isReadValue,
     type: panelType,
     priority: priority,
     callToActionLink: dto.callToActionLink || undefined,
     originalType: dto.type, //
   };
+
+  console.log('Transformed notification:', transformed);
+  return transformed;
 };
 
 interface PaginatedNotificationsResponse {
@@ -78,12 +95,16 @@ interface UseDashboardNotificationsReturn {
   notifications: DashboardNotification[];
   unreadCount: number;
   isLoading: boolean;
+  isLoadingMore: boolean;
   error: string | null;
+  hasMore: boolean;
+  totalElements: number;
   fetchNotifications: (
-    readStatus?: 'all' | 'read' | 'unread',
+    readStatus?: NotificationFilter,
     page?: number,
     size?: number
   ) => Promise<DashboardNotification[] | undefined>;
+  loadMoreNotifications: () => Promise<void>;
   markNotificationAsRead: (notificationId: number) => Promise<boolean>;
   markAllNotificationsAsRead: () => Promise<boolean>;
   refreshUnreadCount: () => Promise<void>;
@@ -93,30 +114,86 @@ const useDashboardNotifications = (): UseDashboardNotificationsReturn => {
   const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [totalElements, setTotalElements] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const [currentFilter, setCurrentFilter] = useState<NotificationFilter>('all');
   const snackbar = useSnackbar();
 
   const fetchNotificationsHook = useCallback(
     async (
-      readStatus: 'all' | 'read' | 'unread' = 'unread',
+      readStatus: NotificationFilter = 'unread',
       page: number = 0,
       size: number = 10 // Default size
     ): Promise<DashboardNotification[] | undefined> => {
-      setIsLoading(true);
+      const isFirstPage = page === 0;
+      const isNewFilter = readStatus !== currentFilter;
+      
+      if (isFirstPage || isNewFilter) {
+        setIsLoading(true);
+        setCurrentPage(0);
+        if (isNewFilter) {
+          setCurrentFilter(readStatus);
+          // Clear notifications immediately when switching filters
+          setNotifications([]);
+        }
+      } else {
+        setIsLoadingMore(true);
+      }
+      
       setError(null);
       try {
+        // Convert frontend filter to backend readStatus format
+        const getBackendReadStatus = (filter: NotificationFilter): string => {
+          switch (filter) {
+            case 'unread': return 'false';
+            case 'read': return 'true';
+            case 'all': return 'all';
+            default: return 'all';
+          }
+        };
+        
+        const backendReadStatus = getBackendReadStatus(readStatus);
+        
         // Endpoint from NotificationController.java
         const response = await fetchApi<PaginatedNotificationsResponse>(
-          `/api/notifications?readStatus=${readStatus}&page=${page}&size=${size}&sort=timestamp,desc`,
+          `/api/notifications?readStatus=${backendReadStatus}&page=${page}&size=${size}&sort=timestamp,desc`,
           'GET'
         );
 
-        if (response.data && response.data.content) {
+        if (response.data?.content) {
           const transformed = response.data.content.map(transformToDashboardNotification);
-          setNotifications(prev => page === 0 ? transformed : [...prev, ...transformed]); // Append for infinite scroll, replace for first page
+          
+          // Debug: Check what we're getting from the API
+          console.log(`Fetched ${transformed.length} notifications for filter "${readStatus}" (backend: "${backendReadStatus}")`);
+          
+          // Update pagination state
+          setTotalElements(response.data.totalElements || 0);
+          setHasMore(page < (response.data.totalPages - 1));
+          setCurrentPage(page);
+          
+          if (isFirstPage || isNewFilter) {
+            setNotifications(transformed);
+            // Update unread count based on actual notifications when fetching 'all'
+            if (readStatus === 'all') {
+              const actualUnreadCount = transformed.filter(n => !n.isRead).length;
+              console.log('Updating unread count from notifications:', actualUnreadCount);
+              setUnreadCount(actualUnreadCount);
+            }
+          } else {
+            console.log(notifications, 'Appending new notifications');
+            setNotifications(prev => [...prev, ...transformed]);
+          }
+          
           return transformed;
         } else {
-          if (page === 0) setNotifications([]);
+          if (isFirstPage || isNewFilter) {
+            setNotifications([]);
+          }
+          setHasMore(false);
+          setTotalElements(0);
           console.warn('No notification content in response:', response);
           return [];
         }
@@ -127,9 +204,10 @@ const useDashboardNotifications = (): UseDashboardNotificationsReturn => {
         return undefined;
       } finally {
         setIsLoading(false);
+        setIsLoadingMore(false);
       }
     },
-    [snackbar]
+    [snackbar, currentFilter]
   );
 
   const markNotificationAsReadHook = useCallback(
@@ -176,18 +254,24 @@ const useDashboardNotifications = (): UseDashboardNotificationsReturn => {
     }
   }, [snackbar]);
 
+  const loadMoreNotificationsHook = useCallback(async () => {
+    if (hasMore && !isLoadingMore && !isLoading) {
+      await fetchNotificationsHook(currentFilter, currentPage + 1);
+    }
+  }, [hasMore, isLoadingMore, isLoading, currentFilter, currentPage, fetchNotificationsHook]);
+
   const fetchUnreadCountHook = useCallback(async () => {
     // Not setting global isLoading for this, as it's a background update
     try {
       // Endpoint from NotificationController.java
       const response = await fetchApi<number>(`/api/notifications/unread-count`, 'GET');
+      console.log('Unread count from API:', response.data);
       if (typeof response.data === 'number') {
         setUnreadCount(response.data);
       }
     } catch (err: any) {
       // Silently fail or show a very subtle error, as this is often a background task
       console.error('Failed to fetch unread notification count:', err);
-      // snackbar.show("Impossible de récupérer le nombre de notifications non lues.", { severity: 'warning', autoHideDuration: 2000 });
     }
   }, []);
 
@@ -200,8 +284,12 @@ const useDashboardNotifications = (): UseDashboardNotificationsReturn => {
     notifications,
     unreadCount,
     isLoading,
+    isLoadingMore,
     error,
+    hasMore,
+    totalElements,
     fetchNotifications: fetchNotificationsHook,
+    loadMoreNotifications: loadMoreNotificationsHook,
     markNotificationAsRead: markNotificationAsReadHook,
     markAllNotificationsAsRead: markAllNotificationsAsReadHook,
     refreshUnreadCount: fetchUnreadCountHook,
