@@ -11,5 +11,9 @@ extends DocumentDTO
   nom?: string;
   complementOuRappels?: ComplementOuRappel[];
   date?: Date;
+  personnelDansZone?: boolean;     // Personnel in zone (true/false)
+  horaireDeTravaille?: string;     // Work schedule text
+  tachesAuthoriser?: string;       // Authorized tasks text
 
 }
+ 

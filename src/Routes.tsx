@@ -1,23 +1,16 @@
 // src/routes/routes.js
 import ViewAllEntreprises from "./pages/Entreprise/ViewAllEntreprises.tsx";
-import ViewAllUser from "./pages/User/ViewAllUser.tsx";
-import ViewAllRisques from "./pages/Risque/ViewAllRsiques.tsx";
 import ViewAllLocalisations from "./pages/Localisation/ViewAllLocalisations.tsx";
-import ViewAllPermits from "./pages/Permit/ViewAllPermits.tsx";
+
 import LivePDFPreview from "./PDF/LivePDFPreview.tsx";
 
 import { Font } from "@react-pdf/renderer";
-import ViewAllPdps from "./pages/PDP/ViewAllPdps.tsx";
-import StepsBDT from "./pages/BDT/StepsBDT.tsx";
-import CreateChantier from "./pages/Chantier/createChantier.tsx";
-import ViewChantier from "./pages/Chantier/ViewChantier.tsx";
-import EditCreateChantier from "./pages/Chantier/EditCreateChantier.tsx";
+import ListPdps from "./pages/PDP/ListPdps.tsx";
 import Home from "./pages/Home.tsx";
 import ProfilePage from "./pages/ProfilePage.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
 import ViewPdp from "./pages/PDP/ViewPdp.tsx";
-import CRUDRisque from "./pages/Risque/CRUDRisque.tsx";
 import RisqueManager from "./pages/Risque/RisqueManager.tsx";
 import UserManager from "./pages/User/UserManager.tsx";
 import PermitManager from "./pages/Permit/PermiManager.tsx";
@@ -74,10 +67,6 @@ PDP_LIST:{
 }
 ,
     // BDT routes
-    BDT_STEPS: {
-        path: "/create/bdt/:bdtId/:pageNumber",
-        element: <StepsBDT />
-    },
     CREATE_BDT:{
         path:"/create/bdt/:chantierId",
         element:<ErrorBoundary><EditCreateBdt /> </ErrorBoundary>
@@ -128,10 +117,6 @@ PDP_LIST:{
     VIEW_RISQUES: {
         path: "/view/risques",
         element: <RisqueManager />
-    },
-    CRUD_RISQUES:{
-      path: "/crud/risques",
-        element: <CRUDRisque />
     },
     VIEW_LOCALISATIONS: {
         path: "/view/localisations",
@@ -202,7 +187,6 @@ export const getRouteLists = () => {
         ROUTES.HOME,
         ROUTES.EDIT_PDP,
         ROUTES.CREATE_PDP,
-        ROUTES.BDT_STEPS,
         ROUTES.VIEW_PDP,
         ROUTES.CREATE_CHANTIER,
         ROUTES.VIEW_CHANTIER,
@@ -211,7 +195,6 @@ export const getRouteLists = () => {
         ROUTES.VIEW_ENTREPRISES,
         ROUTES.VIEW_USERS,
         ROUTES.VIEW_RISQUES,
-        ROUTES.CRUD_RISQUES,
         ROUTES.VIEW_LOCALISATIONS,
         ROUTES.VIEW_PERMITS,
         ROUTES.VIEW_PDPS,

@@ -6,15 +6,15 @@ import {Route, BrowserRouter as Router, Routes} from "react-router-dom";
 import Home from "./pages/Home.tsx";
 import Layout from "./layout/Layout.tsx";
 import Register from "./pages/Register.tsx";
-import {Font} from "@react-pdf/renderer";
 import {getRouteLists} from "./Routes.tsx";
 import NotFoundPage from "./pages/common/NotFoundPage.tsx";
 import {QueryClient, QueryClientProvider} from "react-query";
 
-Font.register({
-    family: "Inter",
-    src: "/fonts/Inter-Regular.ttf", // Ensure this path is correct
-});
+// Font registration removed - using built-in fonts only
+// Font.register({
+//     family: "Inter",
+//     src: "/fonts/Inter-Regular.ttf",
+// });
 
 
 const { protectedRoutes, publicRoutes } = getRouteLists();

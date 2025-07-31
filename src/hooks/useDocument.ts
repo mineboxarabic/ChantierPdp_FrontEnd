@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import fetchApi, { ApiResponse } from "../api/fetchApi";
+import fetchApi from "../api/fetchApi";
 import { ImageModel } from "../utils/image/ImageModel";
 
 export interface SignatureRequestDTO {
@@ -183,6 +183,34 @@ const useDocument = () => {
     }
   };
 
+  // POST /api/document/{documentId}/duplicate
+  const duplicateDocument = async (documentId: number) => {
+    setIsLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetchApi<any>(
+        `/api/document/${documentId}/duplicate`,
+        "POST",
+        null,
+        [
+          { status: 400, message: "Document cannot be duplicated" },
+          { status: 404, message: "Document not found" },
+          { status: 500, message: "Internal server error" },
+        ]
+      );
+      setResult(res.data);
+      notifications.show(res.message || "Document duplicated successfully", { severity: "success" });
+      return res.data;
+    } catch (e: any) {
+      setError(e.message);
+      notifications.show(e.message, { severity: "error" });
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     isLoading,
     error,
@@ -191,7 +219,8 @@ const useDocument = () => {
     signDocumentByUser,
     unsignDocumentByUser,
     unsignDocumentByWorker,
-    getSignaturesByDocumentId
+    getSignaturesByDocumentId,
+    duplicateDocument
   };
 };
 

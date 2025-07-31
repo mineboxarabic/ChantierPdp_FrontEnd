@@ -412,6 +412,20 @@ const ChantierFormWrapper: FC = () => {
                             navigate={navigate}
                             onTriggerSave={handleSubmit} // Allow document manager to trigger save if needed before navigation
                             needPdp={showDocumentsTab}
+                            onUpdateBdtsMap={(newBdt) => {
+                                if (newBdt.id) {
+                                    const updatedBdts = new Map(allBdts);
+                                    updatedBdts.set(newBdt.id, newBdt);
+                                    setAllBdts(updatedBdts);
+                                }
+                            }}
+                            onUpdatePdpsMap={(newPdp) => {
+                                if (newPdp.id) {
+                                    const updatedPdps = new Map(allPdps);
+                                    updatedPdps.set(newPdp.id, newPdp);
+                                    setAllPdps(updatedPdps);
+                                }
+                            }}
                         />
                     </TabPanel>
                 

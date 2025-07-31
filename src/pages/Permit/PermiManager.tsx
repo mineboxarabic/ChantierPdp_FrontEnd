@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Container, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import ManagerCRUD from "../../components/GenericCRUD/ManagerCRUD";
 import { EntityConfig, FieldType, CrudOperations } from "../../components/GenericCRUD/TypeConfig";
-import Permit from "../../utils/entities/Permit.ts";
+import PermitDTO from '../../utils/entitiesDTO/PermitDTO';
 import usePermit from "../../hooks/usePermit";
 import PermiTypes from "../../utils/PermiTypes";
 
@@ -70,21 +70,6 @@ export const permitConfig: EntityConfig = {
             section: 'Basic Information',
             fullWidth: true,
         },
-        /*  {
-              key: 'type',
-              type: FieldType.Enum,
-              label: 'Permit Type',
-              required: true,
-              order: 3,
-              section: 'Permit Details',
-              options: [
-                  { value: PermiTypes.NONE, label: 'None' },
-                  { value: PermiTypes.TYPE1, label: 'Type 1' },
-                  { value: PermiTypes.TYPE2, label: 'Type 2' },
-                  { value: PermiTypes.TYPE3, label: 'Type 3' },
-                  // Add other types as needed based on your PermiTypes enum
-              ],
-          },*/
         {
             key: 'pdfData',
             type: FieldType.Text,
@@ -115,7 +100,7 @@ const PermitManager = () => {
 
 
     // Create CRUD operations adapter from the permit service
-    const crudOperations: CrudOperations<Permit> = {
+    const crudOperations: CrudOperations<PermitDTO> = {
         getAll: async () => {
             const permits = await permitService.getAllPermits();
             return permits || [];
@@ -124,11 +109,11 @@ const PermitManager = () => {
             const permit = await permitService.getPermit(id);
             return permit;
         },
-        create: async (entity: Permit) => {
+        create: async (entity: PermitDTO) => {
             const newPermit = await permitService.createPermit(entity);
             return newPermit;
         },
-        update: async (id: number, entity: Permit) => {
+        update: async (id: number, entity: PermitDTO) => {
             const updatedPermit = await permitService.updatePermit(entity, id);
             return updatedPermit;
         },

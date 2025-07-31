@@ -3,7 +3,7 @@ import { Box, Container, CssBaseline, ThemeProvider, createTheme } from '@mui/ma
 import ManagerCRUD from "../../components/GenericCRUD/ManagerCRUD.tsx";
 import {EntityConfig, FieldType, CrudOperations, ImageModel} from "../../components/GenericCRUD/TypeConfig.ts";
 import useAuditSecu from "../../hooks/useAuditSecu.ts";
-import {AuditSecu} from "../../utils/entities/AuditSecu.ts";
+import { AuditSecuDTO } from '../../utils/entitiesDTO/AuditSecuDTO.ts';
 
 // Create a theme instance
 const theme = createTheme({
@@ -67,10 +67,21 @@ export const auditSecuConfig: EntityConfig = {
             fullWidth: true,
         },
         {
+            key: 'typeOfAudit',
+            type: FieldType.ArrayOfSimpleValues,
+            label: 'Type d\'Audit',
+            options: [
+                { value: 'INTERVENANTS', label: 'Intervenants' },
+                { value: 'OUTILS', label: 'Outils' }
+            ],
+            required: true,
+            order: 3,
+        },
+        {
             key: 'completionStatus',
             type: FieldType.Boolean,
             label: 'Completion Status',
-            order: 3,
+            order: 4,
         },
         {
             key: 'securityLevel',
@@ -82,7 +93,7 @@ export const auditSecuConfig: EntityConfig = {
                 { value: 'high', label: 'High' },
                 { value: 'critical', label: 'Critical' }
             ],
-            order: 4,
+            order: 5,
         },
         {
             key: 'comments',
@@ -90,14 +101,14 @@ export const auditSecuConfig: EntityConfig = {
             label: 'Comments',
             multiline: true,
             rows: 3,
-            order: 5,
+            order: 6,
             fullWidth: true,
         },
         {
             key: 'logo',
             type: FieldType.Image,
             label: 'Logo',
-            order: 6,
+            order: 7,
             fullWidth: true
         },
     ],
@@ -111,7 +122,7 @@ const AuditSecuManager = () => {
 
 
     // Create CRUD operations adapter from the audit service
-    const crudOperations: CrudOperations<AuditSecu> = {
+    const crudOperations: CrudOperations<AuditSecuDTO> = {
         getAll: async () => {
             const auditSecus = await auditSecuService.getAllAuditSecus();
             return auditSecus || [];
@@ -120,11 +131,11 @@ const AuditSecuManager = () => {
             const auditSecu = await auditSecuService.getAuditSecu(id);
             return auditSecu;
         },
-        create: async (entity: AuditSecu) => {
+        create: async (entity: AuditSecuDTO) => {
             const newAuditSecu = await auditSecuService.createAuditSecu(entity);
             return newAuditSecu;
         },
-        update: async (id: number, entity: AuditSecu) => {
+        update: async (id: number, entity: AuditSecuDTO) => {
             const updatedAuditSecu = await auditSecuService.updateAuditSecu(entity, id);
             return updatedAuditSecu;
         },

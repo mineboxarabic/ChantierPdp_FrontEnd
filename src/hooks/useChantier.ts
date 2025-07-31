@@ -1,7 +1,6 @@
 // useChantier.ts
 import { useCallback, useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import Chantier from "../utils/entities/Chantier.ts";
 import fetchApi, { ApiResponse} from "../api/fetchApi.ts";
 import {ChantierDTO} from "../utils/entitiesDTO/ChantierDTO.ts";
 import {
@@ -107,7 +106,12 @@ export const deleteChantier = async (id: number): Promise<ApiResponse<boolean>> 
                 message: "Error chantier or API link not found",
             },
         ]
-    );
+    ).then(() => {
+        return { data: true, message: "Chantier deleted successfully" };
+    }
+    ).catch((error) => {
+        return { data: false, message: error.message || "Error while deleting chantier" };
+    });
 };
 
 // Function to get the last chantier ID
@@ -348,12 +352,12 @@ const useChantier = () => {
     }, []);
 
     // Helper functions for converting between DTO and entity
-    const toChantier = async (chantierDTO: ChantierDTO): Promise<Chantier> => {
+    const toChantier = async (chantierDTO: ChantierDTO): Promise<ChantierDTO> => {
         return await mapChantierDTOToChantier(chantierDTO);
     };
 
-    const toChantierMulti = async (chantierDTOs: ChantierDTO[]): Promise<Chantier[]> => {
-        const chantiers: Chantier[] = [];
+    const toChantierMulti = async (chantierDTOs: ChantierDTO[]): Promise<ChantierDTO[]> => {
+        const chantiers: ChantierDTO[] = [];
         for (const chantierDTO of chantierDTOs) {
             const chantier = await mapChantierDTOToChantier(chantierDTO);
             chantiers.push(chantier);
@@ -361,7 +365,7 @@ const useChantier = () => {
         return chantiers;
     }
 
-    const toChantierDTO = async (chantier: Chantier): Promise<ChantierDTO> => {
+    const toChantierDTO = async (chantier: ChantierDTO): Promise<ChantierDTO> => {
         return await mapChantierToChantierDTO(chantier);
     };
 

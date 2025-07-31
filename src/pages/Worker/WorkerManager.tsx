@@ -7,7 +7,7 @@ import useEntreprise from "../../hooks/useEntreprise.ts";
 import usePdp from "../../hooks/usePdp";
 import useChantier from "../../hooks/useChantier";
 import { EntityRef } from "../../utils/EntityRef";
-import WorkerDTO from '../../utils/entitiesDTO/WorkerDTO.ts';
+import { WorkerDTO } from '../../utils/entitiesDTO/WorkerDTO.ts';
 
 // Create a theme instance (reusing the same theme for consistency)
 const theme = createTheme({

@@ -13,4 +13,5 @@ export interface EntrepriseDTO
   workers?: number[]; // ✅ Workers employed by this entreprise
   raisonSociale?: string; // ✅ Legal name of the company
   numTel?: string; // ✅ SIRET number for identification
+  address?: string; // ✅ New field for company address
 }

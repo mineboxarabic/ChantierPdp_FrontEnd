@@ -20,7 +20,6 @@ import AssignmentIcon from '@mui/icons-material/Assignment'; // For Audits
 import { DocumentDTO } from '../../../utils/entitiesDTO/DocumentDTO';
 import RisqueDTO from '../../../utils/entitiesDTO/RisqueDTO';
 import DispositifDTO from '../../../utils/entitiesDTO/DispositifDTO';
-import { AuditSecu } from '../../../utils/entities/AuditSecu';
 import ObjectAnsweredDTO from '../../../utils/pdp/ObjectAnswered';
 import ObjectAnsweredObjects from '../../../utils/ObjectAnsweredObjects';
 import { SectionTitle } from '../../../pages/Home/styles';
@@ -31,6 +30,7 @@ import ObjectAnsweredComponent from '../../../components/Steps/ObjectAnsweredCom
 
 // Import the multiple selection dialog
 import MultipleRiskSelectionDialog from '../../../components/MultipleSelectionDialog/MultipleRiskSelectionDialog';
+import { AuditSecuDTO } from '../../../utils/entitiesDTO/AuditSecuDTO';
 
 type DialogTypes = 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'editAnalyseDeRisque' | 'audits' | '';
 
@@ -39,7 +39,7 @@ interface DocumentTabRelationsProps<T extends DocumentDTO> {
     errors: Record<string, string>;
     allRisquesMap: Map<number, RisqueDTO>;
     allDispositifsMap: Map<number, DispositifDTO>;
-    allAuditsMap?: Map<number, AuditSecu>; // Optional for documents that don't use audits
+    allAuditsMap?: Map<number, AuditSecuDTO>; // Optional for documents that don't use audits
     onOpenDialog: (type: DialogTypes) => void;
     onDeleteRelation: (objectId: number, objectType: ObjectAnsweredObjects) => void;
     onUpdateRelationField: (relationUniqueKey: string | number, field: keyof ObjectAnsweredDTO, value: any) => void;

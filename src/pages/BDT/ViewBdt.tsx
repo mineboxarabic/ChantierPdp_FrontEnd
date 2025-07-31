@@ -22,7 +22,6 @@ import {
     Warning,
     VerifiedUser,
     Edit,
-    Print,
     ArrowBack,
     Assignment,
     Note,
@@ -53,9 +52,10 @@ import RisqueDTO from "../../utils/entitiesDTO/RisqueDTO";
 import DispositifDTO from "../../utils/entitiesDTO/DispositifDTO";
 import PermitDTO from "../../utils/entitiesDTO/PermitDTO";
 import type { AnalyseDeRisqueDTO } from "../../utils/entitiesDTO/AnalyseDeRisqueDTO";
-import type { AuditSecu } from "../../utils/entities/AuditSecu";
+import type { AuditSecuDTO } from "../../utils/entitiesDTO/AuditSecuDTO";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects";
 import { getRoute } from "../../Routes";
+import BdtPdfButton from "../../components/common/BdtPdfButton";
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -194,7 +194,7 @@ const ViewBdt: FC = () => {
     const [dispositifs, setDispositifs] = useState<Map<number, DispositifDTO>>(new Map<number, DispositifDTO>());
     const [permits, setPermits] = useState<Map<number, PermitDTO>>(new Map<number, PermitDTO>());
     const [analyses, setAnalyses] = useState<Map<number, AnalyseDeRisqueDTO>>(new Map<number, AnalyseDeRisqueDTO>());
-    const [audits, setAudits] = useState<Map<number, AuditSecu>>(new Map<number, AuditSecu>());
+    const [audits, setAudits] = useState<Map<number, AuditSecuDTO>>(new Map<number, AuditSecuDTO>());
 
     // Utility functions to get relations by type
     const getRisquesRelations = () => {
@@ -302,7 +302,7 @@ const ViewBdt: FC = () => {
                     dispositifIds.length > 0 ? dispositifHook.getDispositifsByIds(dispositifIds) : Promise.resolve([]),
                     permitIds.length > 0 ? permitHook.getPermitsByIds(permitIds) : Promise.resolve([]),
                     analyseIds.length > 0 ? Promise.all(analyseIds.map(id => analyseHook.getAnalyseRisque(id))) : Promise.resolve([]),
-                    auditIds.length > 0 ? Promise.all(auditIds.map(id => auditHook.getAuditSecu(id))) : Promise.resolve([])
+                    auditHook.getAllAuditSecus() // Fetch all audits instead of specific ones
                 ]);
 
                 // Create maps with error handling
@@ -342,7 +342,7 @@ const ViewBdt: FC = () => {
                     });
                 }
 
-                const auditsMap = new Map<number, AuditSecu>();
+                const auditsMap = new Map<number, AuditSecuDTO>();
                 if (auditsData.status === 'fulfilled' && auditsData.value) {
                     auditsData.value.forEach(audit => {
                         if (audit) {
@@ -363,7 +363,7 @@ const ViewBdt: FC = () => {
                 setDispositifs(new Map<number, DispositifDTO>());
                 setPermits(new Map<number, PermitDTO>());
                 setAnalyses(new Map<number, AnalyseDeRisqueDTO>());
-                setAudits(new Map<number, AuditSecu>());
+                setAudits(new Map<number, AuditSecuDTO>());
             }
         };
 
@@ -545,6 +545,45 @@ const ViewBdt: FC = () => {
                                         size="small"
                                     />
                                 )}
+                                {bdtData.horaireDeTravaille && (
+                                    <Chip
+                                        icon={<CalendarMonth sx={{ color: 'rgba(255,255,255,0.9) !important' }} />}
+                                        label={`Horaires: ${bdtData.horaireDeTravaille}`}
+                                        sx={{
+                                            bgcolor: 'rgba(255, 255, 255, 0.15)',
+                                            color: 'white',
+                                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                                            backdropFilter: 'blur(4px)',
+                                            '& .MuiChip-icon': {
+                                                color: 'rgba(255,255,255,0.9) !important'
+                                            }
+                                        }}
+                                        size="small"
+                                    />
+                                )}
+                                {bdtData.personnelDansZone !== undefined && (
+                                    <Chip
+                                        icon={bdtData.personnelDansZone ? 
+                                            <Check sx={{ color: 'rgba(255,255,255,0.9) !important' }} /> : 
+                                            <Close sx={{ color: 'rgba(255,255,255,0.9) !important' }} />
+                                        }
+                                        label={`Personnel informé: ${bdtData.personnelDansZone ? 'Oui' : 'Non'}`}
+                                        sx={{
+                                            bgcolor: bdtData.personnelDansZone ? 
+                                                'rgba(76, 175, 80, 0.3)' : 
+                                                'rgba(244, 67, 54, 0.3)',
+                                            color: 'white',
+                                            border: bdtData.personnelDansZone ? 
+                                                '1px solid rgba(76, 175, 80, 0.5)' : 
+                                                '1px solid rgba(244, 67, 54, 0.5)',
+                                            backdropFilter: 'blur(4px)',
+                                            '& .MuiChip-icon': {
+                                                color: 'rgba(255,255,255,0.9) !important'
+                                            }
+                                        }}
+                                        size="small"
+                                    />
+                                )}
                             </Box>
                         </Box>
                     </Grid>
@@ -573,10 +612,15 @@ const ViewBdt: FC = () => {
                             >
                                 Modifier
                             </Button>
-                            <Button
+                            <BdtPdfButton
+                                bdtData={bdtData}
+                                chantierData={chantiers.get(bdtData.chantier!)}
+                                entrepriseData={entreprises.get(bdtData.entrepriseExterieure!)}
+                                allRisksMap={risques}
+                                allAnalyseDeRisque={analyses}
+                                allAudits={audits}
                                 variant="outlined"
                                 size="medium"
-                                startIcon={<Print />}
                                 sx={{
                                     color: 'white',
                                     borderColor: 'rgba(255, 255, 255, 0.5)',
@@ -586,9 +630,7 @@ const ViewBdt: FC = () => {
                                         bgcolor: 'rgba(255, 255, 255, 0.1)',
                                     }
                                 }}
-                            >
-                                Imprimer
-                            </Button>
+                            />
                         </Box>
                     </Grid>
                 </Grid>
@@ -614,6 +656,26 @@ const ViewBdt: FC = () => {
 
                 {/* Risques Tab */}
                 <TabPanel value={tabValue} index={0}>
+                    {/* Tâches autorisées section */}
+                    {bdtData.tachesAuthoriser && (
+                        <>
+                            <SectionTitle variant="h6">Tâches autorisées</SectionTitle>
+                            <Card sx={{ mb: 3 }}>
+                                <CardContent>
+                                    <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                                        <Assignment sx={{ mr: 1, color: 'primary.main' }} />
+                                        <Typography variant="h6" color="primary">
+                                            Description des tâches
+                                        </Typography>
+                                    </Box>
+                                    <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                                        {bdtData.tachesAuthoriser}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </>
+                    )}
+
                     <SectionTitle variant="h6">Risques identifiés</SectionTitle>
                     <Grid container spacing={2}>
                         {getRisquesRelations().length > 0 ? (
@@ -848,57 +910,238 @@ const ViewBdt: FC = () => {
                 {/* Audits Tab */}
                 <TabPanel value={tabValue} index={4}>
                     <SectionTitle variant="h6">Audits de sécurité</SectionTitle>
-                    <Grid container spacing={2}>
-                        {getAuditsRelations().length > 0 ? (
-                            getAuditsRelations().map((relation, index) => {
-                                const audit = audits.get(relation.objectId as number);
-                                return (
-                                    <Grid xs={12} md={6} key={relation.id || index}>
-                                        <ItemCard elevation={2}>
-                                            <CardContent>
-                                                <Box sx={{
-                                                    display: "flex",
-                                                    justifyContent: "space-between",
-                                                    alignItems: "center"
-                                                }}>
-                                                    <Box sx={{display: "flex", alignItems: "center"}}>
-                                                        <Avatar
-                                                            sx={{bgcolor: "success.main", mr: 2}}
-                                                        >
-                                                            <VerifiedUser/>
-                                                        </Avatar>
-                                                        <Box>
-                                                            <Typography variant="h6">
-                                                                {audit?.title || `Audit #${relation.objectId}`}
-                                                            </Typography>
-                                                            <Chip
-                                                                size="small"
-                                                                label="Validé"
-                                                                color="success"
-                                                                sx={{mt: 1}}
-                                                            />
-                                                        </Box>
-                                                    </Box>
-                                                </Box>
-
-                                                {audit?.description && (
-                                                    <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
-                                                        {audit.description}
-                                                    </Typography>
-                                                )}
-                                            </CardContent>
-                                        </ItemCard>
-                                    </Grid>
-                                );
-                            })
-                        ) : (
-                            <Grid xs={12}>
-                                <Typography variant="body1" color="text.secondary" sx={{textAlign: "center"}}>
-                                    Aucun audit de sécurité associé à ce bon de travail
-                                </Typography>
-                            </Grid>
-                        )}
+                    
+                    {/* Summary by type */}
+                    <Grid container spacing={2} sx={{ mb: 3 }}>
+                        <Grid xs={12} md={6}>
+                            <Card sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+                                <CardContent>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <VerifiedUser sx={{ mr: 2, fontSize: 40 }} />
+                                        <Box>
+                                            <Typography variant="h6">Audits Intervenants</Typography>
+                                            <Typography variant="h4">
+                                                {getAuditsRelations().filter(rel => {
+                                                    const audit = audits.get(rel.objectId as number);
+                                                    return audit?.typeOfAudit === 'INTERVENANTS';
+                                                }).length}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                        <Grid xs={12} md={6}>
+                            <Card sx={{ bgcolor: 'secondary.light', color: 'secondary.contrastText' }}>
+                                <CardContent>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Build sx={{ mr: 2, fontSize: 40 }} />
+                                        <Box>
+                                            <Typography variant="h6">Audits Outils</Typography>
+                                            <Typography variant="h4">
+                                                {getAuditsRelations().filter(rel => {
+                                                    const audit = audits.get(rel.objectId as number);
+                                                    return audit?.typeOfAudit === 'OUTILS';
+                                                }).length}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </Grid>
                     </Grid>
+
+                    {/* Audits by type */}
+                    {getAuditsRelations().length > 0 ? (
+                        <>
+                            {/* Audits Intervenants */}
+                            {getAuditsRelations().some(rel => {
+                                const audit = audits.get(rel.objectId as number);
+                                return audit?.typeOfAudit === 'INTERVENANTS';
+                            }) && (
+                                <>
+                                    <Typography variant="h6" sx={{ mt: 3, mb: 2, color: 'primary.main' }}>
+                                        🧑‍💼 Audits des Intervenants
+                                    </Typography>
+                                    <Grid container spacing={2}>
+                                        {getAuditsRelations()
+                                            .filter(rel => {
+                                                const audit = audits.get(rel.objectId as number);
+                                                return audit?.typeOfAudit === 'INTERVENANTS';
+                                            })
+                                            .map((relation, index) => {
+                                                const audit = audits.get(relation.objectId as number);
+                                                return (
+                                                    <Grid xs={12} md={6} key={`intervenant-${relation.id || index}`}>
+                                                        <ItemCard elevation={2}>
+                                                            <CardContent>
+                                                                <Box sx={{
+                                                                    display: "flex",
+                                                                    justifyContent: "space-between",
+                                                                    alignItems: "center"
+                                                                }}>
+                                                                    <Box sx={{display: "flex", alignItems: "center"}}>
+                                                                        <Avatar sx={{bgcolor: "primary.main", mr: 2}}>
+                                                                            <VerifiedUser/>
+                                                                        </Avatar>
+                                                                        <Box>
+                                                                            <Typography variant="h6">
+                                                                                {audit?.title || `Audit Intervenant #${relation.objectId}`}
+                                                                            </Typography>
+                                                                            <Chip
+                                                                                size="small"
+                                                                                label="Intervenants"
+                                                                                color="primary"
+                                                                                sx={{mt: 1}}
+                                                                            />
+                                                                        </Box>
+                                                                    </Box>
+                                                                </Box>
+
+                                                                {audit?.description && (
+                                                                    <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
+                                                                        {audit.description}
+                                                                    </Typography>
+                                                                )}
+                                                            </CardContent>
+                                                        </ItemCard>
+                                                    </Grid>
+                                                );
+                                            })
+                                        }
+                                    </Grid>
+                                </>
+                            )}
+
+                            {/* Audits Outils */}
+                            {getAuditsRelations().some(rel => {
+                                const audit = audits.get(rel.objectId as number);
+                                return audit?.typeOfAudit === 'OUTILS';
+                            }) && (
+                                <>
+                                    <Typography variant="h6" sx={{ mt: 3, mb: 2, color: 'secondary.main' }}>
+                                        🔧 Audits des Outils
+                                    </Typography>
+                                    <Grid container spacing={2}>
+                                        {getAuditsRelations()
+                                            .filter(rel => {
+                                                const audit = audits.get(rel.objectId as number);
+                                                return audit?.typeOfAudit === 'OUTILS';
+                                            })
+                                            .map((relation, index) => {
+                                                const audit = audits.get(relation.objectId as number);
+                                                return (
+                                                    <Grid xs={12} md={6} key={`outils-${relation.id || index}`}>
+                                                        <ItemCard elevation={2}>
+                                                            <CardContent>
+                                                                <Box sx={{
+                                                                    display: "flex",
+                                                                    justifyContent: "space-between",
+                                                                    alignItems: "center"
+                                                                }}>
+                                                                    <Box sx={{display: "flex", alignItems: "center"}}>
+                                                                        <Avatar sx={{bgcolor: "secondary.main", mr: 2}}>
+                                                                            <Build/>
+                                                                        </Avatar>
+                                                                        <Box>
+                                                                            <Typography variant="h6">
+                                                                                {audit?.title || `Audit Outils #${relation.objectId}`}
+                                                                            </Typography>
+                                                                            <Chip
+                                                                                size="small"
+                                                                                label="Outils"
+                                                                                color="secondary"
+                                                                                sx={{mt: 1}}
+                                                                            />
+                                                                        </Box>
+                                                                    </Box>
+                                                                </Box>
+
+                                                                {audit?.description && (
+                                                                    <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
+                                                                        {audit.description}
+                                                                    </Typography>
+                                                                )}
+                                                            </CardContent>
+                                                        </ItemCard>
+                                                    </Grid>
+                                                );
+                                            })
+                                        }
+                                    </Grid>
+                                </>
+                            )}
+
+                            {/* Other audits (if any) */}
+                            {getAuditsRelations().some(rel => {
+                                const audit = audits.get(rel.objectId as number);
+                                return audit && audit.typeOfAudit !== 'INTERVENANTS' && audit.typeOfAudit !== 'OUTILS';
+                            }) && (
+                                <>
+                                    <Typography variant="h6" sx={{ mt: 3, mb: 2, color: 'info.main' }}>
+                                        📋 Autres Audits
+                                    </Typography>
+                                    <Grid container spacing={2}>
+                                        {getAuditsRelations()
+                                            .filter(rel => {
+                                                const audit = audits.get(rel.objectId as number);
+                                                return audit && audit.typeOfAudit !== 'INTERVENANTS' && audit.typeOfAudit !== 'OUTILS';
+                                            })
+                                            .map((relation, index) => {
+                                                const audit = audits.get(relation.objectId as number);
+                                                return (
+                                                    <Grid xs={12} md={6} key={`other-${relation.id || index}`}>
+                                                        <ItemCard elevation={2}>
+                                                            <CardContent>
+                                                                <Box sx={{
+                                                                    display: "flex",
+                                                                    justifyContent: "space-between",
+                                                                    alignItems: "center"
+                                                                }}>
+                                                                    <Box sx={{display: "flex", alignItems: "center"}}>
+                                                                        <Avatar sx={{bgcolor: "info.main", mr: 2}}>
+                                                                            <Assessment/>
+                                                                        </Avatar>
+                                                                        <Box>
+                                                                            <Typography variant="h6">
+                                                                                {audit?.title || `Audit #${relation.objectId}`}
+                                                                            </Typography>
+                                                                            <Chip
+                                                                                size="small"
+                                                                                label={audit?.typeOfAudit || "Autre"}
+                                                                                color="info"
+                                                                                sx={{mt: 1}}
+                                                                            />
+                                                                        </Box>
+                                                                    </Box>
+                                                                </Box>
+
+                                                                {audit?.description && (
+                                                                    <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
+                                                                        {audit.description}
+                                                                    </Typography>
+                                                                )}
+                                                            </CardContent>
+                                                        </ItemCard>
+                                                    </Grid>
+                                                );
+                                            })
+                                        }
+                                    </Grid>
+                                </>
+                            )}
+                        </>
+                    ) : (
+                        <Paper sx={{ p: 4, textAlign: 'center', borderRadius: '16px' }}>
+                            <VerifiedUser sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                            <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+                                Aucun audit de sécurité associé à ce bon de travail
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Les audits permettent de valider les intervenants et les outils utilisés sur le chantier.
+                            </Typography>
+                        </Paper>
+                    )}
                 </TabPanel>
 
                 {/* Compléments Tab */}

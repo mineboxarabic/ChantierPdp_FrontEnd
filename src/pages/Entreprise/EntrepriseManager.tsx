@@ -94,10 +94,18 @@ const EntrepriseManager = () => {
                 fullWidth: true,
             },
             {
+                key: 'address',
+                type: FieldType.Text,
+                label: 'Address',
+                order: 5,
+                section: 'Contact Information',
+                fullWidth: true,
+            },
+            {
                 key: 'numTel',
                 type: FieldType.Text,
                 label: 'Phone Number',
-                order: 5,
+                order: 6,
                 section: 'Contact Information',
                 validation: {
                     pattern: '^[+]?[(]?[0-9]{3}[)]?[-\\s.]?[0-9]{3}[-\\s.]?[0-9]{4,6}$',
@@ -151,7 +159,7 @@ const EntrepriseManager = () => {
         },
         getById: async (id: number) => {
             const entreprise = await entrepriseService.getEntreprise(id);
-            return entreprise;
+            return entreprise as EntrepriseDTO;
         },
         create: async (entity: EntrepriseDTO) => {
             const newEntreprise = await entrepriseService.createEntreprise(entity);
@@ -169,7 +177,7 @@ const EntrepriseManager = () => {
             // This would need to be implemented to fetch referenced entities
             // For example, workers or PDPs for selection in dropdowns
             // For now, return an empty array
-            console.log(`Fetching references forxx: ${entityType}, query: ${query}`);
+            console.log(`Fetching references for: ${entityType}, query: ${query}`);
             if(entityType == 'worker'){
                 return await workerService.getAllWorkers();
             }

@@ -1,15 +1,12 @@
-
-import Risque from "../entities/Risque.ts";
-import Dispositif from "../entities/Dispositif.ts";
-import AnalyseDeRisque from "../entities/AnalyseDeRisque.ts";
+import { AnalyseDeRisqueDTO } from "../entitiesDTO/AnalyseDeRisqueDTO";
 
 class ObjectAnsweredEntreprises {
 
     id: number;
-    analyseDeRisque?: AnalyseDeRisque;
+    analyseDeRisque?: AnalyseDeRisqueDTO;
     ee: boolean;
     eu: boolean;
-    constructor(id:number, analiseDeRisque: AnalyseDeRisque, EE: boolean, EU: boolean){
+    constructor(id:number, analiseDeRisque: AnalyseDeRisqueDTO, EE: boolean, EU: boolean){
         this.id = id;
         this.analyseDeRisque = analiseDeRisque;
         this.ee = EE;

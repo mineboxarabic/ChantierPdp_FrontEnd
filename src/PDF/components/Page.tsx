@@ -5,7 +5,7 @@ const styles = StyleSheet.create({
         padding: 20,
         fontSize: 12,
         fontWeight: "normal",
-        fontFamily: "Inter",
+        fontFamily: "Helvetica",
     }
 });
 

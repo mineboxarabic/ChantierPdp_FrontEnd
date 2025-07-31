@@ -46,7 +46,6 @@ import { PdpDTO } from '../../utils/entitiesDTO/PdpDTO';
 import  RisqueDTO  from '../../utils/entitiesDTO/RisqueDTO';
 import  DispositifDTO  from '../../utils/entitiesDTO/DispositifDTO';
 import  PermitDTO  from '../../utils/entitiesDTO/PermitDTO';
-import  Permit  from '../../utils/entities/Permit';
 import { AnalyseDeRisqueDTO } from '../../utils/entitiesDTO/AnalyseDeRisqueDTO';
 import ObjectAnsweredDTO from '../../utils/pdp/ObjectAnswered';
 import ObjectAnsweredObjects from '../../utils/ObjectAnsweredObjects';
@@ -167,7 +166,7 @@ function a11yProps(index: number) {
 }
 
 type DialogData = RisqueDTO | DispositifDTO | PermitDTO | AnalyseDeRisqueDTO | null;
-type DialogTypes = 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'editAnalyseDeRisque' | '';
+type DialogTypes = 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'editAnalyseDeRisque' | 'audits' | '';
 
 // Signature request interface for API
 interface SignatureRequestDTO {
@@ -536,7 +535,11 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
 
 
     const addRelation = useCallback(async (objectType: ObjectAnsweredObjects, selectedItem: { id?: number; title?: string; travailleDangereux?: boolean; type?: PermiTypes; permitType?: PermiTypes }) => {
-        if (!selectedItem || selectedItem.id === undefined) return;
+        console.log('addRelation called with:', { objectType, selectedItem });
+        if (!selectedItem || selectedItem.id === undefined) {
+            console.log('addRelation: selectedItem is invalid:', selectedItem);
+            return;
+        }
 
         // --- Existing logic to add the relation to formData.relations ---
         const newRelation: ObjectAnsweredDTO = {
@@ -600,7 +603,7 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
         }
         notifications.show("Élément ajouté au PDP.", { severity: "success", autoHideDuration: 1500 });
         handleCloseDialog();
-    }, [formData.relations, allRisquesMap, allPermitsMap, notifications, handleCloseDialog, getAllRisques, getAllDispositifs, getAllPermits]); // Add dependencies
+    }, [formData.relations, allRisquesMap, allPermitsMap, notifications, handleCloseDialog, getAllRisques, getAllDispositifs, getAllPermits, getAllAnalyses]); // Add dependencies
 
     const handleAddMultipleRisks = useCallback(async (selectedRisks: RisqueDTO[], risksToUnlink?: RisqueDTO[]) => {
         const existingRelations = formData.relations || [];
@@ -717,7 +720,7 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
             }
 
             // Create a new permit
-            const newPermit = new Permit(
+            const newPermit = new PermitDTO(
                 undefined, // Let the backend assign the ID
                 file ? `Permis ${permitType} - ${file.name}` : `Nouveau Permis ${permitType}`,
                 `Permis de type ${permitType} ${file ? 'téléchargé' : 'créé'} pour ce PDP`,
@@ -989,15 +992,26 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                     </TabPanel>
                     
                     <TabPanel value={tabIndex} index={4}>
-                        <DocumentTabRiskAnalyses
-                            formData={formData}
-                            errors={errors}
-                            allAnalysesMap={allAnalysesMap}
-                            allRisquesMap={allRisquesMap}
-                            onOpenDialog={handleOpenDialog}
-                            onDeleteRelation={deleteRelation}
-                            onUpdateRelationField={updateRelationField}
-                        />
+                        {(() => {
+                            console.log('=== TabPanel 4 Debug ===');
+                            console.log('addRelation function:', addRelation);
+                            console.log('addRelation type:', typeof addRelation);
+                            console.log('addRelation defined:', !!addRelation);
+                            console.log('========================');
+                            return (
+                                <DocumentTabRiskAnalyses
+                                    formData={formData}
+                                    errors={errors}
+                                    allAnalysesMap={allAnalysesMap}
+                                    allRisquesMap={allRisquesMap}
+                                    onOpenDialog={handleOpenDialog}
+                                    onDeleteRelation={deleteRelation}
+                                    onUpdateRelationField={updateRelationField}
+                                    onAddRelation={addRelation}
+                                />
+                            );
+                        })()}
+                        
                         <PdpTabNavigation
                             tabIndex={tabIndex}
                             isLastTab={tabIndex === 5}

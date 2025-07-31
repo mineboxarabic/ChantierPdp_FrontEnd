@@ -57,6 +57,20 @@ export const createBDT = async (bdtData: BdtDTO): Promise<ApiResponse<BdtDTO>> =
     );
 };
 
+// Function to duplicate a BdtDTO
+export const duplicateBDT = async (documentId: number): Promise<ApiResponse<BdtDTO>> => {
+    return fetchApi<BdtDTO>(
+        `api/document/${documentId}/duplicate`,
+        "POST",
+        null,
+        [
+            { status: 400, message: "Error: Document cannot be duplicated" },
+            { status: 404, message: "Error: Document not found" },
+            { status: 500, message: "Error: Internal server error" }
+        ]
+    );
+};
+
 // Function to delete a BdtDTO
 export const deleteBDT = async (id: number): Promise<ApiResponse<boolean>> => {
     return fetchApi<boolean>(
@@ -116,6 +130,31 @@ export const unlinkAuditToBDT = async (bdtId: number, auditId: number): Promise<
         ]
     );
 };
+
+// Function to link an object to a BdtDTO
+export const linkObjectToBdt = async (bdtId: number, objectId: number, objectType: string): Promise<ApiResponse<ObjectAnsweredDTO>> => {
+    return fetchApi<ObjectAnsweredDTO>(
+        `api/bdt/${bdtId}/link/${objectType}/${objectId}`,
+        "POST",
+        null,
+        [
+            { status: 404, message: "Error BdtDTO or object not found" }
+        ]
+    );
+}
+
+// Function to unlink an object from a BdtDTO
+export const unlinkObjectFromBdt = async (bdtId: number, objectId: number, objectType: string): Promise<ApiResponse<ObjectAnsweredDTO>> => {
+    return fetchApi<ObjectAnsweredDTO>(
+        `api/bdt/${bdtId}/link/${objectType}/${objectId}`,
+        "DELETE",
+        null,
+        [
+            { status: 404, message: "Error BdtDTO or object not found" }
+        ]
+    );
+}
+
 
 // React hook that uses the API functions
 const useBdt = () => {
@@ -199,6 +238,23 @@ const useBdt = () => {
         );
     };
 
+    const duplicateBDTHook = async (documentId: number): Promise<BdtDTO> => {
+        return executeApiCall(
+            () => duplicateBDT(documentId),
+            "Error while duplicating BdtDTO",
+            (data: BdtDTO) => {
+                setResponse(data);
+                // Add the duplicated BDT to the local state
+                if (data.id) {
+                    const updatedBdts = new Map(bdts);
+                    updatedBdts.set(data.id, data);
+                    setBdts(updatedBdts);
+                }
+                return data;
+            }
+        );
+    };
+
     const deleteBDTHook = async (id: number): Promise<boolean> => {
         return executeApiCall(
             () => deleteBDT(id),
@@ -243,6 +299,36 @@ const useBdt = () => {
         );
     };
 
+    const linkObjectToBDTHook = async (bdtId: number, objectId: number, objectType: string): Promise<ObjectAnsweredDTO> => {
+        return executeApiCall(
+            () => linkObjectToBdt(bdtId, objectId, objectType),
+            `Error while linking ${objectType} to BdtDTO`,
+            (data: ObjectAnsweredDTO) => {
+                if (response && typeof response === 'object' && 'id' in response && response.id === bdtId) {
+                    const updatedBdt = { ...response as BdtDTO };
+                    updatedBdt.relations.push(data);
+                    setResponse(updatedBdt);
+                }
+            }
+        );
+    };
+
+    const unlinkObjectFromBDTHook = async (bdtId: number, objectId: number, objectType: string): Promise<ObjectAnsweredDTO> => {
+        return executeApiCall(
+            () => unlinkObjectFromBdt(bdtId, objectId, objectType),
+            `Error while unlinking ${objectType} from BdtDTO`,
+            () => {
+                if (response && typeof response === 'object' && 'id' in response && response.id === bdtId) {
+                    const updatedBdt = { ...response as BdtDTO };
+                    updatedBdt.relations = updatedBdt.relations.filter(
+                        r => !(r.objectId === objectId && r.objectType === objectType)
+                    );
+                    setResponse(updatedBdt);
+                }
+            }
+        );
+    };
+
     return {
         loading,
         error,
@@ -252,11 +338,14 @@ const useBdt = () => {
         saveBDT: saveBDTHook,
         getBDT: getBDTHook,
         createBDT: createBDTHook,
+        duplicateBDT: duplicateBDTHook,
         deleteBDT: deleteBDTHook,
         linkRisqueToBDT: linkRisqueToBDTHook,
         linkAuditToBDT: linkAuditToBDTHook,
         unlinkRisqueToBDT: unlinkRisqueToBDTHook,
-        unlinkAuditToBDT: unlinkAuditToBDTHook
+        unlinkAuditToBDT: unlinkAuditToBDTHook,
+        linkObjectToBDT: linkObjectToBDTHook,
+        unlinkObjectFromBDT: unlinkObjectFromBDTHook,
     };
 };
 

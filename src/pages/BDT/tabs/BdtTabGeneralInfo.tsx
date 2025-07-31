@@ -101,6 +101,57 @@ const BdtTabGeneralInfo: React.FC<BdtTabGeneralInfoProps> = ({
                     }}
                 />
             </Grid>
+
+            <Grid item xs={12} md={6}>
+                <TextField
+                    label="Horaires de travail"
+                    name="horaireDeTravaille"
+                    value={formData.horaireDeTravaille || ''}
+                    onChange={onInputChange}
+                    variant="outlined"
+                    fullWidth
+                    placeholder="Ex: 8h00 - 17h00"
+                    helperText="Précisez les horaires de travail prévus"
+                />
+            </Grid>
+
+            <Grid item xs={12}>
+                <TextField
+                    label="Tâches autorisées"
+                    name="tachesAuthoriser"
+                    value={formData.tachesAuthoriser || ''}
+                    onChange={onInputChange}
+                    variant="outlined"
+                    fullWidth
+                    multiline
+                    rows={3}
+                    placeholder="Décrivez les tâches autorisées pour ce BDT..."
+                    helperText="Détaillez les tâches et restrictions spécifiques"
+                />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+                <Autocomplete
+                    options={[
+                        { value: true, label: 'Oui' },
+                        { value: false, label: 'Non' }
+                    ]}
+                    getOptionLabel={(option) => option.label}
+                    value={formData.personnelDansZone !== undefined ? 
+                        (formData.personnelDansZone ? { value: true, label: 'Oui' } : { value: false, label: 'Non' }) : 
+                        null}
+                    onChange={(_, newValue) => onAutocompleteChange('personnelDansZone', newValue ? newValue.value : null)}
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            label="Personnel présent dans la zone"
+                            variant="outlined"
+                            fullWidth
+                            helperText="Le personnel de cette zone a-t-il été informé ?"
+                        />
+                    )}
+                />
+            </Grid>
         </Grid>
     );
 };

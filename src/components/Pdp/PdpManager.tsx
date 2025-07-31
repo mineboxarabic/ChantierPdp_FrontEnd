@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Box, Container, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import ManagerCRUD from "../../components/GenericCRUD/ManagerCRUD";
 import { EntityConfig, FieldType, CrudOperations } from "../../components/GenericCRUD/TypeConfig";
-import { Pdp } from "../../utils/entities/Pdp.ts";
 import usePdp from "../../hooks/usePdp";
 import useEntreprise from "../../hooks/useEntreprise";
 import useRisque from "../../hooks/useRisque";
@@ -10,6 +9,7 @@ import useDispositif from "../../hooks/useDispositif";
 import usePermit from "../../hooks/usePermit";
 import { EntityRef } from "../../utils/EntityRef";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects";
+import { PdpDTO } from '../../utils/entitiesDTO/PdpDTO.ts';
 
 // Create a theme instance (reusing the same theme for consistency)
 const theme = createTheme({
@@ -215,7 +215,7 @@ const PdpManager = () => {
         {
             name: 'linkRisque',
             label: 'Add Risk',
-            action: async (selected: Pdp[]) => {
+            action: async (selected: PdpDTO[]) => {
                 // This would need to be implemented with a custom dialog
                 // For now, it's a placeholder
                 console.log('Link risque to PDP:', selected);
@@ -225,7 +225,7 @@ const PdpManager = () => {
         {
             name: 'linkDispositif',
             label: 'Add Device',
-            action: async (selected: Pdp[]) => {
+            action: async (selected: PdpDTO[]) => {
                 console.log('Link dispositif to PDP:', selected);
             },
             multiple: false,
@@ -233,7 +233,7 @@ const PdpManager = () => {
         {
             name: 'linkPermit',
             label: 'Add Permit',
-            action: async (selected: Pdp[]) => {
+            action: async (selected: PdpDTO[]) => {
                 console.log('Link permit to PDP:', selected);
             },
             multiple: false,
@@ -241,7 +241,7 @@ const PdpManager = () => {
         {
             name: 'linkAnalyse',
             label: 'Add Risk Analysis',
-            action: async (selected: Pdp[]) => {
+            action: async (selected: PdpDTO[]) => {
                 console.log('Link analyse to PDP:', selected);
             },
             multiple: false,
@@ -249,7 +249,7 @@ const PdpManager = () => {
     ];
 
     // Create CRUD operations adapter from the pdps service
-    const crudOperations: CrudOperations<Pdp> = {
+    const crudOperations: CrudOperations<PdpDTO> = {
         getAll: async () => {
             const pdps = await pdpService.getAllPDPs();
             return pdps || [];
@@ -258,13 +258,13 @@ const PdpManager = () => {
             const pdp = await pdpService.getPlanDePrevention(id);
             return pdp;
         },
-        create: async (entity: Pdp) => {
+        create: async (entity: PdpDTO) => {
             const newPdp = await pdpService.createPdp(entity);
             return newPdp;
         },
-        update: async (id: number, entity: Pdp) => {
+        update: async (id: number, entity: PdpDTO) => {
             const updatedPdp = await pdpService.savePdp(entity, id);
-            return updatedPdp.data?.data as Pdp;
+            return updatedPdp;
         },
         delete: async (id: number) => {
             await pdpService.deletePdp(id);

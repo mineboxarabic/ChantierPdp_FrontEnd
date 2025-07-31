@@ -13,8 +13,6 @@ import {
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { useEffect, useState, ReactNode } from "react";
 import ObjectAnsweredDTO from "../../utils/pdp/ObjectAnswered.ts";
-import ObjectAnsweredEntreprises from "../../utils/pdp/ObjectAnsweredEntreprises.ts";
-import {EntityRef} from "../../utils/EntityRef.ts";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
 import { ParentOfRelations } from "../Interfaces.ts";
 

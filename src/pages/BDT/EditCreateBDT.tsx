@@ -38,9 +38,8 @@ import type { ChantierDTO } from '../../utils/entitiesDTO/ChantierDTO';
 import RisqueDTO from '../../utils/entitiesDTO/RisqueDTO';
 import DispositifDTO from '../../utils/entitiesDTO/DispositifDTO';
 import PermitDTO from '../../utils/entitiesDTO/PermitDTO';
-import Permit from '../../utils/entities/Permit';
 import type { AnalyseDeRisqueDTO } from '../../utils/entitiesDTO/AnalyseDeRisqueDTO';
-import type { AuditSecu } from '../../utils/entities/AuditSecu';
+import { AuditSecuDTO } from '../../utils/entitiesDTO/AuditSecuDTO';
 import PermiTypes from '../../utils/PermiTypes';
 import { DocumentStatus } from '../../utils/enums/DocumentStatus';
 import { ActionType } from '../../utils/enums/ActionType';
@@ -74,7 +73,7 @@ interface ComplementOuRappel {
 }
 
 // Define dialog data types
-type DialogData = RisqueDTO | DispositifDTO | PermitDTO | AnalyseDeRisqueDTO | AuditSecu | null;
+type DialogData = RisqueDTO | DispositifDTO | PermitDTO | AnalyseDeRisqueDTO | AuditSecuDTO | null;
 type DialogTypes = 'complement' | 'chargeDeTravail' | 'donneurDOrdre' | 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'audits' | 'editAnalyseDeRisque' | '';
 
 // Type to represent required permit types and the risks that need them (same as PDP)
@@ -139,6 +138,11 @@ const EditCreateBdt: React.FC = () => {
 
     // Required permit types state (similar to PDP)
     const [requiredPermitTypes, setRequiredPermitTypes] = useState<RequiredPermitType[]>([]);
+
+
+    useEffect(()=>{
+        console.log('BdDDTTTTTT',formData);
+    },[formData])
 
     // Load data on component mount
     useEffect(() => {
@@ -358,52 +362,96 @@ const EditCreateBdt: React.FC = () => {
     }, [formData?.complementOuRappels]);
 
     // --- Relation Management Functions ---
-    const addRelation = useCallback(async (objectType: ObjectAnsweredObjects, selectedItem: { id?: number; title?: string; type?: any }) => {
-        if (!selectedItem?.id) return;
+  const addRelation = useCallback(async (objectType: ObjectAnsweredObjects, selectedItem: { id?: number; title?: string; type?: any }) => {
+    if (!selectedItem?.id) return;
+    
+    console.log('=== ADD RELATION DEBUG ===');
+    console.log('Trying to add:', { objectType, selectedItem });
+    console.log('Current relations:', formData.relations);
+    console.log('Existing relations for this type:', formData.relations?.filter(rel => rel.objectType === objectType));
 
-        const newRelation = {
-            objectId: selectedItem.id,
-            objectType: objectType,
-            answer: true,
-        };
+    const newRelation = {
+        objectId: selectedItem.id,
+        objectType: objectType,
+        answer: true,
+    };
 
-        const existingRelations = formData.relations || [];
-        const alreadyExists = existingRelations.some(
-            rel => rel.objectId === newRelation.objectId && rel.objectType === newRelation.objectType
-        );
+    console.log('New relation to add:', newRelation);
 
-        if (alreadyExists) {
-            notifications.show("Cet élément est déjà lié.", { severity: "info" });
-            handleCloseDialog();
-            return;
-        }
+    const existingRelations = formData.relations || [];
+    
+    // Check each relation individually for debugging
+    const potentialDuplicates = existingRelations.filter(
+        rel => rel.objectId === newRelation.objectId && 
+               rel.objectType === newRelation.objectType
+    );
+    
+    console.log('Potential duplicates found:', potentialDuplicates);
+    
+    const alreadyExists = existingRelations.some(
+        rel => rel.objectId === newRelation.objectId && 
+               rel.objectType === newRelation.objectType && 
+               rel.answer !== null
+    );
+    
+    console.log('Already exists check result:', alreadyExists);
 
+    if (alreadyExists) {
+        console.log('Element already exists, showing notification and closing dialog');
+        notifications.show("Cet élément est déjà lié.", { severity: "info" });
+        handleCloseDialog();
+        return;
+    }
+
+    // Check if there's a deleted relation that we can reactivate
+    const deletedRelationIndex = existingRelations.findIndex(
+        rel => rel.objectId === newRelation.objectId && 
+               rel.objectType === newRelation.objectType && 
+               rel.answer === null
+    );
+
+    console.log('Deleted relation index:', deletedRelationIndex);
+
+    if (deletedRelationIndex >= 0) {
+        console.log('Reactivating deleted relation at index:', deletedRelationIndex);
+        // Reactivate the deleted relation
+        setFormData(prev => ({
+            ...prev,
+            relations: prev.relations?.map((rel, index) => 
+                index === deletedRelationIndex ? { ...rel, answer: true } : rel
+            ) ?? []
+        }));
+    } else {
+        console.log('Adding new relation');
+        // Add new relation
         setFormData(prev => ({
             ...prev,
             relations: [...existingRelations, newRelation]
         }));
+    }
 
-        // Refresh the appropriate data in background
-        try {
-            if (objectType === ObjectAnsweredObjects.RISQUE) {
-                await getAllRisques();
-            } else if (objectType === ObjectAnsweredObjects.DISPOSITIF) {
-                await getAllDispositifs();
-            } else if (objectType === ObjectAnsweredObjects.PERMIT) {
-                await getAllPermits();
-            } else if (objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE) {
-                await getAllAnalyses();
-            } else if (objectType === ObjectAnsweredObjects.AUDIT) {
-                await getAllAuditSecus();
-            }
-        } catch (error) {
-            console.error(`Error refreshing ${objectType} data after adding relation:`, error);
+    console.log('Refreshing data and showing success notification');
+
+    // Refresh the appropriate data in background
+    try {
+        if (objectType === ObjectAnsweredObjects.RISQUE) {
+            await getAllRisques();
+        } else if (objectType === ObjectAnsweredObjects.DISPOSITIF) {
+            await getAllDispositifs();
+        } else if (objectType === ObjectAnsweredObjects.PERMIT) {
+            await getAllPermits();
+        } else if (objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE) {
+            await getAllAnalyses();
+        } else if (objectType === ObjectAnsweredObjects.AUDIT) {
+            await getAllAuditSecus();
         }
+    } catch (error) {
+        console.error(`Error refreshing ${objectType} data after adding relation:`, error);
+    }
 
-        notifications.show("Élément ajouté au BDT.", { severity: "success", autoHideDuration: 1500 });
-        handleCloseDialog();
-    }, [formData.relations, notifications, handleCloseDialog, getAllRisques, getAllDispositifs, getAllPermits, getAllAnalyses, getAllAuditSecus]);
-
+    notifications.show("Élément ajouté au BDT.", { severity: "success", autoHideDuration: 1500 });
+    handleCloseDialog();
+}, [formData.relations, notifications, handleCloseDialog, getAllRisques, getAllDispositifs, getAllPermits, getAllAnalyses, getAllAuditSecus]);
     const deleteRelation = useCallback((relationObjectId: number, relationObjectType: ObjectAnsweredObjects) => {
         setFormData(prev => {
             let hasDeleted = false;
@@ -551,8 +599,8 @@ const EditCreateBdt: React.FC = () => {
                 });
             }
 
-            // Create a new permit using the Permit class (same as PDP)
-            const newPermit = new Permit(
+            // Create a new permit using the PermitDTO class (same as PDP)
+            const newPermit = new PermitDTO(
                 undefined, // Let the backend assign the ID
                 file ? `Permis ${permitType} - ${file.name}` : `Nouveau Permis ${permitType}`,
                 `Permis de type ${permitType} ${file ? 'téléchargé' : 'créé'} pour ce BDT`,
@@ -567,7 +615,7 @@ const EditCreateBdt: React.FC = () => {
             // Create the permit using the hook
             const createdPermit = await createPermit(newPermit);
             
-            if (createdPermit && createdPermit.id) {
+            if (createdPermit?.id) {
                 // Link the permit to the BDT
                 await addRelation(ObjectAnsweredObjects.PERMIT, {
                     id: createdPermit.id,
@@ -760,6 +808,7 @@ const EditCreateBdt: React.FC = () => {
                     onOpenDialog={handleOpenDialog}
                     onDeleteRelation={deleteRelation}
                     onUpdateRelationField={updateRelationField}
+                    onAddRelation={addRelation}
                 />
             )
         },

@@ -1,14 +1,14 @@
 // useAuditSecu.ts
 import { useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import { AuditSecu } from "../utils/entities/AuditSecu.ts";
+import { AuditSecuDTO } from "../utils/entitiesDTO/AuditSecuDTO.ts";
 import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
 
-type AuditSecuResponse = AuditSecu | AuditSecu[] | boolean | null;
+type AuditSecuResponse = AuditSecuDTO | AuditSecuDTO[] | boolean | null;
 
 // Function to get an audit secu by ID
-export const getAuditSecuById = async (id: number): Promise<ApiResponse<AuditSecu>> => {
-    return fetchApi<AuditSecu>(
+export const getAuditSecuById = async (id: number): Promise<ApiResponse<AuditSecuDTO>> => {
+    return fetchApi<AuditSecuDTO>(
         `api/auditsecu/${id}`,
         "GET",
         null,
@@ -20,8 +20,8 @@ export const getAuditSecuById = async (id: number): Promise<ApiResponse<AuditSec
 };
 
 // Function to get all audit secus
-export const getAllAuditSecus = async (): Promise<ApiResponse<AuditSecu[]>> => {
-    return fetchApi<AuditSecu[]>(
+export const getAllAuditSecus = async (): Promise<ApiResponse<AuditSecuDTO[]>> => {
+    return fetchApi<AuditSecuDTO[]>(
         "api/auditsecu",
         "GET",
         null,
@@ -32,9 +32,22 @@ export const getAllAuditSecus = async (): Promise<ApiResponse<AuditSecu[]>> => {
     );
 };
 
+// Function to get audit secus by type
+export const getAuditSecusByType = async (typeOfAudit: string): Promise<ApiResponse<AuditSecuDTO[]>> => {
+    return fetchApi<AuditSecuDTO[]>(
+        `api/auditsecu/type/${typeOfAudit}`,
+        "GET",
+        null,
+        [
+            { status: 404, message: "GetAuditSecusByType: Error audit secus not found" },
+            { status: -1, message: "GetAuditSecusByType: Error while getting audit secus by type" }
+        ]
+    );
+};
+
 // Function to update an audit secu
-export const updateAuditSecu = async (auditSecu: AuditSecu, id: number): Promise<ApiResponse<AuditSecu>> => {
-    return fetchApi<AuditSecu>(
+export const updateAuditSecu = async (auditSecu: AuditSecuDTO, id: number): Promise<ApiResponse<AuditSecuDTO>> => {
+    return fetchApi<AuditSecuDTO>(
         `api/auditsecu/${id}`,
         "PATCH",
         auditSecu,
@@ -62,8 +75,8 @@ export const deleteAuditSecu = async (id: number): Promise<ApiResponse<boolean>>
 };
 
 // Function to create an audit secu
-export const createAuditSecu = async (auditSecu: AuditSecu): Promise<ApiResponse<AuditSecu>> => {
-    return fetchApi<AuditSecu>(
+export const createAuditSecu = async (auditSecu: AuditSecuDTO): Promise<ApiResponse<AuditSecuDTO>> => {
+    return fetchApi<AuditSecuDTO>(
         "api/auditsecu",
         "POST",
         auditSecu,
@@ -80,8 +93,7 @@ const useAuditSecu = () => {
     const [response, setResponse] = useState<AuditSecuResponse>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
-    const [lastId, setLastId] = useState<number | null>(null);
-    const [auditSecus, setAuditSecus] = useState<Map<number, AuditSecu>>(new Map<number, AuditSecu>());
+    const [auditSecus, setAuditSecus] = useState<Map<number, AuditSecuDTO>>(new Map<number, AuditSecuDTO>());
 
     const notifications = useNotifications();
 
@@ -112,19 +124,19 @@ const useAuditSecu = () => {
     };
 
     // Hook methods that wrap the API functions
-    const getAuditSecuHook = async (id: number): Promise<AuditSecu> => {
+    const getAuditSecuHook = async (id: number): Promise<AuditSecuDTO> => {
         return executeApiCall(
             () => getAuditSecuById(id),
             "Error while getting audit secu"
         );
     };
 
-    const getAllAuditSecusHook = async (): Promise<AuditSecu[]> => {
+    const getAllAuditSecusHook = async (): Promise<AuditSecuDTO[]> => {
         return executeApiCall(
             () => getAllAuditSecus(),
             "Error while getting all audit secus",
-            (data: AuditSecu[]) => {
-                const updatedAuditSecus = new Map<number, AuditSecu>();
+            (data: AuditSecuDTO[]) => {
+                const updatedAuditSecus = new Map<number, AuditSecuDTO>();
                 data.forEach(auditSecu => {
                     if (auditSecu.id !== undefined) {
                         updatedAuditSecus.set(auditSecu.id, auditSecu);
@@ -135,7 +147,14 @@ const useAuditSecu = () => {
         );
     };
 
-    const updateAuditSecuHook = async (auditSecu: AuditSecu, id: number): Promise<AuditSecu> => {
+    const getAuditSecusByTypeHook = async (typeOfAudit: string): Promise<AuditSecuDTO[]> => {
+        return executeApiCall(
+            () => getAuditSecusByType(typeOfAudit),
+            "Error while getting audit secus by type"
+        );
+    };
+
+    const updateAuditSecuHook = async (auditSecu: AuditSecuDTO, id: number): Promise<AuditSecuDTO> => {
         return executeApiCall(
             () => updateAuditSecu(auditSecu, id),
             "Error while updating audit secu"
@@ -157,7 +176,7 @@ const useAuditSecu = () => {
         );
     };
 
-    const createAuditSecuHook = async (auditSecu: AuditSecu): Promise<AuditSecu> => {
+    const createAuditSecuHook = async (auditSecu: AuditSecuDTO): Promise<AuditSecuDTO> => {
         return executeApiCall(
             () => createAuditSecu(auditSecu),
             "Error while creating audit secu"
@@ -168,10 +187,10 @@ const useAuditSecu = () => {
         loading,
         error,
         response,
-        lastId,
         auditSecus,
         getAuditSecu: getAuditSecuHook,
         getAllAuditSecus: getAllAuditSecusHook,
+        getAuditSecusByType: getAuditSecusByTypeHook,
         updateAuditSecu: updateAuditSecuHook,
         deleteAuditSecu: deleteAuditSecuHook,
         createAuditSecu: createAuditSecuHook

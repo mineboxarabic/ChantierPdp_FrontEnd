@@ -1,6 +1,6 @@
 // src/pages/Chantier/createChantier.tsx
 import React from 'react';
-import { Container, Typography, Box } from '@mui/material';
+import { Container } from '@mui/material';
 import ChantierFormWrapper from '../../components/ChantierForm/ChantierFormWrapper'; // Adjust path if needed
 
 const CreateChantierPage: React.FC = () => {
