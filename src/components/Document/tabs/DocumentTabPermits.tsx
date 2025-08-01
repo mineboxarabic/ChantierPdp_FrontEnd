@@ -29,7 +29,7 @@ import CreateIcon from '@mui/icons-material/Create';
 
 import { DocumentDTO } from '../../../utils/entitiesDTO/DocumentDTO';
 import PermitDTO from '../../../utils/entitiesDTO/PermitDTO';
-import ObjectAnsweredDTO from '../../../utils/pdp/ObjectAnswered';
+import { ObjectAnsweredDTO } from '../../../utils/entitiesDTO/ObjectAnsweredDTO';
 import ObjectAnsweredObjects from '../../../utils/ObjectAnsweredObjects';
 import { SectionTitle, ListItemCard } from '../../../pages/Home/styles';
 import RisqueDTO from '../../../utils/entitiesDTO/RisqueDTO';

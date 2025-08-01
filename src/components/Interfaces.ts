@@ -5,7 +5,7 @@
 import RisqueDTO from "../utils/entitiesDTO/RisqueDTO";
 import { ImageModel } from "../utils/image/ImageModel";
 import ObjectAnsweredObjects from "../utils/ObjectAnsweredObjects";
-import ObjectAnsweredDTO from "../utils/pdp/ObjectAnswered";
+import { ObjectAnsweredDTO } from "../utils/entitiesDTO/ObjectAnsweredDTO";
 
 export interface ContentItem {
     id?: number;

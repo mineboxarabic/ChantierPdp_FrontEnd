@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Container, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import ManagerCRUD from "../../components/GenericCRUD/ManagerCRUD";
 import { EntityConfig, FieldType, CrudOperations } from "../../components/GenericCRUD/TypeConfig";
-import User from "../../utils/entities/User.ts";
+import { UserDTO as User } from "../../utils/entitiesDTO/UserDTO";
 import useUser from "../../hooks/useUser";
 
 // Create a theme instance (you can reuse the same theme from your RisqueManager)

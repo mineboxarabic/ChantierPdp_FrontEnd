@@ -1,14 +1,13 @@
 // usePermit.ts
 import { useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import Permit from "../utils/entities/Permit.ts";
-import PermitDTO from "../utils/entitiesDTO/PermitDTO.ts";
+import PermitDTO  from "../utils/entitiesDTO/PermitDTO";
 import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
 
-type PermitResponse = Permit | Permit[] | PermitDTO | PermitDTO[] | boolean | null;
+type PermitResponse = PermitDTO | PermitDTO[] | boolean | null;
 
 // Utility function to convert Permit to PermitDTO
-const convertPermitToDTO = (permit: Permit): PermitDTO => {
+const convertPermitToDTO = (permit: PermitDTO): PermitDTO => {
     const permitDTO = new PermitDTO(permit.id || 0, permit.title, permit.description, permit.logo);
     permitDTO.type = permit.type;
     permitDTO.pdfData = permit.pdfData;
@@ -29,8 +28,8 @@ export const getPermitById = async (id: number): Promise<ApiResponse<PermitDTO>>
 };
 
 // Function to get all permits
-export const getAllPermits = async (): Promise<ApiResponse<Permit[]>> => {
-    return fetchApi<Permit[]>(
+export const getAllPermits = async (): Promise<ApiResponse<PermitDTO[]>> => {
+    return fetchApi<PermitDTO[]>(
         "api/permit",
         "GET",
         null,
@@ -42,8 +41,8 @@ export const getAllPermits = async (): Promise<ApiResponse<Permit[]>> => {
 };
 
 // Function to update a permit
-export const updatePermit = async (permit: Permit, id: number): Promise<ApiResponse<Permit>> => {
-    return fetchApi<Permit>(
+export const updatePermit = async (permit: PermitDTO, id: number): Promise<ApiResponse<PermitDTO>> => {
+    return fetchApi<PermitDTO>(
         `api/permit/${id}`,
         "PATCH",
         permit,
@@ -71,8 +70,8 @@ export const deletePermit = async (id: number): Promise<ApiResponse<boolean>> =>
 };
 
 // Function to create a permit
-export const createPermit = async (permit: Permit): Promise<ApiResponse<Permit>> => {
-    return fetchApi<Permit>(
+export const createPermit = async (permit: PermitDTO): Promise<ApiResponse<PermitDTO>> => {
+    return fetchApi<PermitDTO>(
         "api/permit",
         "POST",
         permit,
@@ -142,11 +141,11 @@ const usePermit = () => {
         );
     };
 
-    const getAllPermitsHook = async (): Promise<Permit[]> => {
+    const getAllPermitsHook = async (): Promise<PermitDTO[]> => {
         return executeApiCall(
             () => getAllPermits(),
             "Error while getting all permits",
-            (data: Permit[]) => {
+            (data: PermitDTO[]) => {
                 const updatedPermits = new Map<number, PermitDTO>();
                 data.forEach(permit => {
                     if (permit.id !== undefined) {
@@ -159,7 +158,7 @@ const usePermit = () => {
         );
     };
 
-    const updatePermitHook = async (permit: Permit, id: number): Promise<Permit> => {
+    const updatePermitHook = async (permit: PermitDTO, id: number): Promise<PermitDTO> => {
         return executeApiCall(
             () => updatePermit(permit, id),
             "Error while updating permit"
@@ -181,7 +180,7 @@ const usePermit = () => {
         );
     };
 
-    const createPermitHook = async (permit: Permit): Promise<Permit> => {
+    const createPermitHook = async (permit: PermitDTO): Promise<PermitDTO> => {
         return executeApiCall(
             () => createPermit(permit),
             "Error while creating permit"

@@ -1,8 +1,7 @@
 // useDispositif.ts
 import { useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import Dispositif from "../utils/entities/Dispositif.ts";
-import DispositifDTO from "../utils/entitiesDTO/DispositifDTO.ts";
+import DispositifDTO from "../utils/entitiesDTO/DispositifDTO";
 import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
 
 type DispositifResponse =  DispositifDTO | DispositifDTO[] | boolean | null;
@@ -139,7 +138,7 @@ const useDispositif = () => {
         return executeApiCall(
             () => getAllDispositifs(),
             "Error while getting all dispositifs",
-            (data: Dispositif[]) => {
+            (data: DispositifDTO[]) => {
                 const updatedDispositifs = new Map<number, DispositifDTO>();
                 data.forEach(dispositif => {
                     if (dispositif.id !== undefined) {
@@ -173,7 +172,7 @@ const useDispositif = () => {
         );
     };
 
-    const createDispositifHook = async (dispositif: Dispositif): Promise<Dispositif> => {
+    const createDispositifHook = async (dispositif: DispositifDTO): Promise<DispositifDTO> => {
         return executeApiCall(
             () => createDispositif(dispositif),
             "Error while creating dispositif"
@@ -184,7 +183,7 @@ const useDispositif = () => {
         return executeApiCall(
             () => getDispositifsByIds(ids),
             "Error while getting dispositifs by IDs",
-            (data: Dispositif[]) => {
+            (data: DispositifDTO[]) => {
                 const updatedDispositifs = new Map<number, DispositifDTO>();
                 data.forEach(dispositif => {
                     if (dispositif.id !== undefined) {

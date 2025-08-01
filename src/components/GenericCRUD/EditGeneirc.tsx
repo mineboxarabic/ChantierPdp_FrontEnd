@@ -193,7 +193,7 @@ const EditGeneric = <T extends BaseEntity>({
                 if (crudOperations && !crudOperations.getReferences) return null;
                 if(!crudOperations) return null;
 
-                const options =   await crudOperations?.getReferences(field.entityType);
+                const options =   await crudOperations.getReferences(field.entityType);
 
                 return { field: field.key, options };
             } catch (error) {

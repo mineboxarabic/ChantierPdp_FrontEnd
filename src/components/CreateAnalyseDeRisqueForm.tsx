@@ -34,18 +34,20 @@ interface CreateEditAnalyseDeRisqueFormProps<PARENT extends ParentOAnalyseDeRisq
   currentAnalyse?: AnalyseDeRisqueDTO;
   isEdit?: boolean;
   title?: string;
+  selectedRisqueForCreation?: RisqueDTO | null;
 }
 
 const CreateEditAnalyseDeRisqueForm = <PARENT extends ParentOAnalyseDeRisque>({
-                                                                                onSave,
-                                                                                onCancel,
-                                                                                parent,
-                                                                                saveParent,
-                                                                                setIsChanged,
-                                                                                currentAnalyse,
-                                                                                isEdit = false,
-                                                                                title = "Créer ou Modifier une analyse de risque"
-                                                                              }: CreateEditAnalyseDeRisqueFormProps<PARENT>) => {
+    onSave,
+    onCancel,
+    parent,
+    saveParent,
+    setIsChanged,
+    currentAnalyse,
+    isEdit = false,
+    title = "Créer ou Modifier une analyse de risque",
+    selectedRisqueForCreation = null,
+}: CreateEditAnalyseDeRisqueFormProps<PARENT>) => {
   const { getAllRisques, risques, loading: risquesLoading, error: risquesError } = useRisque();
   const analyseHook = useAnalyseRisque();
 
@@ -53,16 +55,21 @@ const CreateEditAnalyseDeRisqueForm = <PARENT extends ParentOAnalyseDeRisque>({
   const [deroulementDesTaches, setDeroulementDesTaches] = useState<string>(currentAnalyse?.deroulementDesTaches || '');
   const [moyensUtilises, setMoyensUtilises] = useState<string>(currentAnalyse?.moyensUtilises || '');
   const [mesuresDePrevention, setMesuresDePrevention] = useState<string>(currentAnalyse?.mesuresDePrevention || '');
-  const [selectedRisque, setSelectedRisque] = useState<RisqueDTO | null>(currentAnalyse?.risque || null);
+  const [selectedRisque, setSelectedRisque] = useState<RisqueDTO | null>(currentAnalyse?.risque || selectedRisqueForCreation || null);
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
   const [isFormChanged, setIsFormChanged] = useState<boolean>(false);
 
-  // Set the form as changed whenever a field is modified
+  // Effect to fetch initial data
   useEffect(() => {
     getAllRisques();
-    setIsFormChanged(true);
-    setIsChanged(true);
-  }, [deroulementDesTaches, moyensUtilises, mesuresDePrevention, selectedRisque, setIsChanged]);
+  }, []); // Empty dependency array ensures this runs only once
+
+  // Effect to track form changes
+  useEffect(() => {
+    // Only set the form as changed if it's not the initial render
+    const timeout = setTimeout(() => setIsFormChanged(true), 100); // Debounce to avoid instant change state
+    return () => clearTimeout(timeout);
+  }, [deroulementDesTaches, moyensUtilises, mesuresDePrevention, selectedRisque]);
 
   // Select the first risque in the list if none is selected and risques are loaded
   useEffect(() => {
@@ -203,6 +210,7 @@ const CreateEditAnalyseDeRisqueForm = <PARENT extends ParentOAnalyseDeRisque>({
                         getOptionLabel={(option) => option.title}
                         value={selectedRisque}
                         onChange={(_, newValue) => setSelectedRisque(newValue)}
+                        readOnly={!!selectedRisqueForCreation}
                         renderInput={(params) => (
                             <TextField
                                 {...params}

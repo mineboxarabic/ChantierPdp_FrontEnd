@@ -1,6 +1,5 @@
 // src/routes/routes.js
-import ViewAllEntreprises from "./pages/Entreprise/ViewAllEntreprises.tsx";
-import ViewAllLocalisations from "./pages/Localisation/ViewAllLocalisations.tsx";
+
 
 import LivePDFPreview from "./PDF/LivePDFPreview.tsx";
 
@@ -16,7 +15,6 @@ import UserManager from "./pages/User/UserManager.tsx";
 import PermitManager from "./pages/Permit/PermiManager.tsx";
 import EntrepriseManager from "./pages/Entreprise/EntrepriseManager.tsx";
 import LocalisationManager from "./pages/Localisation/LocalisationManager.tsx";
-import PdpManager from "./components/Pdp/PdpManager.tsx";
 import WorkerManager from "./pages/Worker/WorkerManager.tsx";
 import EditCreateBdt from "./pages/BDT/EditCreateBDT.tsx";
 import ErrorBoundary from "./pages/ErrorBoundary.tsx";
@@ -126,10 +124,6 @@ PDP_LIST:{
         path: "/view/permits",
         element: <PermitManager />
     },
-    VIEW_PDPS: {
-        path: "/view/pdps",
-        element: <PdpManager />
-    },
     VIEW_WORKERS:
         {
         path: "/view/workers",
@@ -197,7 +191,6 @@ export const getRouteLists = () => {
         ROUTES.VIEW_RISQUES,
         ROUTES.VIEW_LOCALISATIONS,
         ROUTES.VIEW_PERMITS,
-        ROUTES.VIEW_PDPS,
         ROUTES.PREVIEW_PDF,
         ROUTES.VIEW_WORKERS,
         ROUTES.CREATE_BDT,

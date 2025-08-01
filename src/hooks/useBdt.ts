@@ -1,7 +1,7 @@
 // useBdt.ts
 import { useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import ObjectAnsweredDTO from "../utils/pdp/ObjectAnswered.ts";
+import { ObjectAnsweredDTO } from "../utils/entitiesDTO/ObjectAnsweredDTO.ts";
 import fetchApi, { ApiResponse} from "../api/fetchApi.ts";
 import { BdtDTO } from "../utils/entitiesDTO/BdtDTO.ts";
 
@@ -306,7 +306,11 @@ const useBdt = () => {
             (data: ObjectAnsweredDTO) => {
                 if (response && typeof response === 'object' && 'id' in response && response.id === bdtId) {
                     const updatedBdt = { ...response as BdtDTO };
-                    updatedBdt.relations.push(data);
+                    if (updatedBdt.relations) {
+                        updatedBdt.relations.push(data);
+                    } else {
+                        updatedBdt.relations = [data];
+                    }
                     setResponse(updatedBdt);
                 }
             }
@@ -320,9 +324,11 @@ const useBdt = () => {
             () => {
                 if (response && typeof response === 'object' && 'id' in response && response.id === bdtId) {
                     const updatedBdt = { ...response as BdtDTO };
-                    updatedBdt.relations = updatedBdt.relations.filter(
-                        r => !(r.objectId === objectId && r.objectType === objectType)
-                    );
+                    if (updatedBdt.relations) {
+                        updatedBdt.relations = updatedBdt.relations.filter(
+                            r => !(r.objectId === objectId && r.objectType === objectType)
+                        );
+                    }
                     setResponse(updatedBdt);
                 }
             }

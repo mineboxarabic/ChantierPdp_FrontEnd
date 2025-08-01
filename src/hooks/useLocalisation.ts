@@ -1,8 +1,8 @@
 // useLocalisation.ts
 import { useState } from "react";
 import { useNotifications } from '@toolpad/core/useNotifications';
-import Localisation from "../utils/entities/Localisation.ts";
-import LocalisationDTO from "../utils/entitiesDTO/LocalisationDTO.ts";
+import { LocalisationDTO as Localisation } from "../utils/entitiesDTO/LocalisationDTO";
+import { LocalisationDTO } from "../utils/entitiesDTO/LocalisationDTO.ts";
 import fetchApi, { ApiResponse} from "../api/fetchApi.ts";
 
 type LocalisationResponse = LocalisationDTO | LocalisationDTO[] | Localisation | Localisation[] | boolean | number | null;

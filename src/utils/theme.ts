@@ -33,11 +33,7 @@ const themeOptions: ThemeOptions = {
             dark: '#1565c0',
         },
         // Custom color
-        customColor: {
-            main: '#ff5722',
-            light: '#ff8a65',
-            dark: '#e64a19',
-        },
+        
         background: {
             default: '#f5f5f5',
             paper: '#ffffff',

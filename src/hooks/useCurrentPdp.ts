@@ -1,5 +1,5 @@
 import {useState} from "react";
-import {Pdp} from "../utils/entities/Pdp.ts";
+import { PdpDTO as Pdp } from "../utils/entitiesDTO/PdpDTO";
 
 const useCurrentPdp = ()=> {
     const [currentPdp, setCurrentPdp] = useState<Pdp | null>(null);

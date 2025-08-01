@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
+import { 
     Dialog,
     DialogActions,
     DialogContent,
@@ -8,6 +8,9 @@ import {
     Button,
     TextField,
     Alert,
+    Modal,
+    Box,
+    Typography,
 } from '@mui/material';
 import { 
     Business as BusinessIcon,
@@ -59,6 +62,9 @@ import DocumentTabSigning from '../../components/Document/tabs/DocumentTabSignin
 
 // Import dialog components
 import SelectOrCreateObjectAnswered from '../../components/Pdp/SelectOrCreateObjectAnswered';
+import CreateEditAnalyseDeRisqueForm from "../../components/CreateAnalyseDeRisqueForm";
+import RiskAnalysisManagementDialog from '../../components/Document/dialogs/RiskAnalysisManagementDialog';
+
 
 // Define the interface for URL params
 interface ParamTypes extends Record<string, string | undefined> {
@@ -74,7 +80,7 @@ interface ComplementOuRappel {
 
 // Define dialog data types
 type DialogData = RisqueDTO | DispositifDTO | PermitDTO | AnalyseDeRisqueDTO | AuditSecuDTO | null;
-type DialogTypes = 'complement' | 'chargeDeTravail' | 'donneurDOrdre' | 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'audits' | 'editAnalyseDeRisque' | '';
+export type DialogTypes = 'complement' | 'chargeDeTravail' | 'donneurDOrdre' | 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'audits' | 'editAnalyseDeRisque' | '';
 
 // Type to represent required permit types and the risks that need them (same as PDP)
 interface RequiredPermitType {
@@ -84,7 +90,25 @@ interface RequiredPermitType {
     linkedPermit?: PermitDTO; // The actual permit linked, if any
 }
 
+
+const modalStyle = { 
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: '80%', 
+    maxWidth: '800px', 
+    bgcolor: 'background.paper',
+    border: (theme:any) => `1px solid ${theme.palette.divider}`,
+    borderRadius: 2,
+    boxShadow: 24,
+    p: {xs:2, md:4},
+    maxHeight: '90vh',
+    overflowY: 'auto'
+};
+
 dayjs.locale('fr');
+
 
 const EditCreateBdt: React.FC = () => {
     const {id, chantierId} = useParams<ParamTypes>();
@@ -97,6 +121,7 @@ const EditCreateBdt: React.FC = () => {
     const [dialogData, setDialogData] = useState<DialogData>(null);
     const [editItemData, setEditItemData] = useState<AnalyseDeRisqueDTO | null>(null);
     const [openNestedModal, setOpenNestedModal] = useState<boolean>(false);
+    const [selectedRiskForAnalysis, setSelectedRiskForAnalysis] = useState<RisqueDTO | null>(null);
 
     // New complement form state
     const [newComplement, setNewComplement] = useState<ComplementOuRappel>({
@@ -300,15 +325,17 @@ const EditCreateBdt: React.FC = () => {
     // --- Dialog handlers (updated for new tab structure) ---
     
     // Enhanced dialog handlers for all dialog types
-    const handleOpenDialog = useCallback((type: DialogTypes, dataToEdit: DialogData = null) => {
+    const handleOpenDialog = useCallback((type: DialogTypes, data: DialogData = null) => {
         setDialogType(type);
-        setDialogData(null);
-        setEditItemData(null);
-        if (type === 'editAnalyseDeRisque' && dataToEdit) {
-             setEditItemData(dataToEdit as AnalyseDeRisqueDTO);
+        if (type === 'analyseDeRisques' && data) {
+            setSelectedRiskForAnalysis(data as RisqueDTO);
+            setOpenDialog(true);
+        } else if (type === 'editAnalyseDeRisque' && data) {
+            setEditItemData(data as AnalyseDeRisqueDTO);
             setOpenNestedModal(true);
         } else {
-             setOpenDialog(true);
+            setDialogData(data);
+            setOpenDialog(true);
         }
     }, []);
 
@@ -807,7 +834,6 @@ const EditCreateBdt: React.FC = () => {
                     allRisquesMap={allRisquesMap}
                     onOpenDialog={handleOpenDialog}
                     onDeleteRelation={deleteRelation}
-                    onUpdateRelationField={updateRelationField}
                     onAddRelation={addRelation}
                 />
             )
@@ -860,7 +886,7 @@ const EditCreateBdt: React.FC = () => {
 
             {/* Dialogs */}
             <Dialog
-                open={openDialog}
+                open={openDialog && (dialogType === 'complement' || dialogType === 'chargeDeTravail' || dialogType === 'donneurDOrdre')}
                 onClose={handleCloseDialog}
                 fullWidth
                 maxWidth="sm"
@@ -903,25 +929,128 @@ const EditCreateBdt: React.FC = () => {
                 </DialogActions>
             </Dialog>
 
-            {/* SelectOrCreate Dialogs for Relations */}
-            {(dialogType === 'risques' || dialogType === 'dispositifs' || dialogType === 'permits' || dialogType === 'analyseDeRisques' || dialogType === 'audits') && (
-                <SelectOrCreateObjectAnswered
-                    open={openDialog}
-                    setOpen={setOpenDialog}
-                    parent={formData}
-                    saveParent={setFormData}
-                    setIsChanged={() => {}}
-                    objectType={
-                        dialogType === 'risques' ? ObjectAnsweredObjects.RISQUE :
-                        dialogType === 'dispositifs' ? ObjectAnsweredObjects.DISPOSITIF :
-                        dialogType === 'permits' ? ObjectAnsweredObjects.PERMIT :
-                        dialogType === 'analyseDeRisques' ? ObjectAnsweredObjects.ANALYSE_DE_RISQUE :
-                        dialogType === 'audits' ? ObjectAnsweredObjects.AUDIT :
-                        ObjectAnsweredObjects.RISQUE
+            {/* --- Dialog for Adding/Selecting Items (Risques, Dispositifs, Permits, Audits) --- */}
+            <Dialog 
+                open={openDialog && (dialogType === 'risques' || dialogType === 'dispositifs' || dialogType === 'permits' || dialogType === 'audits')} 
+                onClose={handleCloseDialog} 
+                maxWidth="sm" 
+                fullWidth
+            >
+                <DialogTitle>
+                    Ajouter {
+                        dialogType === 'risques' ? 'un Risque' :
+                        dialogType === 'dispositifs' ? 'un Dispositif' :
+                        dialogType === 'permits' ? 'un Permis' :
+                        dialogType === 'audits' ? 'un Audit de Sécurité' : ''
                     }
-                    addRelation={addRelation}
-                />
-            )}
+                </DialogTitle>
+                <DialogContent dividers>
+                    {dialogType === 'risques' && (
+                        <SelectOrCreateObjectAnswered<RisqueDTO, BdtDTO>
+                            open={openDialog} 
+                            setOpen={setOpenDialog} 
+                            parent={formData} 
+                            saveParent={async(r)=>{
+                                setFormData(r);
+                                await getAllRisques();
+                            }} 
+                            setIsChanged={()=>{}}
+                            objectType={ObjectAnsweredObjects.RISQUE}
+                            addRelation={addRelation}
+                            renderAsContent={true}
+                        />
+                    )}
+                    {dialogType === 'dispositifs' && (
+                        <SelectOrCreateObjectAnswered<DispositifDTO, BdtDTO>
+                            open={openDialog} 
+                            setOpen={setOpenDialog} 
+                            parent={formData} 
+                            saveParent={async(e)=>{
+                                setFormData(e);
+                                await getAllDispositifs();
+                            }} 
+                            setIsChanged={()=>{}}
+                            objectType={ObjectAnsweredObjects.DISPOSITIF}
+                            addRelation={addRelation}
+                            renderAsContent={true}
+                        />
+                    )}
+                    {dialogType === 'permits' && (
+                        <SelectOrCreateObjectAnswered<PermitDTO, BdtDTO>
+                            open={openDialog} 
+                            setOpen={setOpenDialog} 
+                            parent={formData} 
+                            saveParent={setFormData} 
+                            setIsChanged={()=>{}}
+                            objectType={ObjectAnsweredObjects.PERMIT}
+                            addRelation={addRelation}
+                            renderAsContent={true}
+                        />
+                    )}
+                    {dialogType === 'audits' && (
+                        <SelectOrCreateObjectAnswered<AuditSecuDTO, BdtDTO>
+                            open={openDialog} 
+                            setOpen={setOpenDialog} 
+                            parent={formData} 
+                            saveParent={async(e)=>{
+                                setFormData(e);
+                                await getAllAuditSecus();
+                            }} 
+                            setIsChanged={()=>{}}
+                            objectType={ObjectAnsweredObjects.AUDIT}
+                            addRelation={addRelation}
+                            renderAsContent={true}
+                        />
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDialog}>Fermer</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* --- Modal for Creating/Editing AnalyseDeRisque --- */}
+            <Modal open={openNestedModal} onClose={handleCloseNestedModal} aria-labelledby="modal-analyse-risque-form">
+                 <Box sx={modalStyle}>
+                     <Typography id="modal-analyse-risque-form" variant="h6" component="h2" sx={{ mb: 2 }}>
+                         {editItemData ? "Modifier l'Analyse de Risque" : "Créer une Nouvelle Analyse de Risque"}
+                    </Typography>
+                     <CreateEditAnalyseDeRisqueForm
+                         key={editItemData ? `edit-${editItemData.id}` : 'create-analyse'}
+                         parent={formData}
+                         saveParent={setFormData}
+                         setIsChanged={() => {}}
+                         onSave={async (savedAnalyse) => {
+                             await getAllAnalyses();
+                             if (!editItemData && savedAnalyse.id) {
+                                 addRelation(ObjectAnsweredObjects.ANALYSE_DE_RISQUE, savedAnalyse);
+                             }
+                             handleCloseNestedModal();
+                          }}
+                         onCancel={handleCloseNestedModal}
+                         currentAnalyse={editItemData || undefined}
+                         isEdit={!!editItemData}
+                         selectedRisqueForCreation={selectedRiskForAnalysis}
+                     />
+                 </Box>
+             </Modal>
+
+            {/* --- Dialog for Managing Analyses for a specific risk --- */}
+            <RiskAnalysisManagementDialog
+                open={dialogType === 'analyseDeRisques'}
+                onClose={handleCloseDialog}
+                risk={selectedRiskForAnalysis}
+                allAnalyses={allAnalysesMap}
+                linkedAnalysisIds={new Set(formData.relations?.filter(r => r.objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE).map(r => r.objectId as number))}
+                onLinkAnalysis={(analysisId) => {
+                    addRelation(ObjectAnsweredObjects.ANALYSE_DE_RISQUE, { id: analysisId });
+                }}
+                onCreateAnalysis={(risk) => {
+                    handleCloseDialog();
+                    setEditItemData(null);
+                    setSelectedRiskForAnalysis(risk);
+                    setOpenNestedModal(true);
+                }}
+            />
         </LocalizationProvider>
     );
 };

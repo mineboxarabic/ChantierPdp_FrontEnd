@@ -1,7 +1,7 @@
 import React from "react";
 import { PDFViewer } from "@react-pdf/renderer";
 import PDP_Page from "./PDP_Page.tsx";
-import {Pdp} from "../utils/entities/Pdp.ts";
+import { PdpDTO as Pdp } from "../utils/entitiesDTO/PdpDTO";
 import usePdp from "../hooks/usePdp.ts";
 
 

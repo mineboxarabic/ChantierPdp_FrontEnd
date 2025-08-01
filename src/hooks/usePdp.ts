@@ -1,10 +1,9 @@
 // usePdp.ts
 import { useState } from "react";
 import { useNotifications } from '@toolpad/core/useNotifications';
-import { Pdp } from "../utils/entities/Pdp.ts";
+import { PdpDTO as Pdp } from "../utils/entitiesDTO/PdpDTO";
 import { PdpDTO } from "../utils/entitiesDTO/PdpDTO.ts";
-import ObjectAnsweredDTO from "../utils/pdp/ObjectAnswered.ts";
-import ObjectAnsweredEntreprises from "../utils/pdp/ObjectAnsweredEntreprises.ts";
+import { ObjectAnsweredDTO } from "../utils/entitiesDTO/ObjectAnsweredDTO.ts";
 import ObjectAnsweredObjects from "../utils/ObjectAnsweredObjects.ts";
 import fetchApi, { ApiResponse} from "../api/fetchApi.ts";
 

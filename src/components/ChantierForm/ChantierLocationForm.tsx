@@ -78,17 +78,13 @@ const ChantierLocationForm: FC<ChantierLocationFormProps> = ({
                             {selectedLocalisation.code && <Chip label={selectedLocalisation.code} color="primary" size="small" sx={{ ml: 1.5 }} />}
                         </Typography>
                         
-                        {selectedLocalisation.adresse && (
-                             <Typography variant="body2" color="text.secondary" sx={{mb: 0.5}}>
-                                <strong>Adresse:</strong> {selectedLocalisation.adresse}
-                            </Typography>
-                        )}
+                        
                         {selectedLocalisation.description && (
                             <Typography variant="body2" color="text.secondary">
                                 <strong>Description:</strong> {selectedLocalisation.description}
                             </Typography>
                         )}
-                         {!selectedLocalisation.adresse && !selectedLocalisation.description && (
+                         {!selectedLocalisation.description && (
                             <Typography variant="body2" color="text.secondary">
                                 Aucune description ou adresse supplémentaire fournie pour cette localisation.
                             </Typography>

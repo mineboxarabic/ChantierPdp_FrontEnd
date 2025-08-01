@@ -234,8 +234,10 @@ const EditItem = <T, >({
                                         <Button variant="outlined" color="primary" onClick={()=>{
 
                                             //open the file in a new tab
-                                            const newWindow:Window = window.open();
-                                            newWindow?.document.write(`<embed width="100%" height="100%" src="data:application/pdf;base64,${field.getter()}" type="application/pdf" />`);
+                                            const newWindow = window.open();
+                                            if (newWindow) {
+                                                newWindow.document.write(`<embed width="100%" height="100%" src="data:application/pdf;base64,${field.getter()}" type="application/pdf" />`);
+                                            }
                                         }}>
                                             Open File
                                         </Button>

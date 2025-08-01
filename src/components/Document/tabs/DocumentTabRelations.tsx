@@ -1,16 +1,14 @@
 // src/components/Document/tabs/DocumentTabRelations.tsx
 // Generic tab for managing RISQUE and DISPOSITIF relations (formerly PdpTabRisquesDispositifs)
-import React, { FC, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     Grid,
     Paper,
-    Typography,
     Button,
     Box,
     Alert,
     Stack,
     Divider,
-    CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import WarningIcon from '@mui/icons-material/Warning'; // For Risques
@@ -20,7 +18,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment'; // For Audits
 import { DocumentDTO } from '../../../utils/entitiesDTO/DocumentDTO';
 import RisqueDTO from '../../../utils/entitiesDTO/RisqueDTO';
 import DispositifDTO from '../../../utils/entitiesDTO/DispositifDTO';
-import ObjectAnsweredDTO from '../../../utils/pdp/ObjectAnswered';
+import { ObjectAnsweredDTO } from '../../../utils/entitiesDTO/ObjectAnsweredDTO';
 import ObjectAnsweredObjects from '../../../utils/ObjectAnsweredObjects';
 import { SectionTitle } from '../../../pages/Home/styles';
 
@@ -31,8 +29,8 @@ import ObjectAnsweredComponent from '../../../components/Steps/ObjectAnsweredCom
 // Import the multiple selection dialog
 import MultipleRiskSelectionDialog from '../../../components/MultipleSelectionDialog/MultipleRiskSelectionDialog';
 import { AuditSecuDTO } from '../../../utils/entitiesDTO/AuditSecuDTO';
+import { DialogTypes } from '../../../pages/BDT/EditCreateBDT';
 
-type DialogTypes = 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'editAnalyseDeRisque' | 'audits' | '';
 
 interface DocumentTabRelationsProps<T extends DocumentDTO> {
     formData: T;
@@ -90,6 +88,13 @@ const DocumentTabRelations = <T extends DocumentDTO>({
     ) => {
         if (!relations || relations.length === 0) return null;
 
+        const getDefaultTitle = (objectType: ObjectAnsweredObjects, objectId: number | undefined): string => {
+            if (objectType === ObjectAnsweredObjects.RISQUE) return `Risque #${objectId}`;
+            if (objectType === ObjectAnsweredObjects.DISPOSITIF) return `Dispositif #${objectId}`;
+            if (objectType === ObjectAnsweredObjects.AUDIT) return `Audit #${objectId}`;
+            return `Élément #${objectId}`;
+        };
+
         const col1Items: React.ReactNode[] = [];
         const col2Items: React.ReactNode[] = [];
         relations.forEach((relation, index) => {
@@ -98,7 +103,7 @@ const DocumentTabRelations = <T extends DocumentDTO>({
             if (relation.answer !== null) {
                 const displayItemData = itemData || {
                     id: relation.objectId,
-                    title: objectType === ObjectAnsweredObjects.RISQUE ? `Risque #${relation.objectId}` : `Dispositif #${relation.objectId}`,
+                    title: getDefaultTitle(objectType, relation.objectId),
                     description: "Élément récemment créé, rechargez la page pour voir les détails complets"
                 };
 

@@ -19,7 +19,7 @@ import {
     Delete as DeleteIcon
 } from '@mui/icons-material';
 import { BdtDTO } from '../../../utils/entitiesDTO/BdtDTO';
-import { AuditSecu } from '../../../utils/entities/AuditSecu';
+import { AuditSecuDTO as AuditSecu } from '../../../utils/entitiesDTO/AuditSecuDTO';
 import { ObjectAnsweredDTO } from '../../../utils/entitiesDTO/ObjectAnsweredDTO';
 import ObjectAnsweredObjects from '../../../utils/ObjectAnsweredObjects';
 

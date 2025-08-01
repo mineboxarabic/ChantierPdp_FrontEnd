@@ -1,12 +1,10 @@
 // useWorker.ts
 import { useState } from "react";
 import { useNotifications } from '@toolpad/core/useNotifications';
-import Worker from "../utils/entities/Worker.ts";
-import useWorkerSelection from "./useWorkerSelection.ts";
-import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
-import {WorkerDTO} from "../utils/entitiesDTO/WorkerDTO.ts";
-import WorkerChantierSelection from "../utils/entities/WorkerChantierSelection.ts";
+import { WorkerDTO } from "../utils/entitiesDTO/WorkerDTO.ts";
 import { WorkerChantierSelectionDTO } from "../utils/entitiesDTO/WorkerChantierSelectionDTO.ts";
+import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
+import useWorkerSelection from "./useWorkerSelection.ts";
 
 type WorkerResponse = WorkerDTO | WorkerDTO[] | boolean | number | null;
 

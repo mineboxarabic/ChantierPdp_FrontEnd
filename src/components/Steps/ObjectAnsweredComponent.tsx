@@ -6,7 +6,7 @@ import Typography from "@mui/material/Typography";
 import MenuItem from "@mui/material/MenuItem";
 import { useEffect, useState } from "react";
 import { ImageModel } from "../../utils/image/ImageModel.ts";
-import ObjectAnsweredDTO from "../../utils/pdp/ObjectAnswered.ts";
+import { ObjectAnsweredDTO } from "../../utils/entitiesDTO/ObjectAnsweredDTO.ts";
 import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
 import usePdp from "../../hooks/usePdp.ts";

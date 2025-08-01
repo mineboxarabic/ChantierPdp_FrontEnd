@@ -1,7 +1,7 @@
 // useWorkerSelection.ts
 import { useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import Chantier from "../utils/entities/Chantier.ts";
+import { ChantierDTO as Chantier } from "../utils/entitiesDTO/ChantierDTO";
 import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
 import {WorkerDTO} from "../utils/entitiesDTO/WorkerDTO.ts";
 import { WorkerChantierSelectionDTO } from "../utils/entitiesDTO/WorkerChantierSelectionDTO.ts";

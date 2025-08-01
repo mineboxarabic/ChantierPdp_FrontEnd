@@ -1,7 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import logo from "../assets/DANONE_LOGO_VERTICAL_SIMPLE.png";
-import {Pdp} from "../utils/entities/Pdp.ts";
+import { PdpDTO as Pdp } from "../utils/entitiesDTO/PdpDTO";
 import CostomPage from "./components/Page.tsx";
 import Grid from "./components/Grid.tsx";
 import Horizontal from "./components/Horizontal.tsx";

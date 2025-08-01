@@ -3,10 +3,7 @@ import { useCallback, useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
 import fetchApi, { ApiResponse} from "../api/fetchApi.ts";
 import {ChantierDTO} from "../utils/entitiesDTO/ChantierDTO.ts";
-import {
-    mapChantierDTOToChantier,
-    mapChantierToChantierDTO
-} from "../utils/mappers/ChantierMapper.ts";
+
 
 type ChantierResponse = ChantierDTO | ChantierDTO[] | number | boolean | null;
 
@@ -351,23 +348,7 @@ const useChantier = () => {
         }
     }, []);
 
-    // Helper functions for converting between DTO and entity
-    const toChantier = async (chantierDTO: ChantierDTO): Promise<ChantierDTO> => {
-        return await mapChantierDTOToChantier(chantierDTO);
-    };
-
-    const toChantierMulti = async (chantierDTOs: ChantierDTO[]): Promise<ChantierDTO[]> => {
-        const chantiers: ChantierDTO[] = [];
-        for (const chantierDTO of chantierDTOs) {
-            const chantier = await mapChantierDTOToChantier(chantierDTO);
-            chantiers.push(chantier);
-        }
-        return chantiers;
-    }
-
-    const toChantierDTO = async (chantier: ChantierDTO): Promise<ChantierDTO> => {
-        return await mapChantierToChantierDTO(chantier);
-    };
+    
 
     return {
         loading,
@@ -383,8 +364,6 @@ const useChantier = () => {
         getRecentChantiers: getRecentChantiersHook,
         existChantier: existChantierHook,
         chantiers,
-        toChantier, // Helper for converting from DTO to entity
-        toChantierDTO // Helper for converting from entity to DTO
     };
 };
 

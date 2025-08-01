@@ -1,7 +1,7 @@
 // useEntreprise.ts
 import { useEffect, useState } from "react";
 import { useNotifications } from '@toolpad/core/useNotifications';
-import { Entreprise } from "../utils/entities/Entreprise.ts";
+import { EntrepriseDTO as Entreprise } from "../utils/entitiesDTO/EntrepriseDTO";
 import { EntrepriseDTO } from "../utils/entitiesDTO/EntrepriseDTO.ts";
 import fetchApi, { ApiResponse} from "../api/fetchApi.ts";
 

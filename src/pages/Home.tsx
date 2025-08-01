@@ -275,11 +275,11 @@ const Home: React.FC = () => {
              <Typography variant="h6" component="h2" gutterBottom>Notifications / Actions Rapides</Typography>
              <Divider sx={{ mb: 2 }} />
             <List disablePadding>
-                <ListItem button>
+                <ListItem>
                     <ListItemIcon><NotificationsActiveIcon color="action" /></ListItemIcon>
                     <ListItemText primary="Inspection requise pour Chantier Alpha" secondary="Demain" />
                 </ListItem>
-                 <ListItem button>
+                 <ListItem>
                     <ListItemIcon><NotificationsActiveIcon color="action" /></ListItemIcon>
                     <ListItemText primary="Nouveau travailleur ajouté: J. Dupont" secondary="Aujourd'hui" />
                 </ListItem>

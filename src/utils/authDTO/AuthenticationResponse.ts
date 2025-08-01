@@ -1,5 +1,4 @@
-// TODO: import type { User } from '???'; // UNKNOWN IMPORT PATH FOR THIS BAD BOY
-
+import { UserDTO as User } from '../entitiesDTO/UserDTO';
 
 export interface AuthenticationResponse 
 {

@@ -172,7 +172,7 @@ describe('DocumentTabSigning', () => {
         });
     });
 
-    it('filters out already signed workers from selection dropdown', async () => {
+    it('Filters out already signed workers from selection dropdown', async () => {
         // Mock a signature for worker ID 1
         mockGetSignaturesByDocumentId.mockResolvedValue([
             { id: 1, workerId: 1, userId: null, prenom: 'John', nom: 'Doe' }

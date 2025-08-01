@@ -1,8 +1,7 @@
 // useRisque.ts
 import { useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import Risque from "../utils/entities/Risque.ts";
-import RisqueDTO from "../utils/entitiesDTO/RisqueDTO.ts";
+import RisqueDTO from "../utils/entitiesDTO/RisqueDTO";
 import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
 
 type RisqueResponse = RisqueDTO | RisqueDTO[] | boolean | null;

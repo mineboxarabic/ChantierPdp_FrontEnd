@@ -41,13 +41,16 @@ import useAnalyseRisque from '../../hooks/useAnalyseRisque';
 import useWoker from '../../hooks/useWoker';
 import { useAuth } from '../../hooks/useAuth';
 
+import useAuditSecu from '../../hooks/useAuditSecu';
+import { AuditSecuDTO } from '../../utils/entitiesDTO/AuditSecuDTO';
+
 // --- Types and DTOs ---
 import { PdpDTO } from '../../utils/entitiesDTO/PdpDTO';
 import  RisqueDTO  from '../../utils/entitiesDTO/RisqueDTO';
 import  DispositifDTO  from '../../utils/entitiesDTO/DispositifDTO';
 import  PermitDTO  from '../../utils/entitiesDTO/PermitDTO';
 import { AnalyseDeRisqueDTO } from '../../utils/entitiesDTO/AnalyseDeRisqueDTO';
-import ObjectAnsweredDTO from '../../utils/pdp/ObjectAnswered';
+import { ObjectAnsweredDTO } from '../../utils/entitiesDTO/ObjectAnsweredDTO';
 import ObjectAnsweredObjects from '../../utils/ObjectAnsweredObjects';
 import { getRoute } from "../../Routes.tsx";
 import { useNotifications } from "@toolpad/core/useNotifications";
@@ -68,6 +71,7 @@ import {
 import SelectOrCreateObjectAnswered from "../../components/Pdp/SelectOrCreateObjectAnswered";
 import CreateEditAnalyseDeRisqueForm from "../../components/CreateAnalyseDeRisqueForm";
 import RequiredPermitModal from './tabs/RequiredPermitModal.tsx';
+import RiskAnalysisManagementDialog from '../../components/Document/dialogs/RiskAnalysisManagementDialog.tsx';
 
 dayjs.locale('fr');
 
@@ -165,7 +169,7 @@ function a11yProps(index: number) {
     };
 }
 
-type DialogData = RisqueDTO | DispositifDTO | PermitDTO | AnalyseDeRisqueDTO | null;
+type DialogData = RisqueDTO | DispositifDTO | PermitDTO | AnalyseDeRisqueDTO | AuditSecuDTO | null;
 type DialogTypes = 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'editAnalyseDeRisque' | 'audits' | '';
 
 // Signature request interface for API
@@ -232,6 +236,7 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
     const [showRequiredPermitModal, setShowRequiredPermitModal] = useState(false);
     const [currentRisqueForModal, setCurrentRisqueForModal] = useState<RisqueDTO | null>(null);
     const [requiredPermitDataForModal, setRequiredPermitDataForModal] = useState<PermitDTO | null>(null);
+    const [selectedRiskForAnalysis, setSelectedRiskForAnalysis] = useState<RisqueDTO | null>(null);
 
     const initialFormData: PdpDTO = useMemo(() => ({
         // ... same as your existing initialFormData, ensuring `chantier` is set ...
@@ -263,6 +268,7 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
     const { getAllPermits, permits: allPermitsMap, createPermit } = usePermit(); // Map of permits
     const { getAllDispositifs, dispositifs: allDispositifsMap } = useDispositif(); // Map of dispositifs
     const { getAllAnalyses, analyses: allAnalysesMap, createAnalyse, updateAnalyse } = useAnalyseRisque(); // Map of analyses
+    const { getAllAuditSecus, auditSecus: allAuditsMap } = useAuditSecu(); // Map of audits
     const { getAllWorkers, workers: allWorkersMap } = useWoker(); // Map of workers
     const { connectedUser } = useAuth(); // Current user
 
@@ -274,7 +280,7 @@ const EditCreatePdp: React.FC<EditCreatePdpProps> = ({ chantierIdForCreation }) 
             try {
                 await Promise.all([
                     getAllEntreprises(), getAllRisques(), getAllDispositifs(),
-                    getAllPermits(), getAllAnalyses(), getAllWorkers()
+                    getAllPermits(), getAllAnalyses(), getAllAuditSecus(), getAllWorkers()
                 ]);
 
                 if (isEditMode && currentPdpId) {
@@ -513,15 +519,17 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
     setShowRequiredPermitModal(true);
 }, [allPermitsMap, formData.relations]);
 
-    const handleOpenDialog = useCallback((type: DialogTypes, dataToEdit: DialogData = null) => { /* ... */
+    const handleOpenDialog = useCallback((type: DialogTypes, data: DialogData = null) => {
         setDialogType(type);
-        setDialogData(null);
-        setEditItemData(null);
-        if (type === 'editAnalyseDeRisque' && dataToEdit) {
-             setEditItemData(dataToEdit as AnalyseDeRisqueDTO);
+        if (type === 'analyseDeRisques' && data) {
+            setSelectedRiskForAnalysis(data as RisqueDTO);
+            setOpenDialog(true);
+        } else if (type === 'editAnalyseDeRisque' && data) {
+            setEditItemData(data as AnalyseDeRisqueDTO);
             setOpenNestedModal(true);
         } else {
-             setOpenDialog(true);
+            setDialogData(data);
+            setOpenDialog(true);
         }
     }, []);
     const handleCloseDialog = useCallback(() => { /* ... */
@@ -575,6 +583,8 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                 await getAllPermits();
             } else if (objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE) {
                 await getAllAnalyses();
+            } else if (objectType === ObjectAnsweredObjects.AUDIT) {
+                await getAllAuditSecus();
             }
         } catch (error) {
             console.error(`Error refreshing ${objectType} data after adding relation:`, error);
@@ -949,6 +959,8 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                             errors={errors}
                             allRisquesMap={allRisquesMap}
                             allDispositifsMap={allDispositifsMap}
+                            allAuditsMap={allAuditsMap}
+                            showAudits={true}
                             onOpenDialog={handleOpenDialog}
                             onDeleteRelation={deleteRelation}
                             onUpdateRelationField={updateRelationField}
@@ -992,26 +1004,15 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                     </TabPanel>
                     
                     <TabPanel value={tabIndex} index={4}>
-                        {(() => {
-                            console.log('=== TabPanel 4 Debug ===');
-                            console.log('addRelation function:', addRelation);
-                            console.log('addRelation type:', typeof addRelation);
-                            console.log('addRelation defined:', !!addRelation);
-                            console.log('========================');
-                            return (
-                                <DocumentTabRiskAnalyses
-                                    formData={formData}
-                                    errors={errors}
-                                    allAnalysesMap={allAnalysesMap}
-                                    allRisquesMap={allRisquesMap}
-                                    onOpenDialog={handleOpenDialog}
-                                    onDeleteRelation={deleteRelation}
-                                    onUpdateRelationField={updateRelationField}
-                                    onAddRelation={addRelation}
-                                />
-                            );
-                        })()}
-                        
+                        <DocumentTabRiskAnalyses
+                            formData={formData}
+                            errors={errors}
+                            allAnalysesMap={allAnalysesMap}
+                            allRisquesMap={allRisquesMap}
+                            onOpenDialog={handleOpenDialog}
+                            onDeleteRelation={deleteRelation}
+                            onAddRelation={addRelation}
+                        />
                         <PdpTabNavigation
                             tabIndex={tabIndex}
                             isLastTab={tabIndex === 5}
@@ -1044,13 +1045,14 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
 
                     {/* ...existing code... */}
                     
-                    {/* --- Dialog for Adding/Selecting Items (Risques, Dispositifs, Permits) --- */}
-                    <Dialog open={openDialog && (dialogType === 'risques' || dialogType === 'dispositifs' || dialogType === 'permits')} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+                    {/* --- Dialog for Adding/Selecting Items (Risques, Dispositifs, Permits, Audits) --- */}
+                    <Dialog open={openDialog && (dialogType === 'risques' || dialogType === 'dispositifs' || dialogType === 'permits' || dialogType === 'audits')} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
                         <DialogTitle>
                             Ajouter {
                                 dialogType === 'risques' ? 'un Risque' :
                                 dialogType === 'dispositifs' ? 'un Dispositif' :
-                                dialogType === 'permits' ? 'un Permis' : ''
+                                dialogType === 'permits' ? 'un Permis' :
+                                dialogType === 'audits' ? 'un Audit de Sécurité' : ''
                             }
                         </DialogTitle>
                         <DialogContent dividers>
@@ -1066,6 +1068,7 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                                     setIsChanged={()=>{}}
                                     objectType={ObjectAnsweredObjects.RISQUE}
                                     addRelation={addRelation}
+                                    renderAsContent={true}
                                 />
                             )}
                             {dialogType === 'dispositifs' && (
@@ -1080,6 +1083,7 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                                     setIsChanged={()=>{}}
                                     objectType={ObjectAnsweredObjects.DISPOSITIF}
                                     addRelation={addRelation}
+                                    renderAsContent={true}
                                 />
                             )}
                             {dialogType === 'permits' && (
@@ -1091,6 +1095,22 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                                     setIsChanged={()=>{}}
                                     objectType={ObjectAnsweredObjects.PERMIT}
                                     addRelation={addRelation}
+                                    renderAsContent={true}
+                                />
+                            )}
+                            {dialogType === 'audits' && (
+                                <SelectOrCreateObjectAnswered<AuditSecuDTO, PdpDTO>
+                                    open={openDialog} 
+                                    setOpen={setOpenDialog} 
+                                    parent={formData} 
+                                    saveParent={async(e)=>{
+                                        setFormData(e);
+                                        await getAllAuditSecus();
+                                    }} 
+                                    setIsChanged={()=>{}}
+                                    objectType={ObjectAnsweredObjects.AUDIT}
+                                    addRelation={addRelation}
+                                    renderAsContent={true}
                                 />
                             )}
                         </DialogContent>
@@ -1099,117 +1119,7 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                         </DialogActions>
                     </Dialog>
 
-                    {/* --- Dialog for Adding Existing Analyse de Risque --- */}
-                    <Dialog open={openDialog && dialogType === 'analyseDeRisques'} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-                        <DialogTitle>Ajouter une Analyse de Risque</DialogTitle>
-                        <DialogContent dividers>
-                            <Button 
-                                variant="contained" 
-                                onClick={() => {
-                                    handleCloseDialog();
-                                    setEditItemData(null);
-                                    setOpenNestedModal(true);
-                                }}
-                                sx={{ mb: 3 }}
-                                fullWidth
-                            >
-                                Créer une nouvelle Analyse de Risque
-                            </Button>
-                            
-                            <Typography variant="h6" sx={{ mb: 2 }}>
-                                Ou sélectionner une analyse existante:
-                            </Typography>
-                            
-                            {allAnalysesMap && allAnalysesMap.size > 0 ? (
-                                <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
-                                    {Array.from(allAnalysesMap.values())
-                                        .filter(analyse => 
-                                            !formData.relations?.some(rel => 
-                                                rel.objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE && 
-                                                rel.objectId === analyse.id
-                                            )
-                                        )
-                                        .map(analyse => {
-                                            const risqueAssocie = analyse.risqueId ? allRisquesMap.get(analyse.risqueId) : null;
-                                            
-                                            return (
-                                                <Paper 
-                                                    key={analyse.id} 
-                                                    variant="outlined" 
-                                                    sx={{ 
-                                                        p: 2, 
-                                                        mb: 1, 
-                                                        cursor: 'pointer',
-                                                        '&:hover': { 
-                                                            backgroundColor: 'action.hover',
-                                                            borderColor: 'primary.main' 
-                                                        }
-                                                    }}
-                                                    onClick={() => {
-                                                        addRelation(ObjectAnsweredObjects.ANALYSE_DE_RISQUE, {
-                                                            id: analyse.id,
-                                                            title: analyse.nom || `Analyse #${analyse.id}`
-                                                        });
-                                                        handleCloseDialog();
-                                                    }}
-                                                >
-                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                        <Box sx={{ flexGrow: 1 }}>
-                                                            <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                                                                {analyse.nom || `Analyse #${analyse.id}`}
-                                                            </Typography>
-                                                            {risqueAssocie && (
-                                                                <Typography variant="body2" color="text.secondary">
-                                                                    Risque associé: {risqueAssocie.title}
-                                                                </Typography>
-                                                            )}
-                                                            {analyse.deroulementDesTaches && (
-                                                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                                                                    {analyse.deroulementDesTaches.length > 100 
-                                                                        ? `${analyse.deroulementDesTaches.substring(0, 100)}...` 
-                                                                        : analyse.deroulementDesTaches}
-                                                                </Typography>
-                                                            )}
-                                                        </Box>
-                                                        <Button 
-                                                            variant="outlined" 
-                                                            size="small"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                addRelation(ObjectAnsweredObjects.ANALYSE_DE_RISQUE, {
-                                                                    id: analyse.id,
-                                                                    title: analyse.nom || `Analyse #${analyse.id}`
-                                                                });
-                                                                handleCloseDialog();
-                                                            }}
-                                                        >
-                                                            Ajouter
-                                                        </Button>
-                                                    </Box>
-                                                </Paper>
-                                            );
-                                        })
-                                    }
-                                    {Array.from(allAnalysesMap.values())
-                                        .filter(analyse => 
-                                            !formData.relations?.some(rel => 
-                                                rel.objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE && 
-                                                rel.objectId === analyse.id
-                                            )
-                                        ).length === 0 && (
-                                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                                            Toutes les analyses disponibles sont déjà ajoutées à ce PDP.
-                                        </Typography>
-                                    )}
-                                </Box>
-                            ) : (
-                                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                                    Aucune analyse de risque disponible. Créez-en une nouvelle ci-dessus.
-                                </Typography>
-                            )}
-                        </DialogContent>
-                        <DialogActions><Button onClick={handleCloseDialog}>Fermer</Button></DialogActions>
-                    </Dialog>
+                    
 
                     {/* --- Modal for Creating/Editing AnalyseDeRisque --- */}
                     <Modal open={openNestedModal} onClose={handleCloseNestedModal} aria-labelledby="modal-analyse-risque-form">
@@ -1232,9 +1142,28 @@ const handleShowRequiredPermitInfo = useCallback((risque: RisqueDTO) => {
                                  onCancel={handleCloseNestedModal}
                                  currentAnalyse={editItemData || undefined}
                                  isEdit={!!editItemData}
+                                 selectedRisqueForCreation={selectedRiskForAnalysis}
                              />
                          </Box>
                      </Modal>
+
+                    {/* --- Dialog for Managing Analyses for a specific risk --- */}
+                    <RiskAnalysisManagementDialog
+                        open={dialogType === 'analyseDeRisques'}
+                        onClose={handleCloseDialog}
+                        risk={selectedRiskForAnalysis}
+                        allAnalyses={allAnalysesMap}
+                        linkedAnalysisIds={new Set(formData.relations?.filter(r => r.objectType === ObjectAnsweredObjects.ANALYSE_DE_RISQUE).map(r => r.objectId as number))}
+                        onLinkAnalysis={(analysisId) => {
+                            addRelation(ObjectAnsweredObjects.ANALYSE_DE_RISQUE, { id: analysisId });
+                        }}
+                        onCreateAnalysis={(risk) => {
+                            handleCloseDialog();
+                            setEditItemData(null);
+                            setSelectedRiskForAnalysis(risk);
+                            setOpenNestedModal(true);
+                        }}
+                    />
                 </Box>
             </Box>
 

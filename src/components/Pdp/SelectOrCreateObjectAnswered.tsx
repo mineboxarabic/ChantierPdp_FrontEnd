@@ -1,199 +1,266 @@
-import SelectOrCreate from "./SelectOrCreate";
-import {useState} from "react";
-import InfoDeBase from "../../utils/InfoDeBase.ts";
-import {ImageModel} from "../../utils/image/ImageModel.ts";
-import ObjectAnsweredObjects from "../../utils/ObjectAnsweredObjects.ts";
-import {SelectOrCreateObjectAnsweredProps} from "./SelectOrCreaeteInterfaces.ts";
-import usePdp, {getObjectAnswereds} from "../../hooks/usePdp.ts";
-import useDispositif, {createDispositif, getAllDispositifs} from "../../hooks/useDispositif.ts";
-import useRisque, {createRisque, getAllRisques} from "../../hooks/useRisque.ts";
-import usePermit, {createPermit, getAllPermits} from "../../hooks/usePermit.ts";
-import useAuditSecu, {createAuditSecu, getAllAuditSecus} from "../../hooks/useAuditSecu.ts";
-import useAnalyseRisque, {createAnalyse, getAllAnalyses} from "../../hooks/useAnalyseRisque.ts";
-import EditItem, {FieldConfig} from "../EditItem.tsx";
-import {risqueConfig} from "../../pages/Risque/RisqueManager.tsx";
-import {permitConfig} from "../../pages/Permit/PermiManager.tsx";
-import {auditSecuConfig} from "../../pages/AudiSecu/AudiSecuManager.tsx";
-import {AnalyseDeRisqueConfig} from "../../pages/AnalyseDeRisque/AnalyseDeRisqueManager.tsx";
-import EditGeneric from "../GenericCRUD/EditGeneirc.tsx";
-import {EntityConfig} from "../GenericCRUD/TypeConfig.ts";
-import { dispositifConfig } from "../../pages/dispositifs/DispositifManager.tsx";
-import ObjectAnsweredDTO from "../../utils/pdp/ObjectAnswered.ts";
-import { ContentItem, ParentOfRelations } from "../Interfaces.ts";
 
-// Interface for hook results that retrieve and manage linkable objects
-export interface LinkableHook<T extends ContentItem> {
-    getAllItems: () => Promise<T[]>;
-    getItem?: (id: number) => Promise<T>;
-    createItem?: (item: T) => Promise<T>;
-    updateItem?: (item: T, id: number) => Promise<T>;
-    deleteItem?: (id: number) => Promise<boolean>;
+import React, { useState, useCallback } from 'react';
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+    Tabs,
+    Tab,
+    Box,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemIcon,
+    Checkbox,
+    CircularProgress,
+    Alert
+} from '@mui/material';
+import { Add as AddIcon, List as ListIcon } from '@mui/icons-material';
+import GenericCreateForm, { FormConfig } from '../common/GenericCreateForm';
+import ObjectAnsweredObjects from '../../utils/ObjectAnsweredObjects';
+import { risqueConfig } from '../config/risqueConfig';
+import { dispositifConfig } from '../config/dispositifConfig';
+import { auditConfig } from '../config/auditConfig';
+import { permitConfig } from '../config/permitConfig';
+import useRisque from '../../hooks/useRisque';
+import useDispositif from '../../hooks/useDispositif';
+import useAuditSecu from '../../hooks/useAuditSecu';
+import usePermit from '../../hooks/usePermit';
+import { ContentItem, ParentOfRelations } from '../Interfaces';
+
+interface SelectOrCreateObjectAnsweredProps<ITEM extends ContentItem, PARENT extends ParentOfRelations> {
+    open: boolean;
+    setOpen: (open: boolean) => void;
+    parent: PARENT;
+    saveParent: (parent: PARENT) => void;
+    setIsChanged: (isChanged: boolean) => void;
+    objectType: ObjectAnsweredObjects;
+    addRelation: (objectType: ObjectAnsweredObjects, selectedItem: any) => void;
+    renderAsContent?: boolean; // New prop to render content only (no dialog wrapper)
 }
 
-function SelectOrCreateObjectAnswered<ITEM extends ContentItem, PARENT extends ParentOfRelations>(
-    {
-        open, setOpen, parent, saveParent, setIsChanged, objectType, addRelation
-    }: SelectOrCreateObjectAnsweredProps<ITEM, PARENT>
-) {
-    const [openCreateItem, setOpenCreateItem] = useState(false);
+const SelectOrCreateObjectAnswered = <ITEM extends ContentItem, PARENT extends ParentOfRelations>({
+    open,
+    setOpen,
+    parent,
+    saveParent,
+    setIsChanged,
+    objectType,
+    addRelation,
+    renderAsContent = false, // Default to false for backward compatibility
+}: SelectOrCreateObjectAnsweredProps<ITEM, PARENT>) => {
+    const [tab, setTab] = useState(0);
+    const [items, setItems] = useState<ITEM[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-        // Determine if an item is already selected/linked
-    const alreadySelected = (item: ITEM):boolean => {
-        const existingRelations = parent.relations as ObjectAnsweredDTO[] || [];
-        return existingRelations.some((existingRelation) => {
-            return existingRelation.objectId === item.id && existingRelation.objectType === objectType;
-        });
-    };
+    const { getAllRisques, createRisque } = useRisque();
+    const { getAllDispositifs, createDispositif } = useDispositif();
+    const { getAllAuditSecus, createAuditSecu } = useAuditSecu();
+    const { getAllPermits, createPermit } = usePermit();
 
-    const getItemImage = (item: ITEM) => {
-        return item?.logo
-            ? `data:${item.logo.mimeType};base64,${item.logo.imageData}`
-            : '';
-    };
-
-    //Fetch a list of all items line all risques,  all dispoisitfs
-    const fetchAllItems = async (): Promise<ITEM[]> => {
-       let response;
-        switch (objectType){
-            case ObjectAnsweredObjects.RISQUE:
-                response = await getAllRisques();
-                break;
-            case ObjectAnsweredObjects.DISPOSITIF:
-                response = await getAllDispositifs();
-                break;
-            case ObjectAnsweredObjects.PERMIT:
-                response = await getAllPermits();
-                break;
-            case ObjectAnsweredObjects.AUDIT:
-                response = await getAllAuditSecus();
-                break;
-            case ObjectAnsweredObjects.ANALYSE_DE_RISQUE:
-                response = await getAllAnalyses();
-                break;
-            default:
-                throw new Error("Invalid item type");
-        }
-
-        return response.data;
-    }
-    const getItemName = () => {
-        switch (objectType) {
-            case ObjectAnsweredObjects.RISQUE:
-                return "Risque";
-            case ObjectAnsweredObjects.DISPOSITIF:
-                return "Dispositif";
-            case ObjectAnsweredObjects.PERMIT:
-                return "Permis";
-            case ObjectAnsweredObjects.AUDIT:
-                return "Audit de sécurité";
-            case ObjectAnsweredObjects.ANALYSE_DE_RISQUE:
-                return "Analyse de risque";
-            default:
-                return "";
-        }
-    }
-
-    const getFieldConfig = (): EntityConfig => {
+    const getConfig = (): FormConfig => {
         switch (objectType) {
             case ObjectAnsweredObjects.RISQUE:
                 return risqueConfig;
             case ObjectAnsweredObjects.DISPOSITIF:
                 return dispositifConfig;
+            case ObjectAnsweredObjects.AUDIT:
+                return auditConfig;
             case ObjectAnsweredObjects.PERMIT:
                 return permitConfig;
-            case ObjectAnsweredObjects.AUDIT:
-                return auditSecuConfig;
-            case ObjectAnsweredObjects.ANALYSE_DE_RISQUE:
-                return AnalyseDeRisqueConfig;
             default:
-                throw new Error("Invalid item type");
+                throw new Error(`Unsupported object type: ${objectType}`);
         }
-    }
+    };
 
-
-    const onSumbit = async (item: ITEM) => {
-        // Create the item using the appropriate hook
-        let response;
-        console.log("updatedParentObject");
-
-        switch (objectType) {
-            case ObjectAnsweredObjects.RISQUE:
-                response = await createRisque(item as ITEM) as ITEM;
-                break;
-            case ObjectAnsweredObjects.DISPOSITIF:
-                response = await createDispositif(item as ITEM) as ITEM;
-                break;
-            case ObjectAnsweredObjects.PERMIT:
-                response = await createPermit(item as ITEM) as ITEM;
-                break;
-            case ObjectAnsweredObjects.AUDIT:
-                response = await createAuditSecu(item as ITEM) as ITEM;
-                break;
-            case ObjectAnsweredObjects.ANALYSE_DE_RISQUE:
-                response = await createAnalyse(item as ITEM) as ITEM;
-                break;
-            default:
-                throw new Error("Invalid item type");
+    const loadItems = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            let response: any[];
+            // Call the appropriate fetch function directly based on objectType
+            switch (objectType) {
+                case ObjectAnsweredObjects.RISQUE:
+                    response = await getAllRisques();
+                    break;
+                case ObjectAnsweredObjects.DISPOSITIF:
+                    response = await getAllDispositifs();
+                    break;
+                case ObjectAnsweredObjects.AUDIT:
+                    response = await getAllAuditSecus();
+                    break;
+                case ObjectAnsweredObjects.PERMIT:
+                    response = await getAllPermits();
+                    break;
+                default:
+                    throw new Error(`Unsupported object type: ${objectType}`);
+            }
+            setItems(response as ITEM[]);
+        } catch (e) {
+            setError("Failed to load items.");
+            console.error(e);
+        } finally {
+            setLoading(false);
         }
+    }, [objectType, getAllRisques, getAllDispositifs, getAllAuditSecus, getAllPermits]);
 
-        const createdItem = response.data as ITEM;
+    React.useEffect(() => {
+        if (open) {
+            // Reset tab and clear any previous errors when dialog opens
+            setTab(0);
+            setError(null);
+            setItems([]);
+        }
+    }, [open]);
 
-        // Link the newly created item to the parent
-        let updatedParentObject;
+    // Separate useEffect for loading items when tab changes to 0
+    React.useEffect(() => {
+        if (open && tab === 0) {
+            loadItems();
+        }
+    }, [open, tab]);
 
-        // Update the parent object with the new linked item
-        const existingItems = parent.relations || [];
-
-        //No id + answer = create new object answered
-        const objectAnswered: ObjectAnsweredDTO = {
-            answer: true,
-            objectId: createdItem.id,
-            objectType: objectType,
-        } as ObjectAnsweredDTO;
-        
-        updatedParentObject = {
-            ...parent,
-           relations: [...existingItems, objectAnswered],
+    const handleSave = async (formData: Record<string, any>) => {
+        try {
+            // Add default values based on object type
+            let enrichedFormData = { ...formData };
+            let newItem: any;
             
-        } as PARENT;
-
-        if(addRelation){
-            addRelation(objectType, createdItem);
-        }else{
-            saveParent(updatedParentObject);
+            if (objectType === ObjectAnsweredObjects.RISQUE) {
+                // Use uploaded logo or default empty image
+                enrichedFormData = {
+                    ...enrichedFormData,
+                    logo: enrichedFormData.logo || { imageData: '', mimeType: 'image/png' },
+                    permitType: 'NONE' // Default permit type
+                };
+                newItem = await createRisque(enrichedFormData as ITEM);
+            } else if (objectType === ObjectAnsweredObjects.DISPOSITIF) {
+                // Use uploaded logo or default empty image
+                enrichedFormData = {
+                    ...enrichedFormData,
+                    logo: enrichedFormData.logo || { imageData: '', mimeType: 'image/png' }
+                };
+                newItem = await createDispositif(enrichedFormData as ITEM);
+            } else if (objectType === ObjectAnsweredObjects.AUDIT) {
+                // Use uploaded logo or default empty image
+                enrichedFormData = {
+                    ...enrichedFormData,
+                    logo: enrichedFormData.logo || { imageData: '', mimeType: 'image/png' },
+                    typeOfAudit: enrichedFormData.typeOfAudit || 'INTERVENANTS'
+                };
+                newItem = await createAuditSecu(enrichedFormData as ITEM);
+            } else if (objectType === ObjectAnsweredObjects.PERMIT) {
+                // Use uploaded logo or default empty image
+                enrichedFormData = {
+                    ...enrichedFormData,
+                    logo: enrichedFormData.logo || { imageData: '', mimeType: 'image/png' },
+                    type: enrichedFormData.type || 'NONE'
+                };
+                newItem = await createPermit(enrichedFormData as ITEM);
+            } else {
+                throw new Error(`Unsupported object type: ${objectType}`);
+            }
+            
+            // The hooks return data directly, not wrapped in a response object
+            addRelation(objectType, newItem);
+            setOpen(false);
+        } catch (error) {
+            console.error('Error creating item:', error);
+            setError('Failed to create item.');
         }
-        setIsChanged(true);
-        setOpenCreateItem(false);
-    }
+    };
 
-    const createComponent = (): React.ReactNode =>{
-        return (
-            <EditGeneric config={getFieldConfig()} open={openCreateItem} onClose={()=>{setOpenCreateItem(false)}} onSubmit={onSumbit} />
-        )
-    }
+    const alreadySelected = (item: ITEM): boolean => {
+        return parent.relations?.some(rel => rel.objectId === item.id && rel.objectType === objectType) ?? false;
+    };
 
-    return (
+    // Content that will be shared between dialog and content-only modes
+    const dialogContent = (
         <>
-            <SelectOrCreate<ITEM, PARENT>
-                open={open}
-                objectType={objectType}
-                setOpen={setOpen}
-                parent={parent}
-                saveParent={saveParent}
-                setIsChanged={()=>{}}
-                fetchItems={fetchAllItems}
-                alreadySelected={alreadySelected}
-                getItemId={(item) => item.id as number}
-                getItemTitle={(item) => item.title}
-                getItemDescription={(item) => item.description}
-                getItemImage={getItemImage}
-                openCreate={openCreateItem}
-                setOpenCreate={setOpenCreateItem}
-                createComponent={createComponent()}
-                addRelation={addRelation}
-            />
+            <Tabs value={tab} onChange={(_, newValue) => setTab(newValue)} centered>
+                <Tab icon={<ListIcon />} label="Sélectionner existant" />
+                <Tab icon={<AddIcon />} label="Créer nouveau" />
+            </Tabs>
+
+            <Box sx={{ mt: 2 }}>
+                {tab === 0 && (
+                    <Box>
+                        {loading && (
+                            <Box display="flex" justifyContent="center" p={2}>
+                                <CircularProgress />
+                            </Box>
+                        )}
+                        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                        {!loading && !error && items.length === 0 && (
+                            <Alert severity="info" sx={{ mb: 2 }}>
+                                Aucun élément trouvé. Vous pouvez créer un nouveau {objectType.toLowerCase()}.
+                            </Alert>
+                        )}
+                        {!loading && !error && items.length > 0 && (
+                            <List dense>
+                                {items.map(item => (
+                                    <ListItem
+                                        key={item.id}
+                                        onClick={() => !alreadySelected(item) && addRelation(objectType, item)}
+                                        sx={{ 
+                                            opacity: alreadySelected(item) ? 0.5 : 1,
+                                            cursor: alreadySelected(item) ? 'not-allowed' : 'pointer',
+                                            '&:hover': {
+                                                backgroundColor: !alreadySelected(item) ? 'action.hover' : 'transparent'
+                                            }
+                                        }}
+                                    >
+                                        <ListItemIcon>
+                                            <Checkbox edge="start" checked={alreadySelected(item)} tabIndex={-1} disableRipple />
+                                        </ListItemIcon>
+                                        <ListItemText 
+                                            primary={(item as any).title || (item as any).nom || (item as any).question || 'Untitled'} 
+                                            secondary={(item as any).description || 'No description'} 
+                                        />
+                                    </ListItem>
+                                ))}
+                            </List>
+                        )}
+                    </Box>
+                )}
+                {tab === 1 && (
+                    <Box>
+                        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                        <GenericCreateForm
+                            config={getConfig()}
+                            onSave={handleSave}
+                            onCancel={() => setOpen(false)}
+                        />
+                    </Box>
+                )}
+            </Box>
         </>
     );
-}
 
-export default SelectOrCreateObjectAnswered as typeof SelectOrCreateObjectAnswered;
+    // If renderAsContent is true, return content only (for use inside another dialog)
+    if (renderAsContent) {
+        return (
+            <Box>
+                {dialogContent}
+            </Box>
+        );
+    }
+
+    // Otherwise, return full dialog (for backward compatibility)
+    return (
+        <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="md">
+            <DialogTitle>Ajouter un {objectType.toLowerCase()}</DialogTitle>
+            <DialogContent>
+                {dialogContent}
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setOpen(false)}>Annuler</Button>
+            </DialogActions>
+        </Dialog>
+    );
+};
+
+export default SelectOrCreateObjectAnswered;

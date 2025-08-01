@@ -47,9 +47,9 @@ const ChantierEnterprisesForm: FC<ChantierEnterprisesFormProps> = ({
     const availableEntreprisesExterieures = useMemo(() => {
         const selectedIds = new Set(formData.entrepriseExterieurs || []);
         if (formData.entrepriseUtilisatrice) {
-            selectedIds.add(formData.entrepriseUtilisatrice); // Exclude EU from EE list as well
+            selectedIds.add(formData.entrepriseUtilisatrice);
         }
-        return allEntreprises.filter(e => !selectedIds.has(e.id));
+        return allEntreprises.filter(e => !selectedIds.has(e.id as number));
     }, [formData.entrepriseExterieurs, formData.entrepriseUtilisatrice, allEntreprises]);
 
 

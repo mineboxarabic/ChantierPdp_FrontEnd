@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Container, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import ManagerCRUD from "../../components/GenericCRUD/ManagerCRUD";
 import { EntityConfig, FieldType, CrudOperations } from "../../components/GenericCRUD/TypeConfig";
-import Localisation from "../../utils/entities/Localisation.ts";
+import { LocalisationDTO as Localisation } from "../../utils/entitiesDTO/LocalisationDTO";
 import useLocalisation from "../../hooks/useLocalisation";
 
 // Create a theme instance (reusing the same theme for consistency)

@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Container, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import { createTheme } from '@mui/material';
 import ManagerCRUD from "../../components/GenericCRUD/ManagerCRUD";
-import { EntityConfig, FieldType, CrudOperations } from "../../components/GenericCRUD/TypeConfig";
+import { EntityConfig, FieldType, CrudOperations, EntityRef } from "../../components/GenericCRUD/TypeConfig";
 import useWorker from "../../hooks/useWoker.ts";
 import useEntreprise from "../../hooks/useEntreprise.ts";
 import usePdp from "../../hooks/usePdp";
 import useChantier from "../../hooks/useChantier";
-import { EntityRef } from "../../utils/EntityRef";
 import { WorkerDTO } from '../../utils/entitiesDTO/WorkerDTO.ts';
 
 // Create a theme instance (reusing the same theme for consistency)

@@ -1,8 +1,8 @@
 // useAnalyseRisque.ts
 import { useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import AnalyseDeRisqueDTO from "../utils/entitiesDTO/AnalyseDeRisqueDTO.ts";
-import ObjectAnsweredEntreprises from "../utils/pdp/ObjectAnsweredEntreprises.ts";
+import { AnalyseDeRisqueDTO } from "../utils/entitiesDTO/AnalyseDeRisqueDTO.ts";
+
 import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
 
 type AnalyseResponse = AnalyseDeRisqueDTO | AnalyseDeRisqueDTO[] | boolean | null;
@@ -71,18 +71,6 @@ export const deleteAnalyse = async (id: number): Promise<ApiResponse<boolean>> =
     );
 };
 
-// Function to link a risque to an analyse
-export const linkRisqueToAnalyse = async (analyseId: number, risqueId: number): Promise<ApiResponse<ObjectAnsweredEntreprises>> => {
-    return fetchApi<ObjectAnsweredEntreprises>(
-        `api/analyseDeRisque/${analyseId}/risque/${risqueId}`,
-        "POST",
-        null,
-        [
-            { status: 404, message: "Analyse or Risque not found" },
-            { status: -1, message: "Error while linking risque to analyse" }
-        ]
-    );
-};
 
 // React hook that uses the API functions
 const useAnalyseRisque = () => {
@@ -181,14 +169,6 @@ const useAnalyseRisque = () => {
         );
     };
 
-    const linkRisqueToAnalyseHook = async (analyseId: number, risqueId: number): Promise<ObjectAnsweredEntreprises> => {
-        return executeApiCall(
-            () => linkRisqueToAnalyse(analyseId, risqueId),
-            "Error while linking risque to analyse",
-            "Risque linked to analyse"
-        );
-    };
-
     return {
         response,
         error,
@@ -198,8 +178,7 @@ const useAnalyseRisque = () => {
         getAllAnalyses: getAllAnalysesHook,
         createAnalyse: createAnalyseHook,
         updateAnalyse: updateAnalyseHook,
-        deleteAnalyse: deleteAnalyseHook,
-        linkRisqueToAnalyse: linkRisqueToAnalyseHook
+        deleteAnalyse: deleteAnalyseHook
     };
 };
 

@@ -36,12 +36,12 @@ import {
     Work as WorkIcon,
     DocumentScanner as DocumentScannerIcon
 } from '@mui/icons-material';
-import Worker from "../../utils/entities/Worker.ts";
+import { WorkerDTO as Worker } from "../../utils/entitiesDTO/WorkerDTO";
 import useWoker from "../../hooks/useWoker.ts";
 import useChantier from "../../hooks/useChantier.ts";
 import useEntreprise from "../../hooks/useEntreprise.ts";
 import usePdp from "../../hooks/usePdp.ts";
-import { EntityRef } from "../../utils/EntityRef.ts";
+import { EntityRef } from "../../components/GenericCRUD/TypeConfig";
 import { TabPanel } from '@mui/lab';
 
 interface WorkerModalProps {
@@ -93,25 +93,7 @@ const WorkerModal: React.FC<WorkerModalProps> = ({
                 setEntrepriseName(entrepriseDetails.nom || '');
             }
 
-            // Fetch chantiers for this worker if available
-            if (workerDetails.chantier && workerDetails.chantier.length > 0) {
-                const chantiersData = await Promise.all(
-                    workerDetails.chantier.map((chantierRef: EntityRef) =>
-                        chantierService.getChantier(chantierRef.id as number)
-                    )
-                );
-                setChantiersList(chantiersData);
-            }
-
-            // Fetch PDPs for this worker if available
-            if (workerDetails.pdp && workerDetails.pdp.length > 0) {
-                const pdpsData = await Promise.all(
-                    workerDetails.pdp.map((pdpRef: EntityRef) =>
-                        pdpService.getPlanDePrevention(pdpRef.id as number)
-                    )
-                );
-                setPdpsList(pdpsData);
-            }
+            
         } catch (error) {
             console.error('Error fetching worker details:', error);
         } finally {
@@ -244,7 +226,7 @@ const WorkerModal: React.FC<WorkerModalProps> = ({
                             >
                                 <Tab icon={<ConstructionIcon />} label="Chantiers" />
                                 <Tab icon={<AssignmentIcon />} label="PDPs" />
-                                <Tab icon={<DocumentScannerIcon />} label="Signatures" />
+                                
                             </Tabs>
                         </Box>
 
@@ -316,34 +298,7 @@ const WorkerModal: React.FC<WorkerModalProps> = ({
                             </Box>
                         )}
 
-                        {currentTab === 2 && (
-                            <Box>
-                                <Typography variant="h6" gutterBottom>
-                                    Signatures
-                                </Typography>
-                                {worker.signatures && worker.signatures.length > 0 ? (
-                                    <List>
-                                        {worker.signatures.map((signature, index) => (
-                                            <ListItem key={index} divider>
-                                                <ListItemIcon>
-                                                    <DocumentScannerIcon />
-                                                </ListItemIcon>
-                                                <ListItemText
-                                                    primary={`Signature #${signature.id || index + 1}`}
-                                                    secondary={
-                                                        signature.id ? `Document ID: ${signature.id}` : 'No details available'
-                                                    }
-                                                />
-                                            </ListItem>
-                                        ))}
-                                    </List>
-                                ) : (
-                                    <Typography variant="body1" color="text.secondary">
-                                        No signatures recorded.
-                                    </Typography>
-                                )}
-                            </Box>
-                        )}
+                        
                     </>
                 ) : (
                     <Typography variant="body1" color="text.secondary" align="center">

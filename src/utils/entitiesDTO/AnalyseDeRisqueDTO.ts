@@ -1,6 +1,3 @@
-// TODO: import type { Risque } from '???'; // UNKNOWN IMPORT PATH FOR THIS BAD BOY
-
-import Risque from "../entities/Risque";
 import RisqueDTO from "./RisqueDTO";
 
 

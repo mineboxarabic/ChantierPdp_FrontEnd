@@ -214,17 +214,17 @@ const AuditManager: React.FC<AuditManagerProps> = ({
         }
     };
 
-    const handleDelete = async (auditId: number) => {
+    const handleDelete = async (audit: AuditSecuDTO) => {
         if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet audit ?')) {
             return;
         }
 
         setLoading(true);
         try {
-            const success = await auditHook.deleteAuditSecu(auditId);
+            const success = await auditHook.deleteAuditSecu(audit.id!);
             
             if (success) {
-                setAudits(prev => prev.filter(a => a.id !== auditId));
+                setAudits(prev => prev.filter(a => a.id !== audit.id));
                 showSnackbar('Audit supprimé avec succès', 'success');
                 onAuditUpdated?.();
             }
@@ -310,7 +310,7 @@ const AuditManager: React.FC<AuditManagerProps> = ({
                                 <Tooltip title="Supprimer">
                                     <IconButton
                                         color="error"
-                                        onClick={() => handleDelete(audit.id!)}
+                                        onClick={() => handleDelete(audit)}
                                     >
                                         <Delete />
                                     </IconButton>
@@ -374,7 +374,7 @@ const AuditManager: React.FC<AuditManagerProps> = ({
                                 <Tooltip title="Supprimer">
                                     <IconButton
                                         color="error"
-                                        onClick={() => handleDelete(audit.id!)}
+                                        onClick={() => handleDelete(audit)}
                                     >
                                         <Delete />
                                     </IconButton>

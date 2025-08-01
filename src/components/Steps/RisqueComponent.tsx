@@ -13,7 +13,7 @@ import worning from "../../assets/wornings/worning.webp"
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import MenuItem from "@mui/material/MenuItem";
-import ObjectAnsweredDTO from "../../utils/pdp/ObjectAnswered.ts";
+import { ObjectAnsweredDTO } from "../../utils/entitiesDTO/ObjectAnsweredDTO.ts";
 import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import {useEffect, useState} from "react";
 import useRisque from "../../hooks/useRisque.ts";

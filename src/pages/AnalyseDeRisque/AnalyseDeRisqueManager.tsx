@@ -1,10 +1,10 @@
 import React from 'react';
-import { Box, Container, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import { createTheme } from '@mui/material';
 import ManagerCRUD from "../../components/GenericCRUD/ManagerCRUD.tsx";
-import {EntityConfig, FieldType, CrudOperations, ImageModel} from "../../components/GenericCRUD/TypeConfig.ts";
-import useRisque from "../../hooks/useRisque.ts";
+import {EntityConfig, FieldType, CrudOperations} from "../../components/GenericCRUD/TypeConfig.ts";
+import useAnalyseRisque from "../../hooks/useAnalyseRisque.ts";
 import defaultImage from "../../assets/wornings/worning.webp"
-import RisqueDTO from '../../utils/entitiesDTO/RisqueDTO.ts';
+import {AnalyseDeRisqueDTO} from '../../utils/entitiesDTO/AnalyseDeRisqueDTO.ts';
 
 // Create a theme instance
 const theme = createTheme({
@@ -35,15 +35,16 @@ const theme = createTheme({
         },
     },
 });
-    // Define the entity configuration
+
+// Define the entity configuration for AnalyseDeRisque
 export const AnalyseDeRisqueConfig: EntityConfig = {
     entityType: 'analyseDeRisque',
     displayName: 'Analyse de Risque',
-    pluralName: 'Analyse de Risques',
+    pluralName: 'Analyses de Risque',
     keyField: 'id',
-    displayField: 'title',
-    searchFields: ['title', 'description'],
-    defaultSortField: 'title',
+    displayField: 'deroulementDesTaches',
+    searchFields: ['deroulementDesTaches', 'moyensUtilises', 'mesuresDePrevention'],
+    defaultSortField: 'id',
     defaultImage: defaultImage,
     fields: [
         {
@@ -57,88 +58,70 @@ export const AnalyseDeRisqueConfig: EntityConfig = {
             type: FieldType.EntityRef,
             label: 'Risque',
             helperText: 'Select the risk associated with this analysis',
-            reference:{
+            reference: {
                 fieldName: 'title',
-                  keyField: 'id',
-             },
+                keyField: 'id',
+            },
             required: true,
+            order: 1,
         },
         {
-            key: 'title',
+            key: 'deroulementDesTaches',
             type: FieldType.Text,
-            label: 'Title',
-            required: true,
-            order: 2,
-        },
-        {
-            key: 'description',
-            type: FieldType.Text,
-            label: 'Description',
+            label: 'Task Flow',
+            helperText: 'Describe the sequence of tasks and activities',
             multiline: true,
             rows: 4,
+            order: 2,
+            fullWidth: true,
+        },
+        {
+            key: 'moyensUtilises',
+            type: FieldType.Text,
+            label: 'Tools and Means Used',
+            helperText: 'List the tools, equipment, and resources used',
+            multiline: true,
+            rows: 3,
             order: 3,
             fullWidth: true,
         },
         {
-            key: 'travailleDangereux',
-            type: FieldType.Boolean,
-            label: 'Dangerous Work',
+            key: 'mesuresDePrevention',
+            type: FieldType.Text,
+            label: 'Prevention Measures',
+            helperText: 'Describe the safety and prevention measures implemented',
+            multiline: true,
+            rows: 4,
             order: 4,
-        },
-        {
-            key: 'travaillePermit',
-            type: FieldType.Boolean,
-            label: 'Requires Permit',
-            order: 5,
-        },
-        {
-            key: 'logo',
-            type: FieldType.Image,
-            label: 'Logo',
-            order: 6,
-            fullWidth: true
+            fullWidth: true,
         },
     ],
 };
-// Example component showing how to use the generic CRUD system
-const RisqueManager = () => {
-    // Get the hook for Risque CRUD operations
-    const risqueService = useRisque();
+// Example component showing how to use the generic CRUD system for AnalyseDeRisque
+const AnalyseDeRisqueManager = () => {
+    // Get the hook for AnalyseDeRisque CRUD operations
+    const analyseService = useAnalyseRisque();
 
-    const getDefaultImage = ():ImageModel => {
-
-        //Turn the image into a base64 string
-        const imageData = defaultImage;
-        const mimeType = 'image/webp';
-        return{
-            imageData:imageData,
-            mimeType :mimeType
-        }
-    }
-
-
-
-
-    // Create CRUD operations adapter from the risque service
-    const crudOperations: CrudOperations<RisqueDTO> = {
+    // Create CRUD operations adapter from the analyse service
+    const crudOperations: CrudOperations<AnalyseDeRisqueDTO> = {
         getAll: async () => {
-            const risques = await risqueService.getAllRisques();
-            return risques || [];
+            const analyses = await analyseService.getAllAnalyses();
+            return analyses || [];
         },
         getById: async (id: number) => {
-            const risque = await risqueService.getRisque(id);
-            return risque;
+            const analyse = await analyseService.getAnalyseRisque(id);
+            return analyse;
         },
-        create: async (entity: RisqueDTO) => {
-            const newRisque = await risqueService.createRisque(entity);
-            return newRisque;
+        create: async (entity: AnalyseDeRisqueDTO) => {
+            const newAnalyse = await analyseService.createAnalyse(entity);
+            return newAnalyse;
         },
-        update: async (id: number, entity: RisqueDTO) => {
-            const updatedRisque = await risqueService.updateRisque(entity, id);
-            return updatedRisque;
+        update: async (id: number, entity: AnalyseDeRisqueDTO) => {
+            const updatedAnalyse = await analyseService.updateAnalyse(id, entity);
+            return updatedAnalyse;
         },
         delete: async (id: number) => {
-            await risqueService.deleteRisque(id);
+            await analyseService.deleteAnalyse(id);
         },
     };
 
@@ -158,4 +141,4 @@ const RisqueManager = () => {
     );
 };
 
-export default RisqueManager;
+export default AnalyseDeRisqueManager;
