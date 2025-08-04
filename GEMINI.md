@@ -1,6 +1,6 @@
 # Development Guidelines for ChantierPdp Application
 
-- please read the entire project to know it's context and structrure and desgin i am using.
+- please read the src from Chantier_Frontend and read Chantier_Backend to understand project to know it's context and structure and design i am using.
 - if you are not sure about something, ask me before making changes.
 - if there is a not found module search for it in the project or a replacment and if you dont find it ask me or create it.
 - Read the entire document before starting any task.
@@ -8,7 +8,6 @@
 - if i ask you to make a task with backend check if an endpoint already exists that can be used or modified instead of creating a new one.
 
 ## 🚀 Overview
-
 This is a React TypeScript frontend with Spring Boot backend application for managing construction site safety documentation (PDP, BDT, Risk Analysis). Follow these guidelines for efficient development and maintainability.
 
 1. **Analyze Requirements**

@@ -4,7 +4,7 @@ import { BdtDTO } from '../utils/entitiesDTO/BdtDTO';
 import RisqueDTO from '../utils/entitiesDTO/RisqueDTO';
 import { AnalyseDeRisqueDTO } from '../utils/entitiesDTO/AnalyseDeRisqueDTO';
 import { AuditSecuDTO } from '../utils/entitiesDTO/AuditSecuDTO';
-import BdtPage from '../PDF/BDT_Page'; // Adjust the import path if necessary
+import BdtPageModern from '../PDF/BDT_Page_Modern'; // Updated to use the modern dynamic PDF
 import { useNotifications } from '@toolpad/core/useNotifications';
 
 export const useBdtPdfGeneration = () => {
@@ -23,7 +23,7 @@ export const useBdtPdfGeneration = () => {
         setIsGenerating(true);
         try {
             const blob = await pdf(
-                <BdtPage 
+                <BdtPageModern 
                     currentBdt={bdtData}
                     chantierData={chantierData}
                     entrepriseData={entrepriseData}

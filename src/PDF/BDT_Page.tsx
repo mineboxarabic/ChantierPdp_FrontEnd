@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
+import { Document, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
 import logo from "../assets/DANONE_LOGO_VERTICAL_SIMPLE.png";
 import { BdtDTO } from "../utils/entitiesDTO/BdtDTO.ts";
 import CustomPage from "./components/Page.tsx";
@@ -8,6 +8,12 @@ import { ChantierDTO } from '../utils/entitiesDTO/ChantierDTO.ts';
 import RisqueDTO from '../utils/entitiesDTO/RisqueDTO.ts';
 import { AnalyseDeRisqueDTO } from '../utils/entitiesDTO/AnalyseDeRisqueDTO.ts';
 import { AuditSecuDTO } from '../utils/entitiesDTO/AuditSecuDTO.ts';
+
+// Register emoji source for PDF emoji support
+Font.registerEmojiSource({
+    format: 'png',
+    url: 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/',
+});
 
 const styles = StyleSheet.create({
     // Header styles
@@ -72,12 +78,14 @@ const styles = StyleSheet.create({
     companySection: {
         flexDirection: 'row',
         marginBottom: 15,
+        flexWrap: 'wrap',
     },
     companyBox: {
         width: '50%',
         border: '2px solid #000',
         padding: 8,
         marginRight: 5,
+        flexShrink: 0,
     },
     companyBoxRight: {
         width: '50%',
