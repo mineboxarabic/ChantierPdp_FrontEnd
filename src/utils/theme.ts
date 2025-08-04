@@ -2,23 +2,7 @@
 import { createTheme, ThemeOptions } from '@mui/material/styles';
 
 // Define custom theme options if you need to extend the default theme type
-declare module '@mui/material/styles' {
-    interface Palette {
-        customColor?: {
-            main: string;
-            light: string;
-            dark: string;
-        };
-    }
 
-    interface PaletteOptions {
-        customColor?: {
-            main: string;
-            light: string;
-            dark: string;
-        };
-    }
-}
 
 const themeOptions: ThemeOptions = {
     palette: {

@@ -5,17 +5,17 @@ import CustomPage from "./components/Page.tsx";
 import { EntrepriseDTO } from '../utils/entitiesDTO/EntrepriseDTO.ts';
 import { ChantierDTO } from '../utils/entitiesDTO/ChantierDTO.ts';
 import RisqueDTO from '../utils/entitiesDTO/RisqueDTO.ts';
-import { AnalyseDeRisqueDTO } from '../utils/entitiesDTO/AnalyseDeRisqueDTO.ts';
-import { AuditSecuDTO } from '../utils/entitiesDTO/AuditSecuDTO.ts';
 import {
-    ModernCard,
-    ModernField,
-    ModernTable,
     ModernIcon,
-    ModernHeader,
-    RiskItem,
-    ModernSignature
+    OfficialCard,
+    OfficialField,
+    OfficialTable,
+    OfficialHeader,
+    OfficialRiskItem,
+    OfficialSignature
 } from './components';
+import DispositifDTO from "../utils/entitiesDTO/DispositifDTO.ts";
+import DispositifPdfItem from "./components/DispositifPdfItem.tsx";
 
 // Register emoji source for PDF emoji support
 Font.registerEmojiSource({
@@ -150,17 +150,10 @@ interface BdtPageProps {
     chantierData?: ChantierDTO;
     entrepriseData?: EntrepriseDTO;
     allRisksMap?: Map<number, RisqueDTO>;
-    allAnalyseDeRisque?: Map<number, AnalyseDeRisqueDTO>;
-    allAudits?: Map<number, AuditSecuDTO>;
+    allDispositifsMap?: Map<number, DispositifDTO>;
 }
 
-const BDT_Page_Modern = ({ currentBdt, chantierData, entrepriseData, allRisksMap, allAnalyseDeRisque, allAudits }: BdtPageProps) => {
-    // Helper function to get enterprise type label
-    const getEntrepriseTypeLabel = (type?: string) => {
-        if (type === 'EE') return 'Entreprise Extérieure';
-        if (type === 'EU') return 'Entreprise Utilisatrice';
-        return '';
-    };
+const BDT_Page_Modern = ({ currentBdt, chantierData, entrepriseData, allRisksMap, allDispositifsMap }: BdtPageProps) => {
 
     // Helper function to get risk icon based on risk type
     const getRiskIcon = (risque: RisqueDTO): string => {
@@ -181,34 +174,22 @@ const BDT_Page_Modern = ({ currentBdt, chantierData, entrepriseData, allRisksMap
         return risque.travailleDangereux ? '⚠️' : '📋';
     };
 
-    // Get analyses de risque from the relations
-    const getAnalysesDeRisque = () => {
-        if (!currentBdt.relations || !allAnalyseDeRisque) return [];
-        
-        return currentBdt.relations
-            .filter(rel => rel.objectType?.toString().toLowerCase().includes('risque'))
-            .map(rel => allAnalyseDeRisque.get(rel.objectId))
-            .filter(Boolean) as AnalyseDeRisqueDTO[];
-    };
-
     // Get risks that are marked as dangerous work from the relations
     const getRisquesParticuliers = () => {
         if (!currentBdt.relations || !allRisksMap) return [];
         
         return currentBdt.relations
-            .filter(rel => rel.objectType?.toString().toLowerCase().includes('risque'))
+            .filter(rel => rel.objectType === 'RISQUE' || rel.objectType?.toString() === 'RISQUE')
             .map(rel => allRisksMap.get(rel.objectId))
             .filter(Boolean) as RisqueDTO[];
     };
 
-    // Get audits that are categorized by type
-    const getAuditsByType = (auditType: string) => {
-        if (!currentBdt.relations || !allAudits) return [];
-        
+    const getDispositifs = () => {
+        if (!currentBdt.relations || !allDispositifsMap) return [];
         return currentBdt.relations
-            .filter(rel => rel.objectType?.toString().toLowerCase().includes('audit'))
-            .map(rel => allAudits.get(rel.objectId))
-            .filter(audit => audit && audit.typeOfAudit === auditType) as AuditSecuDTO[];
+            .filter(rel => rel.objectType === 'DISPOSITIF' || rel.objectType?.toString() === 'DISPOSITIF')
+            .map(rel => allDispositifsMap.get(rel.objectId))
+            .filter(Boolean) as DispositifDTO[];
     };
 
     // Helper function to chunk array into smaller arrays for dynamic pages
@@ -220,10 +201,17 @@ const BDT_Page_Modern = ({ currentBdt, chantierData, entrepriseData, allRisksMap
         return chunks;
     };
 
-    const analysesDeRisque = getAnalysesDeRisque();
     const risquesParticuliers = getRisquesParticuliers();
-    const auditIntervenants = getAuditsByType('INTERVENANTS');
-    const auditOutils = getAuditsByType('OUTILS');
+    const dispositifs = getDispositifs();
+    const epiDispositifs = dispositifs.filter(d => d.type === 'EPI');
+    const epcDispositifs = dispositifs.filter(d => d.type === 'EPC');
+
+    // Debug logging
+    console.log('BDT Relations:', currentBdt.relations);
+    console.log('All Dispositifs Map:', allDispositifsMap);
+    console.log('Filtered Dispositifs:', dispositifs);
+    console.log('EPI Dispositifs:', epiDispositifs);
+    console.log('EPC Dispositifs:', epcDispositifs);
 
     // Dynamically split risks if there are too many (more than 8 risks)
     const riskChunks = risquesParticuliers.length > 8 
@@ -235,137 +223,205 @@ const BDT_Page_Modern = ({ currentBdt, chantierData, entrepriseData, allRisksMap
             {/* Page 1: Basic Information */}
             <CustomPage>
                 <View style={styles.pageContainer}>
-                    {/* Modern Header */}
-                    <ModernHeader
+                    {/* Official Professional Header */}
+                    <OfficialHeader
                         documentNumber={currentBdt.id}
                         date={currentBdt.date ? new Date(currentBdt.date).toLocaleDateString('fr-FR') : undefined}
+                        version="V2.0 - 2024"
+                        classification="INTERNE"
                     />
 
-                    {/* Company Information Section */}
+                    {/* Company Information Section - Following the JSON structure */}
                     <View style={styles.companySection}>
                         <View style={styles.companyColumn}>
-                            <ModernCard 
+                            <OfficialCard 
                                 title="ENTREPRISE UTILISATRICE" 
                                 subtitle="DANONE"
                                 accentColor="#0066cc"
+                                sectionNumber="1.1"
                             >
-                                <ModernField label="Raison sociale" value="DANONE" />
-                                <ModernField label="Adresse" value="50 Impasse du Dan Perdu" />
-                                <ModernField label="Ville" value="38540 Saint Just Chaleyssin" />
-                                <ModernField label="Téléphone" value="04.72.70.11.11" />
-                                <ModernField label="Donneur d'ordre" value="" placeholder="À remplir" />
-                                <ModernField label="Fonction" value="" placeholder="À remplir" />
-                            </ModernCard>
+                                <OfficialField label="Raison sociale" value="DANONE" />
+                                <OfficialField label="Adresse" value="50 Impasse du Dan Perdu, 38540 Saint Just Chaleyssin" />
+                                <OfficialField label="N° de téléphone" value="04.72.70.11.11" />
+                                <OfficialField label="Donneur d'ordre" value={currentBdt.donneurDOrdre || ""} placeholder="À remplir" required />
+                                <OfficialField label="Fonction (Donneur)" value="" placeholder="Man please - fonctionDonneur missing in BdtDTO" required />
+                            </OfficialCard>
                         </View>
 
                         <View style={styles.companyColumnLast}>
-                            <ModernCard 
+                            <OfficialCard 
                                 title="ENTREPRISE EXTÉRIEURE" 
                                 subtitle="Prestataire"
                                 accentColor="#009900"
+                                sectionNumber="1.2"
                             >
-                                <ModernField 
+                                <OfficialField 
                                     label="Raison sociale" 
                                     value={entrepriseData?.raisonSociale || entrepriseData?.nom} 
                                     placeholder="Non renseigné"
+                                    required
                                 />
-                                <ModernField 
+                                <OfficialField 
                                     label="Adresse" 
                                     value={entrepriseData?.address} 
                                     placeholder="Non renseignée"
+                                    required
                                 />
-                                <ModernField 
-                                    label="Téléphone" 
+                                <OfficialField 
+                                    label="N° de téléphone" 
                                     value={entrepriseData?.numTel} 
                                     placeholder="Non renseigné"
+                                    required
                                 />
-                                <ModernField 
-                                    label="Type" 
-                                    value={getEntrepriseTypeLabel(entrepriseData?.type)} 
-                                    placeholder="Non défini"
-                                />
-                                <ModernField label="Responsable chantier" value="" placeholder="À remplir" />
-                            </ModernCard>
+                                <OfficialField label="Responsable chantier" value="" placeholder="Man please - responsableChantier missing in BdtDTO" required />
+                                <OfficialField label="Fonction (Responsable)" value="" placeholder="Man please - fonctionResponsable missing in BdtDTO" required />
+                            </OfficialCard>
                         </View>
                     </View>
 
-                    {/* Work Details Section */}
-                    <ModernCard 
-                        title="IDENTIFICATION DU CHANTIER" 
-                        subtitle="Nature des risques et équipements"
+                    {/* Work Details Section - Enhanced with JSON structure fields */}
+                    <OfficialCard 
+                        title="INFORMATIONS GÉNÉRALES" 
+                        subtitle="Identification du chantier et des travaux"
                         accentColor="#ff9900"
+                        sectionNumber="2"
                     >
-                        <ModernField label="Nom du BDT" value={currentBdt?.nom} placeholder="Non renseigné" />
-                        <ModernField 
+                        <OfficialField label="Nom du BDT" value={currentBdt?.nom} placeholder="Non renseigné" required />
+                        <OfficialField 
                             label="Date BDT" 
                             value={currentBdt?.date ? new Date(currentBdt.date).toLocaleDateString('fr-FR') : undefined} 
                             placeholder="Non renseignée"
+                            required
                         />
-                        <ModernField label="Lieu d'intervention" value={chantierData?.nom} placeholder="Non renseigné" />
-                        <ModernField 
+                        <OfficialField label="Lieu d'intervention" value={chantierData?.nom} placeholder="Man please - lieuIntervention missing in ChantierDTO" required />
+                        <OfficialField 
                             label="Date début" 
                             value={chantierData?.dateDebut ? new Date(chantierData.dateDebut).toLocaleDateString('fr-FR') : undefined} 
                             placeholder="Non renseignée"
+                            required
                         />
-                        <ModernField 
+                        <OfficialField 
                             label="Date fin" 
                             value={chantierData?.dateFin ? new Date(chantierData.dateFin).toLocaleDateString('fr-FR') : undefined} 
                             placeholder="Non renseignée"
+                            required
                         />
-                        <ModernField 
-                            label="Tâches autorisées" 
-                            value={currentBdt?.tachesAuthoriser} 
-                            placeholder="Non définies"
-                        />
-                        <ModernField 
-                            label="Personnel informé" 
-                            value={currentBdt?.personnelDansZone ? 'OUI' : 'NON'} 
-                        />
-                        <ModernField 
-                            label="Effectif maxi sur chantier" 
-                            value={chantierData?.effectifMaxiSurChantier} 
+                        <OfficialField 
+                            label="Effectif max sur chantier" 
+                            value={chantierData?.effectifMaxiSurChantier?.toString()} 
                             placeholder="Non défini"
+                            required
                         />
-                        <ModernField 
+                        <OfficialField 
+                            label="Nom du référent COVID" 
+                            value="" 
+                            placeholder="Man please - referentCovid missing in ChantierDTO"
+                        />
+                        <OfficialField 
                             label="Horaires de travail" 
                             value={currentBdt?.horaireDeTravaille} 
                             placeholder="Non définis"
+                            required
                         />
-                    </ModernCard>
+                        <OfficialField 
+                            label="Personnel Danone informé" 
+                            value={currentBdt?.personnelDansZone ? 'OUI' : 'NON'} 
+                            required
+                        />
+                        <OfficialField 
+                            label="Tâches autorisées" 
+                            value={currentBdt?.tachesAuthoriser} 
+                            placeholder="Non définies"
+                            fullWidth
+                            required
+                        />
+                    </OfficialCard>
 
-                    {/* Safety Equipment Section */}
-                    <ModernCard 
+                    {/* Risques / Procédures d'Urgence Section */}
+                    <OfficialCard 
+                        title="RISQUES / PROCÉDURES D'URGENCE" 
+                        subtitle="Coactivité et procédures d'évacuation"
+                        accentColor="#dc2626"
+                        sectionNumber="3"
+                    >
+                        <OfficialField label="Risques de coactivité" value="" placeholder="Man please - coactivite missing in RisqueDTO" fullWidth />
+                        <OfficialField label="Mode opératoire" value="" placeholder="Man please - modeOperatoire missing in RisqueDTO" fullWidth />
+                        <OfficialField label="Moyens utilisés" value="" placeholder="Man please - moyensUtilises missing in RisqueDTO" fullWidth />
+                        <OfficialField label="Evacuation incendie" value="" placeholder="Man please - evacuationIncendie missing in DispositifDTO" />
+                        <OfficialField label="Evacuation ammoniac" value="" placeholder="Man please - evacuationAmmoniac missing in DispositifDTO" />
+                        <OfficialField label="Confinement" value="" placeholder="Man please - confinement missing in DispositifDTO" />
+                        <OfficialField 
+                            label="Numéros d'urgence" 
+                            value="Accident: 04.72.70.1100 (Infirmerie) • 1520 (Poste Garde) • 15 (SAMU) | Incendie: 1520 (Poste Garde) • 04.72.70.1213 • 18 (Pompiers)" 
+                            fullWidth
+                        />
+                    </OfficialCard>
+
+                    {/* Tâches et Risques Section */}
+                    <OfficialCard 
+                        title="TÂCHES ET RISQUES" 
+                        subtitle="Analyses des risques spécifiques"
+                        accentColor="#8b5cf6"
+                        sectionNumber="4"
+                    >
+                        <OfficialField label="Travaux en hauteur" value="" placeholder="Man please - travauxEnHauteur missing in AnalyseDeRisqueDTO" />
+                        <OfficialField label="Utilisation de grue" value="" placeholder="Man please - utilisationGrue missing in AnalyseDeRisqueDTO" />
+                        <OfficialField label="Travailleur isolé" value="" placeholder="Man please - travailleurIsole missing in AnalyseDeRisqueDTO" />
+                        <OfficialField label="Risque amiante" value="" placeholder="Man please - risqueAmiante missing in AnalyseDeRisqueDTO" />
+                        <OfficialField label="Utilisation outils portatifs" value="" placeholder="Man please - outilsPortatifs missing in AnalyseDeRisqueDTO" />
+                    </OfficialCard>
+
+                    {/* Prévention et Qualité Section */}
+                    <OfficialCard 
+                        title="PRÉVENTION ET QUALITÉ" 
+                        subtitle="Consignations et vérifications"
+                        accentColor="#059669"
+                        sectionNumber="5"
+                    >
+                        <OfficialField label="Consignation machine" value="" placeholder="Man please - consignationMachine missing in AuditSecuDTO" />
+                        <OfficialField label="Consignation fluide" value="" placeholder="Man please - consignationFluide missing in AuditSecuDTO" />
+                        <OfficialField label="Consignation électrique" value="" placeholder="Man please - consignationElectrique missing in AuditSecuDTO" />
+                        <OfficialField label="Outils vérifiés" value="" placeholder="Man please - outilsVerifies missing in AuditSecuDTO" />
+                        <OfficialField label="Tri déchets" value="" placeholder="Man please - triDechets missing in AuditSecuDTO" />
+                    </OfficialCard>
+
+                    {/* Safety Equipment Section - Enhanced */}
+                    <OfficialCard 
                         title="MESURES DE SÉCURITÉ" 
                         subtitle="Équipements et précautions obligatoires"
                         accentColor="#dc2626"
+                        sectionNumber="6"
                     >
                         <View style={styles.safetySection}>
                             <View style={styles.safetyColumn}>
                                 <Text style={styles.safetyTitle}>ÉQUIPEMENTS DE PROTECTION INDIVIDUELLE (EPI)</Text>
-                                <ModernField label="Casque de sécurité" value="À définir" />
-                                <ModernField label="Lunettes de sécurité" value="À définir" />
-                                <ModernField label="Protection auditive" value="À définir" />
-                                <ModernField label="Gants de protection" value="À définir" />
-                                <ModernField label="Chaussures de sécurité" value="À définir" />
-                                <ModernField label="Vêtements HV" value="À définir" />
+                                {epiDispositifs.length > 0 ? (
+                                    epiDispositifs.map(dispositif => (
+                                        <DispositifPdfItem key={dispositif.id} dispositif={dispositif} />
+                                    ))
+                                ) : (
+                                    <Text style={{ fontSize: 9, color: '#555555', fontStyle: 'italic' }}>Aucun équipement individuel requis</Text>
+                                )}
                             </View>
                             <View style={styles.safetyColumn}>
                                 <Text style={styles.safetyTitle}>ÉQUIPEMENTS DE PROTECTION COLLECTIVE (EPC)</Text>
-                                <ModernField label="Garde-corps" value="À définir" />
-                                <ModernField label="Filets de sécurité" value="À définir" />
-                                <ModernField label="Barrières de sécurité" value="À définir" />
-                                <ModernField label="Signalisation" value="À définir" />
-                                <ModernField label="Éclairage" value="À définir" />
-                                <ModernField label="Ventilation" value="À définir" />
+                                {epcDispositifs.length > 0 ? (
+                                    epcDispositifs.map(dispositif => (
+                                        <DispositifPdfItem key={dispositif.id} dispositif={dispositif} />
+                                    ))
+                                ) : (
+                                    <Text style={{ fontSize: 9, color: '#555555', fontStyle: 'italic' }}>Aucun équipement collectif requis</Text>
+                                )}
                             </View>
                         </View>
-                    </ModernCard>
+                    </OfficialCard>
 
                     {/* Safety Icons Section */}
-                    <ModernCard 
+                    <OfficialCard 
                         title="INFORMATIONS DE SÉCURITÉ" 
                         subtitle="Numéros d'urgence et procédures"
                         accentColor="#dc2626"
+                        sectionNumber="7"
                     >
                         <View style={styles.safetyGrid}>
                             <View style={styles.safetyIconColumn}>
@@ -401,7 +457,7 @@ const BDT_Page_Modern = ({ currentBdt, chantierData, entrepriseData, allRisksMap
                                 />
                             </View>
                         </View>
-                    </ModernCard>
+                    </OfficialCard>
                 </View>
             </CustomPage>
 
@@ -415,43 +471,47 @@ const BDT_Page_Modern = ({ currentBdt, chantierData, entrepriseData, allRisksMap
                 return (
                     <CustomPage key={pageKey}>
                         <View style={styles.pageContainer}>
-                            {/* Risk Assessment Table - Show on first risk page if data exists */}
-                            {pageIndex === 0 && analysesDeRisque.length > 0 && (
-                                <ModernCard 
+                            {/* Risk Assessment Table - Show placeholder since data not available */}
+                            {pageIndex === 0 && (
+                                <OfficialCard 
                                     title="ANALYSE DES RISQUES" 
                                     subtitle="Coactivité avec les entreprises extérieures"
                                     accentColor="#dc2626"
+                                    sectionNumber="8"
                                 >
-                                    <ModernTable
+                                    <OfficialTable
                                         columns={[
                                             { header: 'Mode Opératoire', width: '25%', align: 'left' },
                                             { header: 'Moyens Utilisés', width: '25%', align: 'left' },
                                             { header: 'Risques Prévisibles', width: '25%', align: 'left' },
                                             { header: 'Mesures de Prévention', width: '25%', align: 'left' }
                                         ]}
-                                        data={analysesDeRisque.slice(0, 4).map(analyse => ({
-                                            modeOperatoire: analyse.deroulementDesTaches || '',
-                                            moyensUtilises: analyse.moyensUtilises || '',
-                                            risquesPrevisibles: analyse.risque?.title || analyse.risque?.description || '',
-                                            mesuresPrevention: analyse.mesuresDePrevention || ''
-                                        }))}
+                                        data={[
+                                            {
+                                                modeOperatoire: 'Man please - need allAnalyseDeRisque data',
+                                                moyensUtilises: 'Man please - need allAnalyseDeRisque data',
+                                                risquesPrevisibles: 'Man please - need allAnalyseDeRisque data',
+                                                mesuresPrevention: 'Man please - need allAnalyseDeRisque data'
+                                            }
+                                        ]}
                                         minRows={3}
                                         emptyRowText="À compléter"
                                     />
-                                </ModernCard>
+                                </OfficialCard>
                             )}
 
                             {/* Detailed Risk Assessment */}
                             {riskChunk.length > 0 && (
-                                <ModernCard 
+                                <OfficialCard 
                                     title={pageTitle}
                                     subtitle="Évaluation détaillée des risques"
                                     accentColor="#dc2626"
+                                    sectionNumber={`9.${pageIndex + 1}`}
                                 >
                                     <View style={styles.riskGrid}>
                                         <View style={styles.riskColumn}>
                                             {riskChunk.slice(0, Math.ceil(riskChunk.length / 2)).map((risque, index) => (
-                                                <RiskItem
+                                                <OfficialRiskItem
                                                     key={`risk-left-${risque.id || index}`}
                                                     title={risque.title || risque.description || `Risque #${risque.id}`}
                                                     description={risque.description !== risque.title ? risque.description : undefined}
@@ -464,7 +524,7 @@ const BDT_Page_Modern = ({ currentBdt, chantierData, entrepriseData, allRisksMap
                                         
                                         <View style={styles.riskColumn}>
                                             {riskChunk.slice(Math.ceil(riskChunk.length / 2)).map((risque, index) => (
-                                                <RiskItem
+                                                <OfficialRiskItem
                                                     key={`risk-right-${risque.id || index}`}
                                                     title={risque.title || risque.description || `Risque #${risque.id}`}
                                                     description={risque.description !== risque.title ? risque.description : undefined}
@@ -475,21 +535,22 @@ const BDT_Page_Modern = ({ currentBdt, chantierData, entrepriseData, allRisksMap
                                             ))}
                                         </View>
                                     </View>
-                                </ModernCard>
+                                </OfficialCard>
                             )}
 
                             {/* Equipment/Consignation Section - Only on last risk page */}
                             {pageIndex === riskChunks.length - 1 && (
-                                <ModernCard 
+                                <OfficialCard 
                                     title="MESURES DE PRÉVENTION COMPLÉMENTAIRES" 
                                     subtitle="Consignations et procédures"
                                     accentColor="#0ea5e9"
+                                    sectionNumber="10"
                                 >
-                                    <ModernField label="Consignation énergétique DM/NOR" value="" placeholder="À remplir - CADENASSÉ:" />
-                                    <ModernField label="Consignation fluide(s) DM/NOR" value="" placeholder="À remplir - CADENASSÉ:" />
-                                    <ModernField label="Consignation électrique DM/NOR" value="" placeholder="À remplir - CADENASSÉ:" />
-                                    <ModernField label="Consignation DU 1424" value="" placeholder="QUALITÉ, AFGRI ENVIRONNEMENT" />
-                                </ModernCard>
+                                    <OfficialField label="Consignation énergétique DM/NOR" value="" placeholder="À remplir - CADENASSÉ:" fullWidth />
+                                    <OfficialField label="Consignation fluide(s) DM/NOR" value="" placeholder="À remplir - CADENASSÉ:" fullWidth />
+                                    <OfficialField label="Consignation électrique DM/NOR" value="" placeholder="À remplir - CADENASSÉ:" fullWidth />
+                                    <OfficialField label="Consignation DU 1424" value="" placeholder="QUALITÉ, AFGRI ENVIRONNEMENT" fullWidth />
+                                </OfficialCard>
                             )}
                         </View>
                     </CustomPage>
@@ -502,84 +563,69 @@ const BDT_Page_Modern = ({ currentBdt, chantierData, entrepriseData, allRisksMap
                     {/* Interventions Section */}
                     <View style={styles.interventionsSection}>
                         <View style={styles.interventionColumn}>
-                            <ModernCard 
+                            <OfficialCard 
                                 title="LES INTERVENANTS" 
                                 subtitle="Personnel autorisé"
                                 accentColor="#059669"
+                                sectionNumber="11.1"
                             >
-                                {auditIntervenants.length > 0 ? (
-                                    auditIntervenants.map((audit, index) => (
-                                        <View key={`intervenant-${audit.id || index}`} style={styles.checklistItem}>
-                                            <View style={styles.checkboxSmall} />
-                                            <Text style={styles.checkboxText}>
-                                                {audit.title || audit.description || `Intervenant #${audit.id}`}
-                                            </Text>
-                                            <View style={styles.statusGroup}>
-                                                <View style={styles.statusMini}>
-                                                    <Text style={styles.statusMiniText}>O</Text>
-                                                </View>
-                                                <View style={styles.statusMini}>
-                                                    <Text style={styles.statusMiniText}>N</Text>
-                                                </View>
-                                            </View>
+                                <View style={styles.checklistItem}>
+                                    <View style={styles.checkboxSmall} />
+                                    <Text style={styles.checkboxText}>Man please - need allAudits data for intervenants</Text>
+                                    <View style={styles.statusGroup}>
+                                        <View style={styles.statusMini}>
+                                            <Text style={styles.statusMiniText}>O</Text>
                                         </View>
-                                    ))
-                                ) : (
-                                    <View style={styles.checklistItem}>
-                                        <View style={styles.checkboxSmall} />
-                                        <Text style={styles.checkboxText}>Aucun intervenant défini</Text>
-                                        <View style={styles.statusGroup}>
-                                            <View style={styles.statusMini} />
-                                            <View style={styles.statusMini} />
+                                        <View style={styles.statusMini}>
+                                            <Text style={styles.statusMiniText}>N</Text>
                                         </View>
                                     </View>
-                                )}
-                            </ModernCard>
+                                </View>
+                            </OfficialCard>
                         </View>
 
                         <View style={styles.interventionColumn}>
-                            <ModernCard 
+                            <OfficialCard 
                                 title="OUTILS UTILISÉS" 
                                 subtitle="Équipements autorisés"
                                 accentColor="#8b5cf6"
+                                sectionNumber="11.2"
                             >
-                                {auditOutils.length > 0 ? (
-                                    auditOutils.map((audit, index) => (
-                                        <View key={`outil-${audit.id || index}`} style={styles.checklistItem}>
-                                            <View style={styles.checkboxSmall} />
-                                            <Text style={styles.checkboxText}>
-                                                {audit.title || audit.description || `Outil #${audit.id}`}
-                                            </Text>
-                                            <View style={styles.statusGroup}>
-                                                <View style={styles.statusMini}>
-                                                    <Text style={styles.statusMiniText}>O</Text>
-                                                </View>
-                                                <View style={styles.statusMini}>
-                                                    <Text style={styles.statusMiniText}>N</Text>
-                                                </View>
-                                            </View>
+                                <View style={styles.checklistItem}>
+                                    <View style={styles.checkboxSmall} />
+                                    <Text style={styles.checkboxText}>Man please - need allAudits data for outils</Text>
+                                    <View style={styles.statusGroup}>
+                                        <View style={styles.statusMini}>
+                                            <Text style={styles.statusMiniText}>O</Text>
                                         </View>
-                                    ))
-                                ) : (
-                                    <View style={styles.checklistItem}>
-                                        <View style={styles.checkboxSmall} />
-                                        <Text style={styles.checkboxText}>Aucun outil défini</Text>
-                                        <View style={styles.statusGroup}>
-                                            <View style={styles.statusMini} />
-                                            <View style={styles.statusMini} />
+                                        <View style={styles.statusMini}>
+                                            <Text style={styles.statusMiniText}>N</Text>
                                         </View>
                                     </View>
-                                )}
-                            </ModernCard>
+                                </View>
+                            </OfficialCard>
                         </View>
                     </View>
 
-                    {/* Signatures Section */}
-                    <ModernSignature
+                    {/* Signatures Section - Enhanced with JSON structure */}
+                    <OfficialCard 
+                        title="SIGNATURES ET VALIDATION" 
+                        subtitle="Validation des intervenants"
+                        accentColor="#6366f1"
+                        sectionNumber="12"
+                    >
+                        <OfficialField label="Entreprise utilisatrice" value="" placeholder="Man please - entrepriseUtilisatrice missing in DocumentDTO" required />
+                        <OfficialField label="Entreprise extérieure" value="" placeholder="Man please - entrepriseExterieure missing in DocumentDTO" required />
+                        <OfficialField label="Chargé de travaux" value="" placeholder="Man please - chargeDeTravaux missing in DocumentDTO" required />
+                        <OfficialField label="Donneur d'ordres" value="" placeholder="Man please - donneurOrdres missing in DocumentDTO" required />
+                    </OfficialCard>
+
+                    {/* Official Signatures Section */}
+                    <OfficialSignature
                         leftTitle="CHARGÉ DE TRAVAUX"
                         rightTitle="DONNEUR D'ORDRES"
-                        leftSubtitle="SIGNATURE ET VISA"
-                        rightSubtitle="SIGNATURE ET VISA"
+                        leftSubtitle="SIGNATURE ET VISA OBLIGATOIRE"
+                        rightSubtitle="SIGNATURE ET VISA OBLIGATOIRE"
                     />
                 </View>
             </CustomPage>

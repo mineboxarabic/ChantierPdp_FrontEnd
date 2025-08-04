@@ -25,6 +25,7 @@ import { SectionTitle } from '../../../pages/Home/styles';
 // Import your custom components for rendering individual items
 import RisqueComponent from '../../../components/Steps/RisqueComponent';
 import ObjectAnsweredComponent from '../../../components/Steps/ObjectAnsweredComponent';
+import DispositifCard from '../../../components/Dispositif/DispositifCard';
 
 // Import the multiple selection dialog
 import MultipleRiskSelectionDialog from '../../../components/MultipleSelectionDialog/MultipleRiskSelectionDialog';
@@ -70,7 +71,7 @@ const DocumentTabRelations = <T extends DocumentDTO>({
         
         return formData.relations.filter(r => {
             const typeMatches = r.objectType === type || String(r.objectType) === String(type);
-            const hasValidAnswer = r.answer === true || r.answer === null;
+            const hasValidAnswer = r.answer !== null;
             return typeMatches && hasValidAnswer;
         });
     };
@@ -208,7 +209,7 @@ const DocumentTabRelations = <T extends DocumentDTO>({
                     {errors.dispositifs && <Alert severity="error" sx={{ mb: 2 }}>{errors.dispositifs}</Alert>}
 
                     {dispositifsRelations.length > 0 ? (
-                        renderItemsInColumns(dispositifsRelations, ObjectAnsweredComponent, allDispositifsMap, ObjectAnsweredObjects.DISPOSITIF)
+                        renderItemsInColumns(dispositifsRelations, DispositifCard, allDispositifsMap, ObjectAnsweredObjects.DISPOSITIF)
                     ) : (
                         <Alert severity="info">
                             Aucun dispositif ajouté. Cliquez sur "Ajouter / Créer" pour commencer.

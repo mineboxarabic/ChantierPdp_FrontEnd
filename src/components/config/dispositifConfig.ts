@@ -18,6 +18,16 @@ export const dispositifConfig: FormConfig = {
             rows: 4,
         },
         {
+            name: 'type',
+            label: 'Type de Dispositif',
+            type: 'select',
+            required: true,
+            options: [
+                { value: 'EPI', label: 'EPI - Équipement de Protection Individuelle' },
+                { value: 'EPC', label: 'EPC - Équipement de Protection Collective' },
+            ],
+        },
+        {
             name: 'logo',
             label: 'Image/Logo du Dispositif',
             type: 'file',

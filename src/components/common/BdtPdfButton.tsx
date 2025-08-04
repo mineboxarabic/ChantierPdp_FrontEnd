@@ -18,8 +18,7 @@ import {
 } from '@mui/icons-material';
 import { BdtDTO } from '../../utils/entitiesDTO/BdtDTO';
 import RisqueDTO from '../../utils/entitiesDTO/RisqueDTO';
-import { AnalyseDeRisqueDTO } from '../../utils/entitiesDTO/AnalyseDeRisqueDTO';
-import { AuditSecuDTO } from '../../utils/entitiesDTO/AuditSecuDTO';
+import DispositifDTO from '../../utils/entitiesDTO/DispositifDTO';
 import { useBdtPdfGeneration } from '../../hooks/useBdtPdfGeneration';
 
 interface BdtPdfButtonProps {
@@ -27,8 +26,7 @@ interface BdtPdfButtonProps {
     chantierData?: any;
     entrepriseData?: any;
     allRisksMap?: Map<number, RisqueDTO>;
-    allAnalyseDeRisque?: Map<number, AnalyseDeRisqueDTO>;
-    allAudits?: Map<number, AuditSecuDTO>;
+    allDispositifsMap?: Map<number, DispositifDTO>;
     variant?: 'contained' | 'outlined' | 'text';
     size?: 'small' | 'medium' | 'large';
     disabled?: boolean;
@@ -40,8 +38,7 @@ const BdtPdfButton: React.FC<BdtPdfButtonProps> = ({
     chantierData,
     entrepriseData,
     allRisksMap,
-    allAnalyseDeRisque,
-    allAudits,
+    allDispositifsMap,
     variant = 'contained',
     size = 'medium',
     disabled = false,
@@ -68,8 +65,7 @@ const BdtPdfButton: React.FC<BdtPdfButtonProps> = ({
                 chantierData, 
                 entrepriseData, 
                 allRisksMap, 
-                allAnalyseDeRisque,
-                allAudits,
+                allDispositifsMap,
                 action
             );
         } catch (error) {

@@ -141,7 +141,8 @@ const SelectOrCreateObjectAnswered = <ITEM extends ContentItem, PARENT extends P
                 // Use uploaded logo or default empty image
                 enrichedFormData = {
                     ...enrichedFormData,
-                    logo: enrichedFormData.logo || { imageData: '', mimeType: 'image/png' }
+                    logo: enrichedFormData.logo || { imageData: '', mimeType: 'image/png' },
+                    type: enrichedFormData.type || 'EPI' // Default type
                 };
                 newItem = await createDispositif(enrichedFormData as ITEM);
             } else if (objectType === ObjectAnsweredObjects.AUDIT) {

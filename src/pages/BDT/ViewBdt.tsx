@@ -617,8 +617,7 @@ const ViewBdt: FC = () => {
                                 chantierData={chantiers.get(bdtData.chantier!)}
                                 entrepriseData={entreprises.get(bdtData.entrepriseExterieure!)}
                                 allRisksMap={risques}
-                                allAnalyseDeRisque={analyses}
-                                allAudits={audits}
+                                allDispositifsMap={dispositifs}
                                 variant="outlined"
                                 size="medium"
                                 sx={{

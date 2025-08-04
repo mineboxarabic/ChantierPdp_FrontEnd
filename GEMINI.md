@@ -1,5 +1,7 @@
 # Development Guidelines for ChantierPdp Application
-
+- Dont write code until i ask you to do so.
+- When you want to build dont build for production, build for development.
+- Dont correct errors that has nothing to do with the task i asked you to do.
 - please read the src from Chantier_Frontend and read Chantier_Backend to understand project to know it's context and structure and design i am using.
 - if you are not sure about something, ask me before making changes.
 - if there is a not found module search for it in the project or a replacment and if you dont find it ask me or create it.

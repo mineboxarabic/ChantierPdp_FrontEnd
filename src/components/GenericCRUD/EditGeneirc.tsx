@@ -190,12 +190,11 @@ const EditGeneric = <T extends BaseEntity>({
             if (!field.entityType) return null;
 
             try {
-                if (crudOperations && !crudOperations.getReferences) return null;
-                if(!crudOperations) return null;
-
-                const options =   await crudOperations.getReferences(field.entityType);
-
-                return { field: field.key, options };
+                if (crudOperations && crudOperations.getReferences) {
+                    const options = await crudOperations.getReferences(field.entityType);
+                    return { field: field.key, options };
+                }
+                return null;
             } catch (error) {
                 console.error(`Error loading reference options for ${field.key}:`, error);
                 return { field: field.key, options: [] };

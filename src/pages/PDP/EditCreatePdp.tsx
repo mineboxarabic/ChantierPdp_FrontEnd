@@ -169,8 +169,7 @@ function a11yProps(index: number) {
     };
 }
 
-type DialogData = RisqueDTO | DispositifDTO | PermitDTO | AnalyseDeRisqueDTO | AuditSecuDTO | null;
-type DialogTypes = 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'editAnalyseDeRisque' | 'audits' | '';
+import { DialogTypes, DialogData } from '../BDT/EditCreateBDT.tsx';
 
 // Signature request interface for API
 interface SignatureRequestDTO {

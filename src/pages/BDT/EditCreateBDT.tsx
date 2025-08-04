@@ -79,7 +79,7 @@ interface ComplementOuRappel {
 }
 
 // Define dialog data types
-type DialogData = RisqueDTO | DispositifDTO | PermitDTO | AnalyseDeRisqueDTO | AuditSecuDTO | null;
+export type DialogData = RisqueDTO | DispositifDTO | PermitDTO | AnalyseDeRisqueDTO | AuditSecuDTO | null;
 export type DialogTypes = 'complement' | 'chargeDeTravail' | 'donneurDOrdre' | 'risques' | 'dispositifs' | 'permits' | 'analyseDeRisques' | 'audits' | 'editAnalyseDeRisque' | '';
 
 // Type to represent required permit types and the risks that need them (same as PDP)
@@ -164,10 +164,6 @@ const EditCreateBdt: React.FC = () => {
     // Required permit types state (similar to PDP)
     const [requiredPermitTypes, setRequiredPermitTypes] = useState<RequiredPermitType[]>([]);
 
-
-    useEffect(()=>{
-        console.log('BdDDTTTTTT',formData);
-    },[formData])
 
     // Load data on component mount
     useEffect(() => {

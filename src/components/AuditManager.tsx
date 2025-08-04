@@ -185,10 +185,7 @@ const AuditManager: React.FC<AuditManagerProps> = ({
         try {
             if (editingAudit) {
                 // Update existing audit
-                const updatedAudit = await auditHook.updateAuditSecu(editingAudit.id!, {
-                    ...editingAudit,
-                    ...formData
-                } as AuditSecuDTO);
+                const updatedAudit = await auditHook.updateAuditSecu(formData as AuditSecuDTO, editingAudit.id!);
                 
                 if (updatedAudit) {
                     setAudits(prev => prev.map(a => a.id === updatedAudit.id ? updatedAudit : a));

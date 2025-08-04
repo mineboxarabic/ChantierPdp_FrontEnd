@@ -243,7 +243,7 @@ const ViewChantierPage: FC = () => {
                                 label="Entreprise Utilisatrice"
                                 entityId={chantier.entrepriseUtilisatrice}
                                 entityData={entrepriseUtilisatriceData}
-                                getRoute={(id) => getRoute('VIEW_ENTREPRISE', { id: id.toString() })} // Ensure this route exists
+                                getRoute={(id) => getRoute('VIEW_ENTREPRISES', { id: id.toString() })} // Ensure this route exists
                                 icon={<BusinessIcon fontSize="small"/>}
                                 fullWidth
                             />
@@ -251,7 +251,7 @@ const ViewChantierPage: FC = () => {
                                 label="Donneur d'Ordre"
                                 entityId={chantier.donneurDOrdre}
                                 entityData={donneurDOrdreData} // Assuming UserDTO has 'username' or 'name'
-                                getRoute={(id) => getRoute('VIEW_USER_PROFILE', { id: id.toString() })} // Ensure this route exists
+                                getRoute={(id) => getRoute('PROFILE', { id: id.toString() })} // Ensure this route exists
                                 icon={<PersonIcon fontSize="small"/>}
                                 fullWidth
                             />
@@ -259,7 +259,7 @@ const ViewChantierPage: FC = () => {
                                 label="Localisation"
                                 entityId={chantier.localisation}
                                 entityData={localisationData}
-                                getRoute={(id) => getRoute('VIEW_LOCALISATION', { id: id.toString() })} // Ensure this route exists
+                                getRoute={(id) => getRoute('VIEW_LOCALISATIONS', { id: id.toString() })} // Ensure this route exists
                                 icon={<LocationIcon fontSize="small"/>}
                                 fullWidth
                             />
@@ -267,7 +267,7 @@ const ViewChantierPage: FC = () => {
                                 label="Entreprises Extérieures"
                                 entityIds={chantier.entrepriseExterieurs}
                                 entitiesDataMap={entreprisesMap}
-                                getRoute={(id) => getRoute('VIEW_ENTREPRISE', { id: id.toString() })}
+                                getRoute={(id) => getRoute('VIEW_ENTREPRISES', { id: id.toString() })}
                                 icon={<BusinessIcon fontSize="small"/>}
                                 fullWidth
                             />
@@ -283,7 +283,7 @@ const ViewChantierPage: FC = () => {
                                 label="" // No extra label needed as section title is enough
                                 entityIds={chantier.workerSelections}
                                 entitiesDataMap={workersMap} // Pass the specific workers for this chantier
-                                getRoute={(id) => getRoute('VIEW_WORKER', { id: id.toString() })} // Assuming a worker view route
+                                getRoute={(id) => getRoute('VIEW_WORKERS', { id: id.toString() })} // Assuming a worker view route
                                 fullWidth
                             />
                         </DetailSection>

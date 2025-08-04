@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback } from 'react';
-import { TextField, Button, Box, Switch, FormControlLabel, Typography, Avatar } from '@mui/material';
+import { TextField, Button, Box, Switch, FormControlLabel, Typography, Avatar, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
 import { PhotoCamera } from '@mui/icons-material';
 import SaveIcon from '@mui/icons-material/Save';
 
@@ -8,11 +8,12 @@ import SaveIcon from '@mui/icons-material/Save';
 export interface FormField {
     name: string;
     label: string;
-    type: 'text' | 'boolean' | 'number' | 'file';
+    type: 'text' | 'boolean' | 'number' | 'file' | 'select';
     required?: boolean;
     multiline?: boolean;
     rows?: number;
     accept?: string; // For file inputs, specify accepted file types
+    options?: { value: string; label: string }[]; // For select inputs
 }
 
 // Defines the configuration for the entire form
@@ -159,6 +160,32 @@ const GenericCreateForm: React.FC<GenericCreateFormProps> = ({ config, onSave, o
                                         {errors[field.name]}
                                     </Typography>
                                 )}
+                            </Box>
+                        );
+                    }
+
+                    if (field.type === 'select') {
+                        return (
+                            <Box key={field.name}>
+                                <FormControl fullWidth error={!!errors[field.name]}>
+                                    <InputLabel>{field.label}</InputLabel>
+                                    <Select
+                                        value={formData[field.name] || ''}
+                                        onChange={(e) => handleChange(field.name, e.target.value)}
+                                        label={field.label}
+                                    >
+                                        {field.options?.map(option => (
+                                            <MenuItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                    {errors[field.name] && (
+                                        <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                                            {errors[field.name]}
+                                        </Typography>
+                                    )}
+                                </FormControl>
                             </Box>
                         );
                     }

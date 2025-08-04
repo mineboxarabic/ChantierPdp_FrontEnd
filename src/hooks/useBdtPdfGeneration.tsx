@@ -2,9 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { BdtDTO } from '../utils/entitiesDTO/BdtDTO';
 import RisqueDTO from '../utils/entitiesDTO/RisqueDTO';
-import { AnalyseDeRisqueDTO } from '../utils/entitiesDTO/AnalyseDeRisqueDTO';
-import { AuditSecuDTO } from '../utils/entitiesDTO/AuditSecuDTO';
-import BdtPageModern from '../PDF/BDT_Page_Modern'; // Updated to use the modern dynamic PDF
+import DispositifDTO from '../utils/entitiesDTO/DispositifDTO';
+import BdtPageModern from '../PDF/BDT_Page_Modern'; // Use the modern template with components
 import { useNotifications } from '@toolpad/core/useNotifications';
 
 export const useBdtPdfGeneration = () => {
@@ -16,8 +15,7 @@ export const useBdtPdfGeneration = () => {
         chantierData?: any, 
         entrepriseData?: any,
         allRisksMap?: Map<number, RisqueDTO>,
-        allAnalyseDeRisque?: Map<number, AnalyseDeRisqueDTO>,
-        allAudits?: Map<number, AuditSecuDTO>,
+        allDispositifsMap?: Map<number, DispositifDTO>,
         action: 'download' | 'print' | 'preview' = 'download'
     ) => {
         setIsGenerating(true);
@@ -28,8 +26,7 @@ export const useBdtPdfGeneration = () => {
                     chantierData={chantierData}
                     entrepriseData={entrepriseData}
                     allRisksMap={allRisksMap}
-                    allAnalyseDeRisque={allAnalyseDeRisque}
-                    allAudits={allAudits}
+                    allDispositifsMap={allDispositifsMap}
                 />
             ).toBlob();
             

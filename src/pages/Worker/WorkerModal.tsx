@@ -88,9 +88,9 @@ const WorkerModal: React.FC<WorkerModalProps> = ({
             setWorker(workerDetails);
 
             // Fetch enterprise details if available
-            if (workerDetails.entreprise?.id) {
-                const entrepriseDetails = await entrepriseService.getEntreprise(workerDetails.entreprise.id);
-                setEntrepriseName(entrepriseDetails.nom || '');
+            if (workerDetails.entreprise) {
+                const entrepriseDetails = await entrepriseService.getEntreprise(workerDetails.entreprise as number);
+                setEntrepriseName(entrepriseDetails?.nom || '');
             }
 
             
@@ -108,7 +108,7 @@ const WorkerModal: React.FC<WorkerModalProps> = ({
     };
 
     const handleDeleteClick = () => {
-        if (worker?.id && onDelete) {
+        if (worker && worker.id && onDelete) {
             onDelete(worker.id);
             onClose();
         }
