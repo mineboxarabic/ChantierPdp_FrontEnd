@@ -19,7 +19,12 @@ import {
 import { BdtDTO } from '../../utils/entitiesDTO/BdtDTO';
 import RisqueDTO from '../../utils/entitiesDTO/RisqueDTO';
 import DispositifDTO from '../../utils/entitiesDTO/DispositifDTO';
+import { LocalisationDTO } from '../../utils/entitiesDTO/LocalisationDTO';
+import { UserDTO } from '../../utils/entitiesDTO/UserDTO';
+import { AnalyseDeRisqueDTO } from '../../utils/entitiesDTO/AnalyseDeRisqueDTO';
+import { AuditSecuDTO } from '../../utils/entitiesDTO/AuditSecuDTO';
 import { useBdtPdfGeneration } from '../../hooks/useBdtPdfGeneration';
+import { SignatureResponseDTO } from '../../hooks/useDocument';
 
 interface BdtPdfButtonProps {
     bdtData: BdtDTO;
@@ -27,6 +32,11 @@ interface BdtPdfButtonProps {
     entrepriseData?: any;
     allRisksMap?: Map<number, RisqueDTO>;
     allDispositifsMap?: Map<number, DispositifDTO>;
+    localisationsMap?: Map<number, LocalisationDTO>;
+    usersMap?: Map<number, UserDTO>;
+    allAnalysesMap?: Map<number, AnalyseDeRisqueDTO>;
+    allAuditsMap?: Map<number, AuditSecuDTO>;
+    signatures?: SignatureResponseDTO[];
     variant?: 'contained' | 'outlined' | 'text';
     size?: 'small' | 'medium' | 'large';
     disabled?: boolean;
@@ -39,6 +49,11 @@ const BdtPdfButton: React.FC<BdtPdfButtonProps> = ({
     entrepriseData,
     allRisksMap,
     allDispositifsMap,
+    localisationsMap,
+    usersMap,
+    allAnalysesMap,
+    allAuditsMap,
+    signatures,
     variant = 'contained',
     size = 'medium',
     disabled = false,
@@ -66,6 +81,11 @@ const BdtPdfButton: React.FC<BdtPdfButtonProps> = ({
                 entrepriseData, 
                 allRisksMap, 
                 allDispositifsMap,
+                localisationsMap,
+                usersMap,
+                allAnalysesMap,
+                allAuditsMap,
+                signatures,
                 action
             );
         } catch (error) {

@@ -3,8 +3,13 @@ import { pdf } from '@react-pdf/renderer';
 import { BdtDTO } from '../utils/entitiesDTO/BdtDTO';
 import RisqueDTO from '../utils/entitiesDTO/RisqueDTO';
 import DispositifDTO from '../utils/entitiesDTO/DispositifDTO';
-import BdtPageModern from '../PDF/BDT_Page_Modern'; // Use the modern template with components
+import { LocalisationDTO } from '../utils/entitiesDTO/LocalisationDTO';
+import { UserDTO } from '../utils/entitiesDTO/UserDTO';
+import { AnalyseDeRisqueDTO } from '../utils/entitiesDTO/AnalyseDeRisqueDTO';
+import { AuditSecuDTO } from '../utils/entitiesDTO/AuditSecuDTO';
 import { useNotifications } from '@toolpad/core/useNotifications';
+import BDT_Page_New from '../PDF/BDT_Page_New';
+import { SignatureResponseDTO } from './useDocument';
 
 export const useBdtPdfGeneration = () => {
     const [isGenerating, setIsGenerating] = useState(false);
@@ -16,17 +21,27 @@ export const useBdtPdfGeneration = () => {
         entrepriseData?: any,
         allRisksMap?: Map<number, RisqueDTO>,
         allDispositifsMap?: Map<number, DispositifDTO>,
+        localisationsMap?: Map<number, LocalisationDTO>,
+        usersMap?: Map<number, UserDTO>,
+        allAnalysesMap?: Map<number, AnalyseDeRisqueDTO>,
+        allAuditsMap?: Map<number, AuditSecuDTO>,
+        signatures?: SignatureResponseDTO[],
         action: 'download' | 'print' | 'preview' = 'download'
     ) => {
         setIsGenerating(true);
         try {
             const blob = await pdf(
-                <BdtPageModern 
+                <BDT_Page_New
                     currentBdt={bdtData}
                     chantierData={chantierData}
                     entrepriseData={entrepriseData}
                     allRisksMap={allRisksMap}
                     allDispositifsMap={allDispositifsMap}
+                    localisationsMap={localisationsMap}
+                    usersMap={usersMap}
+                    allAnalysesMap={allAnalysesMap}
+                    allAuditsMap={allAuditsMap}
+                    signatures={signatures}
                 />
             ).toBlob();
             

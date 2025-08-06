@@ -136,6 +136,8 @@ const useEntreprise = () => {
         setLoading(true);
         try {
             const result = await getEntrepriseById(id);
+                        
+
             if (result.data) {
                 setResponse(result.data);
                 return result.data;

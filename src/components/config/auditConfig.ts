@@ -1,6 +1,7 @@
 
 
 import { FormConfig } from '../common/GenericCreateForm';
+import AuditType from '../../utils/AuditType';
 
 export const auditConfig: FormConfig = {
     fields: [
@@ -27,8 +28,12 @@ export const auditConfig: FormConfig = {
         {
             name: 'typeOfAudit',
             label: 'Type d\'audit',
-            type: 'text',
-            required: false,
+            type: 'select',
+            required: true,
+            options: [
+                { value: AuditType.INTERVENANT, label: 'Intervenants' },
+                { value: AuditType.OUTILS, label: 'Outils' }
+            ],
         },
     ],
 };

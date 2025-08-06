@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useNotifications } from "@toolpad/core/useNotifications";
 import { AuditSecuDTO } from "../utils/entitiesDTO/AuditSecuDTO.ts";
+import AuditType from "../utils/AuditType.ts";
 import fetchApi, { ApiResponse } from "../api/fetchApi.ts";
 
 type AuditSecuResponse = AuditSecuDTO | AuditSecuDTO[] | boolean | null;
@@ -33,7 +34,7 @@ export const getAllAuditSecus = async (): Promise<ApiResponse<AuditSecuDTO[]>> =
 };
 
 // Function to get audit secus by type
-export const getAuditSecusByType = async (typeOfAudit: string): Promise<ApiResponse<AuditSecuDTO[]>> => {
+export const getAuditSecusByType = async (typeOfAudit: AuditType): Promise<ApiResponse<AuditSecuDTO[]>> => {
     return fetchApi<AuditSecuDTO[]>(
         `api/auditsecu/type/${typeOfAudit}`,
         "GET",
@@ -147,7 +148,7 @@ const useAuditSecu = () => {
         );
     };
 
-    const getAuditSecusByTypeHook = async (typeOfAudit: string): Promise<AuditSecuDTO[]> => {
+    const getAuditSecusByTypeHook = async (typeOfAudit: AuditType): Promise<AuditSecuDTO[]> => {
         return executeApiCall(
             () => getAuditSecusByType(typeOfAudit),
             "Error while getting audit secus by type"

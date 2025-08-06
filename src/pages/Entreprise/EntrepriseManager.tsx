@@ -4,6 +4,7 @@ import ManagerCRUD from "../../components/GenericCRUD/ManagerCRUD";
 import { EntityConfig, FieldType, CrudOperations } from "../../components/GenericCRUD/TypeConfig";
 import useEntreprise from "../../hooks/useEntreprise";
 import useWorker from "../../hooks/useWoker.ts";
+import useUser from "../../hooks/useUser";
 import {EntrepriseDTO} from "../../utils/entitiesDTO/EntrepriseDTO.ts";
 
 // Create a theme instance (reusing the same theme for consistency)
@@ -41,6 +42,7 @@ const EntrepriseManager = () => {
     // Get the hook for Entreprise CRUD operations
     const entrepriseService = useEntreprise();
     const workerService = useWorker();
+    const userService = useUser();
     // Define the entity configuration for Entreprise
     const entrepriseConfig: EntityConfig = {
         entityType: 'entreprise',
@@ -140,10 +142,21 @@ const EntrepriseManager = () => {
                 reference:{fieldName:'nom', keyField:'id'},
             },
             {
+                key: 'responsableChantier',
+                type: FieldType.EntityRef,
+                label: 'Site Manager',
+                order: 9,
+                section: 'Management',
+                entityType: 'user',
+                fullWidth: true,
+                reference:{fieldName:'username', keyField:'id'},
+                helperText: 'Select the user responsible for managing this worksite',
+            },
+            {
                 key: 'medecinDuTravailleEE',
                 type: FieldType.Object,
                 label: 'Occupational Physician',
-                order: 9,
+                order: 10,
                 section: 'Healthcare',
                 fullWidth: true,
                 helperText: 'Enter information about the occupational physician',
@@ -176,10 +189,12 @@ const EntrepriseManager = () => {
         getReferences: async (entityType: string, query?: string) => {
             // This would need to be implemented to fetch referenced entities
             // For example, workers or PDPs for selection in dropdowns
-            // For now, return an empty array
             console.log(`Fetching references for: ${entityType}, query: ${query}`);
             if(entityType == 'worker'){
                 return await workerService.getAllWorkers();
+            }
+            if(entityType == 'user'){
+                return await userService.getUsers();
             }
 
             return [];

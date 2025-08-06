@@ -4,6 +4,7 @@ import ManagerCRUD from "../../components/GenericCRUD/ManagerCRUD.tsx";
 import {EntityConfig, FieldType, CrudOperations, ImageModel} from "../../components/GenericCRUD/TypeConfig.ts";
 import useAuditSecu from "../../hooks/useAuditSecu.ts";
 import { AuditSecuDTO } from '../../utils/entitiesDTO/AuditSecuDTO.ts';
+import AuditType from '../../utils/AuditType.ts';
 
 // Create a theme instance
 const theme = createTheme({
@@ -71,8 +72,8 @@ export const auditSecuConfig: EntityConfig = {
             type: FieldType.ArrayOfSimpleValues,
             label: 'Type d\'Audit',
             options: [
-                { value: 'INTERVENANTS', label: 'Intervenants' },
-                { value: 'OUTILS', label: 'Outils' }
+                { value: AuditType.INTERVENANT, label: 'Intervenants' },
+                { value: AuditType.OUTILS, label: 'Outils' }
             ],
             required: true,
             order: 3,

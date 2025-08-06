@@ -45,9 +45,15 @@ import useAnalyseRisque from "../../hooks/useAnalyseRisque";
 import useAuditSecu from "../../hooks/useAuditSecu";
 import useEntreprise from "../../hooks/useEntreprise";
 import useChantier from "../../hooks/useChantier";
+import useLocalisation from "../../hooks/useLocalisation";
+import useUser from "../../hooks/useUser";
+import useDocument, { SignatureResponseDTO } from "../../hooks/useDocument";
+import AuditType from "../../utils/AuditType.ts";
 import type { BdtDTO } from "../../utils/entitiesDTO/BdtDTO";
 import type { EntrepriseDTO } from "../../utils/entitiesDTO/EntrepriseDTO";
 import type { ChantierDTO } from "../../utils/entitiesDTO/ChantierDTO";
+import type { LocalisationDTO } from "../../utils/entitiesDTO/LocalisationDTO";
+import type { UserDTO } from "../../utils/entitiesDTO/UserDTO";
 import RisqueDTO from "../../utils/entitiesDTO/RisqueDTO";
 import DispositifDTO from "../../utils/entitiesDTO/DispositifDTO";
 import PermitDTO from "../../utils/entitiesDTO/PermitDTO";
@@ -181,20 +187,26 @@ const ViewBdt: FC = () => {
     const risquesHook = useRisque();
     const entrepriseHook = useEntreprise();
     const chantierHook = useChantier();
+    const localisationHook = useLocalisation();
     const dispositifHook = useDispositif();
     const permitHook = usePermit();
     const analyseHook = useAnalyseRisque();
     const auditHook = useAuditSecu();
+    const userHook = useUser();
+    const documentHook = useDocument();
     const theme = useTheme();
 
     // Maps for related data
     const [risques, setRisques] = useState<Map<number, RisqueDTO>>(new Map<number, RisqueDTO>());
     const [entreprises, setEntreprises] = useState<Map<number, EntrepriseDTO>>(new Map<number, EntrepriseDTO>());
     const [chantiers, setChantiers] = useState<Map<number, ChantierDTO>>(new Map<number, ChantierDTO>());
+    const [localisations, setLocalisations] = useState<Map<number, LocalisationDTO>>(new Map<number, LocalisationDTO>());
     const [dispositifs, setDispositifs] = useState<Map<number, DispositifDTO>>(new Map<number, DispositifDTO>());
     const [permits, setPermits] = useState<Map<number, PermitDTO>>(new Map<number, PermitDTO>());
     const [analyses, setAnalyses] = useState<Map<number, AnalyseDeRisqueDTO>>(new Map<number, AnalyseDeRisqueDTO>());
     const [audits, setAudits] = useState<Map<number, AuditSecuDTO>>(new Map<number, AuditSecuDTO>());
+    const [users, setUsers] = useState<Map<number, UserDTO>>(new Map<number, UserDTO>());
+    const [signatures, setSignatures] = useState<SignatureResponseDTO[]>([]);
 
     // Utility functions to get relations by type
     const getRisquesRelations = () => {
@@ -238,16 +250,36 @@ const ViewBdt: FC = () => {
         fetchBdt();
     }, [id]);
 
+    // Fetch signatures when BDT data is available
+    useEffect(() => {
+        const fetchSignatures = async () => {
+            if (!bdtData?.id) return;
+            
+            try {
+                const signatureData = await documentHook.getSignaturesByDocumentId(bdtData.id);
+                console.log('Signatures:', signatureData);
+                setSignatures(signatureData);
+            } catch (error) {
+                console.error('Error fetching signatures:', error);
+                setSignatures([]);
+            }
+        };
+
+        fetchSignatures();
+    }, [bdtData]);
+
     useEffect(() => {
         const fetchEntrepriseAndChantier = async () => {
             if (!bdtData) return;
             
             const entrepriseMap = new Map<number, EntrepriseDTO>();
             const chantierMap = new Map<number, ChantierDTO>();
+            const localisationMap = new Map<number, LocalisationDTO>();
             
             try {
                 if (bdtData.entrepriseExterieure) {
                     const entrepriseExterieure = await entrepriseHook.getEntreprise(bdtData.entrepriseExterieure);
+                    console.log('Entreprise Exterieure:', bdtData.entrepriseExterieure);
                     if (entrepriseExterieure) {
                         entrepriseMap.set(bdtData.entrepriseExterieure, entrepriseExterieure);
                     }
@@ -257,13 +289,22 @@ const ViewBdt: FC = () => {
                     const chantier = await chantierHook.getChantier(bdtData.chantier);
                     if (chantier) {
                         chantierMap.set(bdtData.chantier, chantier);
+                        
+                        // Fetch localisation if chantier has one
+                        if (chantier.localisation) {
+                            const localisation = await localisationHook.getLocalisation(chantier.localisation);
+                            if (localisation) {
+                                localisationMap.set(chantier.localisation, localisation);
+                            }
+                        }
                     }
                 }
                 
                 setEntreprises(entrepriseMap);
                 setChantiers(chantierMap);
+                setLocalisations(localisationMap);
             } catch (error) {
-                console.error('Error fetching entreprise or chantier:', error);
+                console.error('Error fetching entreprise, chantier, or localisation:', error);
             }
         };
 
@@ -368,6 +409,29 @@ const ViewBdt: FC = () => {
         };
 
         fetchAllRelatedData();
+    }, [bdtData]);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            if (!bdtData) return;
+            
+            try {
+                // Load all users to have a complete map
+                const allUsers = await userHook.getUsers();
+                const usersMap = new Map<number, UserDTO>();
+                allUsers.forEach(user => {
+                    if (user.id) {
+                        usersMap.set(user.id, user);
+                    }
+                });
+                setUsers(usersMap);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                setUsers(new Map<number, UserDTO>());
+            }
+        };
+
+        fetchUsers();
     }, [bdtData]);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -615,9 +679,14 @@ const ViewBdt: FC = () => {
                             <BdtPdfButton
                                 bdtData={bdtData}
                                 chantierData={chantiers.get(bdtData.chantier!)}
-                                entrepriseData={entreprises.get(bdtData.entrepriseExterieure!)}
+                                entrepriseData={entreprises.get(bdtData.entrepriseExterieure as number)}
                                 allRisksMap={risques}
                                 allDispositifsMap={dispositifs}
+                                localisationsMap={localisations}
+                                usersMap={users}
+                                allAnalysesMap={analyses}
+                                allAuditsMap={audits}
+                                signatures={signatures}
                                 variant="outlined"
                                 size="medium"
                                 sx={{
@@ -922,7 +991,7 @@ const ViewBdt: FC = () => {
                                             <Typography variant="h4">
                                                 {getAuditsRelations().filter(rel => {
                                                     const audit = audits.get(rel.objectId as number);
-                                                    return audit?.typeOfAudit === 'INTERVENANTS';
+                                                    return audit?.typeOfAudit === AuditType.INTERVENANT;
                                                 }).length}
                                             </Typography>
                                         </Box>
@@ -940,7 +1009,7 @@ const ViewBdt: FC = () => {
                                             <Typography variant="h4">
                                                 {getAuditsRelations().filter(rel => {
                                                     const audit = audits.get(rel.objectId as number);
-                                                    return audit?.typeOfAudit === 'OUTILS';
+                                                    return audit?.typeOfAudit === AuditType.OUTILS;
                                                 }).length}
                                             </Typography>
                                         </Box>
@@ -956,7 +1025,7 @@ const ViewBdt: FC = () => {
                             {/* Audits Intervenants */}
                             {getAuditsRelations().some(rel => {
                                 const audit = audits.get(rel.objectId as number);
-                                return audit?.typeOfAudit === 'INTERVENANTS';
+                                return audit?.typeOfAudit === AuditType.INTERVENANT;
                             }) && (
                                 <>
                                     <Typography variant="h6" sx={{ mt: 3, mb: 2, color: 'primary.main' }}>
@@ -966,7 +1035,7 @@ const ViewBdt: FC = () => {
                                         {getAuditsRelations()
                                             .filter(rel => {
                                                 const audit = audits.get(rel.objectId as number);
-                                                return audit?.typeOfAudit === 'INTERVENANTS';
+                                                return audit?.typeOfAudit === AuditType.INTERVENANT;
                                             })
                                             .map((relation, index) => {
                                                 const audit = audits.get(relation.objectId as number);
@@ -1015,7 +1084,7 @@ const ViewBdt: FC = () => {
                             {/* Audits Outils */}
                             {getAuditsRelations().some(rel => {
                                 const audit = audits.get(rel.objectId as number);
-                                return audit?.typeOfAudit === 'OUTILS';
+                                return audit?.typeOfAudit === AuditType.OUTILS;
                             }) && (
                                 <>
                                     <Typography variant="h6" sx={{ mt: 3, mb: 2, color: 'secondary.main' }}>
@@ -1025,7 +1094,7 @@ const ViewBdt: FC = () => {
                                         {getAuditsRelations()
                                             .filter(rel => {
                                                 const audit = audits.get(rel.objectId as number);
-                                                return audit?.typeOfAudit === 'OUTILS';
+                                                return audit?.typeOfAudit === AuditType.OUTILS;
                                             })
                                             .map((relation, index) => {
                                                 const audit = audits.get(relation.objectId as number);
@@ -1074,7 +1143,7 @@ const ViewBdt: FC = () => {
                             {/* Other audits (if any) */}
                             {getAuditsRelations().some(rel => {
                                 const audit = audits.get(rel.objectId as number);
-                                return audit && audit.typeOfAudit !== 'INTERVENANTS' && audit.typeOfAudit !== 'OUTILS';
+                                return audit && audit.typeOfAudit !== AuditType.INTERVENANT && audit.typeOfAudit !== AuditType.OUTILS;
                             }) && (
                                 <>
                                     <Typography variant="h6" sx={{ mt: 3, mb: 2, color: 'info.main' }}>
@@ -1084,7 +1153,7 @@ const ViewBdt: FC = () => {
                                         {getAuditsRelations()
                                             .filter(rel => {
                                                 const audit = audits.get(rel.objectId as number);
-                                                return audit && audit.typeOfAudit !== 'INTERVENANTS' && audit.typeOfAudit !== 'OUTILS';
+                                                return audit && audit.typeOfAudit !== AuditType.INTERVENANT && audit.typeOfAudit !== AuditType.OUTILS;
                                             })
                                             .map((relation, index) => {
                                                 const audit = audits.get(relation.objectId as number);

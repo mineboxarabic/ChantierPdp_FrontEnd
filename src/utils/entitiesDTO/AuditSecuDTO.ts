@@ -1,5 +1,6 @@
 import InfoDeBase from "../InfoDeBase.ts";
+import AuditType from "../AuditType.ts";
 
 export class AuditSecuDTO extends InfoDeBase{
-    typeOfAudit?: string; // New attribute to distinguish different types of audits
+    typeOfAudit?: AuditType; // Enum to distinguish different types of audits
 }

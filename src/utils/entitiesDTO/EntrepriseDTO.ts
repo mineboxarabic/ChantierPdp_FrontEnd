@@ -14,4 +14,5 @@ export interface EntrepriseDTO
   raisonSociale?: string; // ✅ Legal name of the company
   numTel?: string; // ✅ SIRET number for identification
   address?: string; // ✅ New field for company address
+  responsableChantier?: number; // ✅ User ID of the responsible person
 }

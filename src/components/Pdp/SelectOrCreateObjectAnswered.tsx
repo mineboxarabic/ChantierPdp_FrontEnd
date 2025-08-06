@@ -29,6 +29,7 @@ import useDispositif from '../../hooks/useDispositif';
 import useAuditSecu from '../../hooks/useAuditSecu';
 import usePermit from '../../hooks/usePermit';
 import { ContentItem, ParentOfRelations } from '../Interfaces';
+import AuditType from '../../utils/AuditType.ts';
 
 interface SelectOrCreateObjectAnsweredProps<ITEM extends ContentItem, PARENT extends ParentOfRelations> {
     open: boolean;
@@ -150,7 +151,7 @@ const SelectOrCreateObjectAnswered = <ITEM extends ContentItem, PARENT extends P
                 enrichedFormData = {
                     ...enrichedFormData,
                     logo: enrichedFormData.logo || { imageData: '', mimeType: 'image/png' },
-                    typeOfAudit: enrichedFormData.typeOfAudit || 'INTERVENANTS'
+                    typeOfAudit: enrichedFormData.typeOfAudit || AuditType.INTERVENANT
                 };
                 newItem = await createAuditSecu(enrichedFormData as ITEM);
             } else if (objectType === ObjectAnsweredObjects.PERMIT) {

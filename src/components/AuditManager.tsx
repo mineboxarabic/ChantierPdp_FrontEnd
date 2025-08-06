@@ -47,6 +47,7 @@ import {
 import { styled } from '@mui/material/styles';
 import useAuditSecu from '../hooks/useAuditSecu';
 import { AuditSecuDTO } from '../utils/entitiesDTO/AuditSecuDTO';
+import AuditType from '../utils/AuditType.ts';
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -92,7 +93,7 @@ const AuditManager: React.FC<AuditManagerProps> = ({
     const [formData, setFormData] = useState<Partial<AuditSecuDTO>>({
         title: '',
         description: '',
-        typeOfAudit: 'INTERVENANTS'
+        typeOfAudit: AuditType.INTERVENANT
     });
     
     // Snackbar state
@@ -159,7 +160,7 @@ const AuditManager: React.FC<AuditManagerProps> = ({
             setFormData({
                 title: '',
                 description: '',
-                typeOfAudit: 'INTERVENANTS'
+                typeOfAudit: AuditType.INTERVENANT
             });
         }
         setOpenDialog(true);
@@ -171,7 +172,7 @@ const AuditManager: React.FC<AuditManagerProps> = ({
         setFormData({
             title: '',
             description: '',
-            typeOfAudit: 'INTERVENANTS'
+            typeOfAudit: AuditType.INTERVENANT
         });
     };
 
@@ -482,12 +483,12 @@ const AuditManager: React.FC<AuditManagerProps> = ({
                             <FormControl fullWidth>
                                 <InputLabel>Type d'audit *</InputLabel>
                                 <Select
-                                    value={formData.typeOfAudit || 'INTERVENANTS'}
+                                    value={formData.typeOfAudit || AuditType.INTERVENANT}
                                     label="Type d'audit *"
-                                    onChange={(e: SelectChangeEvent) => setFormData(prev => ({ ...prev, typeOfAudit: e.target.value }))}
+                                    onChange={(e: SelectChangeEvent) => setFormData(prev => ({ ...prev, typeOfAudit: e.target.value as AuditType }))}
                                 >
-                                    <MenuItem value="INTERVENANTS">Intervenants</MenuItem>
-                                    <MenuItem value="OUTILS">Outils</MenuItem>
+                                    <MenuItem value={AuditType.INTERVENANT}>Intervenants</MenuItem>
+                                    <MenuItem value={AuditType.OUTILS}>Outils</MenuItem>
                                 </Select>
                             </FormControl>
                         </Grid>

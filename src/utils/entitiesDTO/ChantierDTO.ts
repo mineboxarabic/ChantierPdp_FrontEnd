@@ -16,7 +16,9 @@ export interface ChantierDTO
   entrepriseExterieurs?: number[];
   entrepriseUtilisatrice?: number;
   localisation?: number;
+  
   donneurDOrdre?: number;
+
   bdts?: number[];
   pdps?: number[];
   workerSelections?: number[];
