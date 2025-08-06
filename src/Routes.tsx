@@ -1,8 +1,5 @@
 // src/routes/routes.js
 
-
-import LivePDFPreview from "./PDF/LivePDFPreview.tsx";
-
 import { Font } from "@react-pdf/renderer";
 import ListPdps from "./pages/PDP/ListPdps.tsx";
 import Home from "./pages/Home.tsx";
@@ -129,11 +126,7 @@ PDP_LIST:{
         path: "/view/workers",
         element: <WorkerManager />
     },
-    // PDF Preview route
-    PREVIEW_PDF: {
-        path: "/preview/pdf",
-        element: <LivePDFPreview />
-    },
+
 
     //Audit
     CRUD_AUDISECU:{
@@ -191,7 +184,6 @@ export const getRouteLists = () => {
         ROUTES.VIEW_RISQUES,
         ROUTES.VIEW_LOCALISATIONS,
         ROUTES.VIEW_PERMITS,
-        ROUTES.PREVIEW_PDF,
         ROUTES.VIEW_WORKERS,
         ROUTES.CREATE_BDT,
         ROUTES.CRUD_AUDISECU,

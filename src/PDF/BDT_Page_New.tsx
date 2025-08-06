@@ -709,19 +709,30 @@ const BDT_Page_New = ({
     };
 
     // Helper component for signatures
-    const SignaturesSection = () => {
-        // Helper function to get signature by user type
+    const SignaturesSection = ({ signatures, entrepriseData }: { signatures: SignatureResponseDTO[], entrepriseData: EntrepriseDTO | null | undefined }) => {
 
-        const getDanoneSignature = () => {
-            return signatures.find(sig => entrepriseData?.responsableChantier && sig.userId == entrepriseData.responsableChantier);
+        const isValidSignatureImage = (signature: SignatureResponseDTO) => {
+            return signature?.signatureImage?.imageData &&
+                typeof signature.signatureImage.imageData === 'string' &&
+                signature.signatureImage.imageData.trim() !== '';
         };
-        
+        const getDanoneSignature = () => {
+            return signatures.find(sig =>
+                entrepriseData?.responsableChantier &&
+                sig.userId === entrepriseData.responsableChantier
+            );
+        };
+
         const getEntrepriseSignature = () => {
-            return signatures.find(sig => sig.workerId !== null && sig.workerId !== undefined);
+            return signatures.find(sig =>
+                sig.workerId !== null &&
+                sig.workerId !== undefined
+            );
         };
 
         const danoneSignature = getDanoneSignature();
         const entrepriseSignature = getEntrepriseSignature();
+            console.log('testt', danoneSignature)
         return (
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
                 {/* Left: Entreprise Utilisatrice (Danone) */}
@@ -738,18 +749,18 @@ const BDT_Page_New = ({
                     
                     <View style={{ marginBottom: 15 }}>
                         <Text style={{ fontSize: 9, marginBottom: 5 }}>Signature:</Text>
-                        {danoneSignature?.signatureImage?.imageData ? (
-                            <Image 
-                                src={`data:${danoneSignature.signatureImage.mimeType || 'image/png'};base64,${danoneSignature.signatureImage.imageData}`}
-                                style={{ 
-                                    height: 40, 
+                        {danoneSignature && isValidSignatureImage(danoneSignature) ? (
+                            <Image
+                                src={`data:${danoneSignature!.signatureImage.mimeType || 'image/png'};base64,${danoneSignature!.signatureImage.imageData}`}
+                                style={{
+                                    height: 60,
                                     width: '100%',
                                     objectFit: 'contain',
-                                    border: '1 solid #cccccc' 
-                                }} 
+                                    border: '1 solid #cccccc'
+                                }}
                             />
                         ) : (
-                            <View style={{ height: 40, border: '1 solid #cccccc' }} />
+                            <View style={{ height: 60, border: '1 solid #cccccc' }} />
                         )}
                     </View>
                     
@@ -782,18 +793,18 @@ const BDT_Page_New = ({
                     
                     <View style={{ marginBottom: 15 }}>
                         <Text style={{ fontSize: 9, marginBottom: 5 }}>Signature:</Text>
-                        {entrepriseSignature?.signatureImage?.imageData ? (
-                            <Image 
-                                src={`data:${entrepriseSignature.signatureImage.mimeType || 'image/png'};base64,${entrepriseSignature.signatureImage.imageData}`}
-                                style={{ 
-                                    height: 40, 
+                        {entrepriseSignature && isValidSignatureImage(entrepriseSignature) ? (
+                            <Image
+                                src={`data:${entrepriseSignature!.signatureImage.mimeType || 'image/png'};base64,${entrepriseSignature!.signatureImage.imageData}`}
+                                style={{
+                                    height: 60,
                                     width: '100%',
                                     objectFit: 'contain',
-                                    border: '1 solid #cccccc' 
-                                }} 
+                                    border: '1 solid #cccccc'
+                                }}
                             />
                         ) : (
-                            <View style={{ height: 40, border: '1 solid #cccccc' }} />
+                            <View style={{ height: 60, border: '1 solid #cccccc' }} />
                         )}
                     </View>
                     
@@ -995,7 +1006,7 @@ const BDT_Page_New = ({
                             SIGNATURES
                         </Text>
                         <View style={styles.sectionContent}>
-                            <SignaturesSection />
+                            <SignaturesSection signatures={signatures} entrepriseData={entrepriseData} />
                         </View>
                     </View>
 
